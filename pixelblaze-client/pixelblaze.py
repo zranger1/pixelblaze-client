@@ -1,5 +1,5 @@
 """
- pixelblaze-client.py
+ pixelblaze.py
 
  A library that presents a simple, synchronous interface for communicating with and
  controlling a Pixelblaze LED controller.  Requires Python 3 and the websocket-client
