@@ -26,6 +26,7 @@
  Version  Date         Author Comment
  v0.0.1   11/23/2020   JEM(ZRanger1)    Created
  v0.0.2   12/01/2020   JEM(ZRanger1)    Updated for name change
+ v0.0.3   12/02/2020   JEM(ZRanger1)    added support for multiple color controls per pattern
 """
 from pixelblaze import *
 import time
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     pixelblazeIP = "192.168.1.15"     # insert your own IP address here
     basicPatternName = "KITT"         # everybody has KITT!
     vartestPatternName = "Bouncer3D"  # a pattern with exported variables
-    controlPatternName = "Bouncer3D"   # a pattern with UI controls
+    controlPatternName = "Many Controls"   # a pattern with UI controls
     testControlName = "sliderSpeed"   # name of control in controlPatternName   
     
     # create a Pixelblaze object.
@@ -101,6 +102,12 @@ if __name__ == "__main__":
     result = pb.getControls(controlPatternName) 
     val = result[testControlName]    
     print("Controls: ",result)
+    
+    
+    print("Testing: getColorControlName(s)")
+    print("Empty Control List: ", pb.getColorControlNames("KITT"))
+    print("Control Name List: ",pb.getColorControlNames())
+    print("First Color Control: ",pb.getColorControlName())    
 
 # we don't test persistence, so you have to look at the pattern to see the result
     print("Testing: setControls")

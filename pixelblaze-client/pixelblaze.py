@@ -368,11 +368,11 @@ class Pixelblaze:
         result = self.getControls(pattern)
         return True if ctl_name in result else False
     
-    def getColorControlName(self, pattern = None):
+    def getColorControlNames(self, pattern = None):
         """
-        Returns the name of the specified pattern's rgbPicker or hsvPicker control
-        if it exists, None otherwise.  If the pattern argument is not specified,
-        checks in the currently running pattern
+        Returns a list of names of the specified pattern's rgbPicker or
+        hsvPicker controls if any exist, None otherwise.  If the pattern
+        argument is not specified, check the currently running pattern
         """
         controls = self.getControls(pattern)
         if (controls is None):
@@ -380,12 +380,25 @@ class Pixelblaze:
         
         # check for hsvPicker        
         result = dict(filter(lambda ctl: "hsvPicker" in ctl[0], controls.items()))
+        ctl_list = list(result.keys())
         
-        # check for rgbPicker if we didn't find an hsvPicker
-        if (len(result) == 0):
-            result = dict(filter(lambda ctl: "rgbPicker" in ctl[0], controls.items()))
+        # check for rgbPicker
+        result = dict(filter(lambda ctl: "rgbPicker" in ctl[0], controls.items()))
+        ctl_list += list(result.keys())
             
-        return list(result.keys())[0] if (len(result) > 0) else None        
+        return ctl_list if (len(ctl_list) > 0) else None
+    
+    def getColorControlName(self, pattern = None):
+        """
+        Returns the name of the specified pattern's first rgbPicker or
+        hsvPicker control if one exists, None otherwise.  If the pattern
+        argument is not specified, checks in the currently running pattern
+        """        
+        result = self.getColorControlNames(pattern)
+        if (result is None):
+            return result
+        else:
+            return result[0]       
         
     def setDataspeed(self, speed, saveFlash = False):
         """

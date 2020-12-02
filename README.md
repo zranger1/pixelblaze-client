@@ -3,7 +3,19 @@ A Python library that presents a simple, synchronous interface for communicating
 controlling one or more Pixelblaze LED controllers. Requires Python 3 and the websocket-client
 module.
 
-## Current Version: v0.0.2
+## Current Version: v0.0.3
+Added the ability to handle patterns with multiple color controls.  This is not,
+at the time of this writing, a common occurence in patterns, but it is something the Pixelblaze supports.
+
+- added getColorControlNames() - returns a complete list of all rgb and hsv color controls associated
+with a pattern
+- getColorControlName() - now explicitly returns the name of the pattern's first color control. (It always
+did this, but now it's officially defined that way.)
+
+New methods are documented in the API Documentation section below.
+
+## Previously...
+#### v0.0.2
 Added methods for dealing with color picker controls:
 - controlExists(ctl_name, pattern) - returns True if specified control exists in the specified pattern, False otherwise
 - getColorControlName() - returns name of rgb or hsv color picker if the pattern has one, None otherwise
@@ -16,14 +28,11 @@ Various improvements:
 - If you omit the pattern name argument from getControls() or controlExists(), control data is retrieved
 for the current pattern if available.
 
-New methods are documented in the API Documentation section below.
-
-## Previously...
-#### Version 0.0.1
+#### v0.0.1
 Initial release - here be dragons (hopefully not, but bugs are within the realm of possibility)
 
 ## Requirements
-Python 3.4-3.7 (written and tested on 3.7.7)
+Python 3.4-3.8 (written and tested on 3.7.7)
 
 websocket-client (installable via pip, or from https://github.com/websocket-client/websocket-client
 (Python 3.8 and above are not yet supported by websocket-client module)
@@ -73,7 +82,12 @@ object
 #### getColorControlName(pattern = None)
 Returns the name of the specified pattern's rgbPicker or hsvPicker control
 if it exists, None otherwise.  If the pattern argument is not specified,
-checks in the currently running pattern
+checks in the currently running pattern.
+
+#### getColorControlNames(pattern = None)
+Returns a list of the names of the specified pattern's rgbPicker or
+hsvPicker controls if any exist, None otherwise.  If the pattern
+argument is not specified, check the currently running pattern
 
 #### getControls(pid)
 Returns a JSON object containing the state of all the specified
