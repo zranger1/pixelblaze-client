@@ -5,4 +5,4 @@ don't wish to use your own.  KITT and Bouncer3D are identical to the patterns
 in the library at electromage.com.  "Many Controls" tests the use of multiple
 color pickers in a single pattern. 
 
-To use, jus install the patterns you don't already have on your Pixelblaze.
+To use, just install the patterns you don't already have on your Pixelblaze.
