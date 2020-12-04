@@ -68,7 +68,7 @@ class Pixelblaze:
             
     def __boolean_to_json_string(self, val):
         """Utility method: Converts Python True/False to JSON true/false"""
-        return ',"save":true' if (val is True) else ""
+        return ',"save":true' if (val is True) else ',"save":false'
     
     def __get_save_string(self, val):
         """
@@ -413,7 +413,9 @@ class Pixelblaze:
         the saveFlash parameter to make your new timing (semi) permanent.
         """
         saveStr = self.__get_save_string(saveFlash)
-        self.send_string('{"dataSpeed" : %d %s}'%(speed,saveStr))       
+        self.ws_flush()
+        self.send_string('{"dataSpeed":%d %s}'%(speed,saveStr))
+        
     
     def getPatternList(self):
         """

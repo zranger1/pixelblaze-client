@@ -40,7 +40,8 @@ if __name__ == "__main__":
     pixelblazeIP = "192.168.1.15"     # insert your own IP address here
     basicPatternName = "KITT"         # everybody has KITT!
     vartestPatternName = "Bouncer3D"  # a pattern with exported variables
-    controlPatternName = "Many Controls"   # a pattern with UI controls
+    controlPatternName1 = "Bouncer3D" # a pattern with UI controls
+    controlPatternName2 = "Many Controls"  # a pattern with color pickers
     testControlName = "sliderSpeed"   # name of control in controlPatternName   
     
     # create a Pixelblaze object.
@@ -98,13 +99,15 @@ if __name__ == "__main__":
     time.sleep(1)
     
     print("Testing: getControls")
-    pb.setActivePattern(controlPatternName)    
-    result = pb.getControls(controlPatternName) 
+    pb.setActivePattern(controlPatternName1)    
+    result = pb.getControls(controlPatternName1) 
     val = result[testControlName]    
     print("Controls: ",result)
     
     
-    print("Testing: getColorControlName(s)")
+    print("Testing Color Picker Methods")
+    time.sleep(1)
+    pb.setActivePattern(controlPatternName2)    
     print("Empty Control List: ", pb.getColorControlNames("KITT"))
     print("Control Name List: ",pb.getColorControlNames())
     print("First Color Control: ",pb.getColorControlName())    
@@ -112,6 +115,7 @@ if __name__ == "__main__":
 # we don't test persistence, so you have to look at the pattern to see the result
     print("Testing: setControls")
     time.sleep(2)                             # display pattern w/original control setting
+    pb.setActivePattern(controlPatternName1)        
     pb.setControl(testControlName,1,False)    # set control value to max
     for i in range(5):                        # display this way for a while
         print('.', end='')    
