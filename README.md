@@ -44,7 +44,7 @@ websocket-client (installable via pip, or from https://github.com/websocket-clie
 (Python 3.8 and above are not yet supported by websocket-client module)
 
 ## Known Issues
-Will not work if you've got the Pixelblaze web UI running on the same computer (actually, the same interface).
+Will not work if you've got the Pixelblaze web UI running on the same computer (actually, the same network interface).
 Trying to create a Pixelblaze object under those circumstances will generate an exception.  The browser 
 does not want to share the socket, and strange things might happen even if it did. 
 
