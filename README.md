@@ -3,18 +3,24 @@ A Python library that presents a simple, synchronous interface for communicating
 controlling one or more Pixelblaze LED controllers. Requires Python 3 and the websocket-client
 module.
 
-## Current Version: v0.0.3
-Added the ability to handle patterns with multiple color controls.  This is not,
-at the time of this writing, a common occurence in patterns, but it is something the Pixelblaze supports.
+## Current Version: v0.9.0
+The **PixelblazeEnumerator class** has been added.  It listens continuously for Pixelblaze beacon
+packets, maintains a list of visible Pixelblazes and supports synchronizing time
+on multiple Pixelblazes to allow them to run patterns simultaneously. 
+
+The new class and methods are documented in the API Documentation section below.  Code that demonstrates
+PixelblazeEnumerator has been added to example.py and the new example2.py in the repository.
+
+## Previously...
+
+#### v0.0.3
+Added the ability to handle patterns with multiple color controls. 
 
 - added getColorControlNames() - returns a complete list of all rgb and hsv color controls associated
 with a pattern
 - getColorControlName() - now explicitly returns the name of the pattern's first color control. (It always
 did this, but now it's officially defined that way.)
 
-New methods are documented in the API Documentation section below.
-
-## Previously...
 #### v0.0.2
 Added methods for dealing with color picker controls:
 - controlExists(ctl_name, pattern) - returns True if specified control exists in the specified pattern, False otherwise
@@ -47,15 +53,48 @@ asynchronous communication system. At this point, it's good, but not perfect. It
 controlling the same Pixelblaze from multiple computers or multiple programs.  Report bugs of this sort if
 you see them -- it may not be fixable, but at least I can take a look.
 
-Detection and Firestorm-style time synchronization are not yet implemented, but are coming soon.
-
 ## Installation
 pixelblaze-client consists of a single file -- [pixelblaze.py](https://github.com/zranger1/pixelblaze-client/blob/main/pixelblaze-client/pixelblaze.py) from this repository.  Drop it into your project
 directory and import it into your project.  That's all.  An example -- [example.py](https://github.com/zranger1/pixelblaze-client/blob/main/pixelblaze-client/example.py) -- of setup and
 API usage is also provided.
 
-## API Documentation
-(roughly alphabetical except for object constructor)
+# API Documentation
+(roughly alphabetical except for object constructors)
+
+## class PixelblazeEnumerator
+
+#### PixelblazeEnumerator(addr)
+Create an object that listens continuously for Pixelblaze time and beacon
+packets, and maintains a list of visible Pixelblazes.  The PixelblazeEnumerator
+object also supports synchronizing time on multiple Pixelblazes to allows
+them to run patterns simultaneously.
+
+Takes the IPv4 address of the interface to use for listening on the calling computer.
+Listens on all available interfaces if addr is not specified.
+
+#### disableAutosync()
+Turns off the autoSync feature -- the PixelblazeEnumerator will not
+automatically synchronize Pixelblazes.  You can still manually synchronize
+by calling the synchronize() method.
+
+#### enableAutosync()
+Instructs the PixelblazeEnumerator object to automatically synchronize
+all Pixelblazes roughly every 5 seconds.  This feature is off by default
+when a new PixelblazeEnumerator is created.
+
+#### getPixelblazeList()
+Returns a list of Pixelblazes visible on the network.
+
+#### setDeviceTimeout(ms)
+Sets the interval in milliseconds which the enumerator will wait without
+hearing from a Pixelblaze before removing it from the active devices list.        
+The default timeout is 30000 (30 seconds).
+
+#### synchronize()
+Sets the time on all currently visible Pixelblazes to match time on the
+sending computer.
+
+## class Pixelblaze
 
 #### Pixelblaze(addr)
 Create and open Pixelblaze object. Takes the Pixelblaze's IPv4 address in the

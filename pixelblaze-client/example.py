@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
  example.py
 
@@ -25,33 +26,35 @@
 
  Version  Date         Author Comment
  v0.0.1   11/23/2020   JEM(ZRanger1)    Created
- v0.0.2   12/01/2020   JEM(ZRanger1)    Updated for name change
- v0.0.3   12/02/2020   JEM(ZRanger1)    added support for multiple color controls per pattern
+ v0.0.2   12/01/2020   "                Updated for name change
+ v0.0.3   12/02/2020   "                added support for multiple color controls per pattern
+ v0.9.0   12/06/2020   "                simple tests for PixelblazeEnumerator class
 """
 from pixelblaze import *
-import time
-import sys
-
 
 if __name__ == "__main__":
-    
-# When testing, change these pattern, variable and control names as necessary for
-# your Pixelblaze.
+    # When testing, change these pattern, variable and control names as necessary for
+    # your Pixelblaze.
     pixelblazeIP = "192.168.1.15"     # insert your own IP address here
     basicPatternName = "KITT"         # everybody has KITT!
     vartestPatternName = "Bouncer3D"  # a pattern with exported variables
     controlPatternName1 = "Bouncer3D" # a pattern with UI controls
+    testControlName = "sliderSpeed"   # name of control in controlPatternName    
     controlPatternName2 = "Many Controls"  # a pattern with color pickers
-    testControlName = "sliderSpeed"   # name of control in controlPatternName   
+    
+    # create a PixelblazeEnumerator object, listen for a couple of seconds, then
+    # list the Pixelblazes we found.
+    pbList = PixelblazeEnumerator()
+    print("Testing: PixelblazeEnumerator object created -- listening for Pixelblazes")
+    time.sleep(2)
+    print("Available Pixelblazes: ", pbList.getPixelblazeList())        
     
     # create a Pixelblaze object.
     pb = Pixelblaze(pixelblazeIP)   # use your own IP address here
-    print("Testing: Pixelblaze object created and connected")
+    pb.stopSequencer()              # make sure the sequencer isn't running    
+    print("Testing: Pixelblaze object created,connected,ready!")
       
-    # run through various calls to make sure we have
-    # basic functionality  
-    pb.stopSequencer()
-       
+    # Run through various calls to make sure we have basic functionality     
     print("Testing: getPatternList")
     result = pb.getPatternList()
     for key, value in result.items():
@@ -59,13 +62,14 @@ if __name__ == "__main__":
     time.sleep(1)
     
     print("Testing: setActivePattern")
-    pb.setActivePattern("OBVIOUSLY BOGUS PATTERN")  # just to make sure nothing bad happens
+    pb.setActivePattern("*OBVIOUSLY BOGUS PATTERN*")  # just to make sure nothing bad happens
     pb.setActivePattern(basicPatternName)
     pb.waitForEmptyQueue(1000)
     time.sleep(1)
     
     print("Testing: getVars")
     pb.setActivePattern(vartestPatternName) 
+    pb.waitForEmptyQueue(1000)       
     print("Variables: ",pb.getVars())
     time.sleep(1)    
            
@@ -76,16 +80,17 @@ if __name__ == "__main__":
     for i in range(4):
         print('.', end='')
         pb.setBrightness(0)
-        time.sleep(2)
+        time.sleep(1)
         print('.', end='')        
         pb.setBrightness(1)
-        time.sleep(2)
+        time.sleep(1)
     print("")        
          
     print("Testing: Internal Sequencer Control")
+    print("Should change patterns every two seconds")
     pb.setSequenceTimer(2)
     pb.startSequencer()
-    for i in range(10):
+    for i in range(6):
         print('.', end='')    
         time.sleep(1)
     print("")
@@ -99,7 +104,8 @@ if __name__ == "__main__":
     time.sleep(1)
     
     print("Testing: getControls")
-    pb.setActivePattern(controlPatternName1)    
+    pb.setActivePattern(controlPatternName1)   
+    pb.waitForEmptyQueue(1000)    
     result = pb.getControls(controlPatternName1) 
     val = result[testControlName]    
     print("Controls: ",result)
@@ -110,12 +116,14 @@ if __name__ == "__main__":
     pb.setActivePattern(controlPatternName2)    
     print("Empty Control List: ", pb.getColorControlNames("KITT"))
     print("Control Name List: ",pb.getColorControlNames())
-    print("First Color Control: ",pb.getColorControlName())    
+    print("First Color Control: ",pb.getColorControlName()) 
+    time.sleep(1)      
 
 # we don't test persistence, so you have to look at the pattern to see the result
     print("Testing: setControls")
-    time.sleep(2)                             # display pattern w/original control setting
-    pb.setActivePattern(controlPatternName1)        
+                
+    pb.setActivePattern(controlPatternName1)  # switch to control test pattern 
+    time.sleep(2)                             # display with original control setting
     pb.setControl(testControlName,1,False)    # set control value to max
     for i in range(5):                        # display this way for a while
         print('.', end='')    
@@ -124,7 +132,10 @@ if __name__ == "__main__":
     pb.setControl(testControlName,val,False); # restore previous setting
     time.sleep(2)
     
-    pb.setActivePattern(basicPatternName) # Set pattern back to something reasonable      
+    pb.setActivePattern(basicPatternName) # Set pattern back to something reasonable
+    
+    # and fetch list of Pixelblazes one last time!
+    print("Testing: Available Pixelblazes: ", pbList.getPixelblazeList())            
 
     pb.close()
     print("Testing: Complete!")
