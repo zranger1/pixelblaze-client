@@ -72,16 +72,15 @@ them to run patterns simultaneously.
 Takes the IPv4 address of the interface to use for listening on the calling computer.
 Listens on all available interfaces if addr is not specified.
 
-#### disableAutosync()
-Turns off the autoSync feature -- the PixelblazeEnumerator will not
-automatically synchronize Pixelblazes.  You can still manually synchronize
-by calling the synchronize() method.
+#### disableTimesync()
+Turns off the time synchronization -- the PixelblazeEnumerator will not
+automatically synchronize Pixelblazes. 
 
-#### enableAutosync()
+#### enableTimesync()
 Instructs the PixelblazeEnumerator object to automatically synchronize
-all Pixelblazes roughly every 5 seconds.  This feature is off by default
-when a new PixelblazeEnumerator is created.
-
+time on all Pixelblazes. (Note that time synchronization
+is off by default when a new PixelblazeEnumerator is created.)
+ 
 #### getPixelblazeList()
 Returns a list of Pixelblazes visible on the network.
 
@@ -90,9 +89,6 @@ Sets the interval in milliseconds which the enumerator will wait without
 hearing from a Pixelblaze before removing it from the active devices list.        
 The default timeout is 30000 (30 seconds).
 
-#### synchronize()
-Sets the time on all currently visible Pixelblazes to match time on the
-sending computer.
 
 ## class Pixelblaze
 

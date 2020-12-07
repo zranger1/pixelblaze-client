@@ -36,6 +36,7 @@ if __name__ == "__main__":
     print("...listening for 5 seconds....")
     s = PixelblazeEnumerator()   # create the enumerator object
     s.setDeviceTimeout(10000)    # shorten timeout for test purposes -- default is 30s
+#    s.enableTimesync()           #uncomment to test time synchronization
     
     # loop forever, print out the list of Pixelblazes on the net every 5 seconds
     try:

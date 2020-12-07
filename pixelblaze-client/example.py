@@ -29,6 +29,7 @@
  v0.0.2   12/01/2020   "                Updated for name change
  v0.0.3   12/02/2020   "                added support for multiple color controls per pattern
  v0.9.0   12/06/2020   "                simple tests for PixelblazeEnumerator class
+ v0.9.1   12/07/2020   "                fixes to time synchronization API
 """
 from pixelblaze import *
 

@@ -460,7 +460,7 @@ class PixelblazeEnumerator:
     running synchronized patterns on a network of Pixelblazes.
     """
     PORT = 1889
-    SYNC_ID = 889
+    SYNC_ID = 890
     BEACON_PACKET = 42
     TIMESYNC_PACKET = 43
     DEVICE_TIMEOUT = 30000
@@ -488,9 +488,9 @@ class PixelblazeEnumerator:
 
     def _time_in_millis(self):
         """
-        Utility Method: Returns current time in milliseconds
+        Utility Method: Returns last 32 bits of the current time in milliseconds
         """
-        return int(round(time.time() * 1000))
+        return int(round(time.time() * 1000)) % 0xFFFFFFFF
 
     def _unpack_beacon(self, data):
         """
@@ -505,9 +505,16 @@ class PixelblazeEnumerator:
         Utility Method: Builds a Pixelblaze timesync packet from
         supplied data.
         """
-        now = now & 0xFFFFFFFF  # limit to 32 bits
         return struct.pack("LLLLL", self.TIMESYNC_PACKET, self.SYNC_ID,
                            now, sender_id, sender_time)
+    
+    def _set_timesync_id(self,id):
+        """Utility Method:  Sets the PixelblazeEnumerator object's network
+           id for time synchronization. At the moment, any 32 bit value will
+           do, and calling this method does (almost) nothing.  In the
+           future, the ID might be used to determine priority among multiple time sources. 
+        """
+        self.SYNC_ID = id
 
     def setDeviceTimeout(self, ms):
         """
@@ -518,19 +525,18 @@ class PixelblazeEnumerator:
         """
         self.DEVICE_TIMEOUT = ms
 
-    def enableAutosync(self):
+    def enableTimesync(self):
         """
         Instructs the PixelblazeEnumerator object to automatically synchronize
-        all Pixelblazes roughly every 5 seconds.  This feature is off by default
-        when a new PixelblazeEnumerator is created.
+        time on all Pixelblazes. (Note that time synchronization
+        is off by default when a new PixelblazeEnumerator is created.)
         """
         self.autoSync = True
 
-    def disableAutosync(self):
+    def disableTimesync(self):
         """
-        Turns off the autoSync feature -- the PixelblazeEnumerator will not
-        automatically synchronize Pixelblazes.  You can still manually synchronize
-        by calling the synchronize() method.
+        Turns off the time synchronization -- the PixelblazeEnumerator will not
+        automatically synchronize Pixelblazes. 
         """
         self.autoSync = False
 
@@ -570,25 +576,16 @@ class PixelblazeEnumerator:
             self.threadObj = None
             self.listener = None
 
-    def _send_timesync(self, record, now):
+    def _send_timesync(self,now,sender_id,sender_time,addr):
         """
         Utility Method: Composes and sends a timesync packet to a single Pixelblaze
         """
         try:
-            self.listener.sendto(self._pack_timesync(now, record["sender_id"], record["sender_time"]),
-                                 record["address"])
+            self.listener.sendto(self._pack_timesync(now,sender_id,sender_time),addr)
+
         except socket.error as e:
             print(e)
             self.stop()
-
-    def synchronize(self):
-        """
-        Synchronize the time on all currently visible Pixelblazes to
-        match the time on the sending computer.
-        """
-        now = self._time_in_millis()
-        for record in self.devices.values():
-            self._send_timesync(record, now)
 
     def _listen(self):
         """
@@ -603,10 +600,15 @@ class PixelblazeEnumerator:
             # update device record and timestamp in our device list
             pkt = self._unpack_beacon(data)
             if (pkt[0] == self.BEACON_PACKET):
+                #add pixelblaze to list of devices
                 self.devices[pkt[1]] = {"address": addr,
                                         "timestamp": now,
                                         "sender_id": pkt[1],
                                         "sender_time": pkt[2]}
+                
+                # immediately send timesync if enabled
+                if self.autoSync:
+                    self._send_timesync(now,pkt[1],pkt[2],addr)
 
                 # remove devices we haven't seen in a while
                 if ((now - self.listTimeoutCheck) >= self.LIST_CHECK_INTERVAL):
@@ -618,10 +620,11 @@ class PixelblazeEnumerator:
 
                     self.devices = newlist
                     self.listTimeoutCheck = now
+                    
+            elif (pkt[0] == self.TIMESYNC_PACKET):   # always defer to other time sources
+                if self.autoSync:
+                    self.disableTimesync()
 
-                    # synchronize all Pixelblazes if autoSync is on
-                    if self.autoSync:
-                        self.synchronize()
 
     def getPixelblazeList(self):
         dev = []
