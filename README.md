@@ -3,45 +3,20 @@ A Python library that presents a simple, synchronous interface for communicating
 controlling one or more Pixelblaze LED controllers. Requires Python 3 and the websocket-client
 module.
 
-## Current Version: v0.9.0
-The **PixelblazeEnumerator class** has been added.  It listens continuously for Pixelblaze beacon
-packets, maintains a list of visible Pixelblazes and supports synchronizing time
-on multiple Pixelblazes to allow them to run patterns simultaneously. 
+## Current Version: v0.9.1
+Support for pypi.
 
-The new class and methods are documented in the API Documentation section below.  Code that demonstrates
-PixelblazeEnumerator has been added to example.py and the new example2.py in the repository.
+You can now install pixelblaze-client with pip.  Once installed, simply 
+"import pixelblaze" in your python programs!
 
 ## Previously...
-
-#### v0.0.3
-Added the ability to handle patterns with multiple color controls. 
-
-- added getColorControlNames() - returns a complete list of all rgb and hsv color controls associated
-with a pattern
-- getColorControlName() - now explicitly returns the name of the pattern's first color control. (It always
-did this, but now it's officially defined that way.)
-
-#### v0.0.2
-Added methods for dealing with color picker controls:
-- controlExists(ctl_name, pattern) - returns True if specified control exists in the specified pattern, False otherwise
-- getColorControlName() - returns name of rgb or hsv color picker if the pattern has one, None otherwise
-- setColorControl(name,color) - allows you to set a color picker control to a 3 element array of color values
-
-New convenience methods:
-- variableExists(var_name) - returns True if specified variable is exported by the current pattern
-
-Various improvements:
-- If you omit the pattern name argument from getControls() or controlExists(), control data is retrieved
-for the current pattern if available.
-
-#### v0.0.1
-Initial release - here be dragons (hopefully not, but bugs are within the realm of possibility)
+See changelog.md for details on previous versions.
 
 ## Requirements
 Python 3.4-3.8 (written and tested on 3.7.7)
 
 websocket-client (installable via pip, or from https://github.com/websocket-client/websocket-client
-(Python 3.8 and above are not yet supported by websocket-client module)
+(Python 3.8 and above are not yet officially supported by websocket-client module)
 
 ## Known Issues
 Will not work if you've got the Pixelblaze web UI running on the same computer (actually, the same network interface).
@@ -54,9 +29,9 @@ controlling the same Pixelblaze from multiple computers or multiple programs.  R
 you see them -- it may not be fixable, but at least I can take a look.
 
 ## Installation
-pixelblaze-client consists of a single file -- [pixelblaze.py](https://github.com/zranger1/pixelblaze-client/blob/main/pixelblaze-client/pixelblaze.py) from this repository.  Drop it into your project
-directory and import it into your project.  That's all.  An example -- [example.py](https://github.com/zranger1/pixelblaze-client/blob/main/pixelblaze-client/example.py) -- of setup and
-API usage is also provided.
+Install with pip, or if you prefer -- pixelblaze-client consists of a single file: [pixelblaze.py](https://github.com/zranger1/pixelblaze-client/blob/main/pixelblaze-client/pixelblaze.py) from this repository.  Drop it into your project
+directory and import it into your project.  That's all.  Sample code illustrating usage
+is provided in the [examples directory](https://github.com/zranger1/pixelblaze-client/blob/main/pixelblaze-client/examples) 
 
 # API Documentation
 (roughly alphabetical except for object constructors)

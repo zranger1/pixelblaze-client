@@ -1,0 +1,13 @@
+MANIFEST.in
+README.md
+changelog.md
+setup.py
+examples/example.py
+examples/example2.py
+pixelblaze/__init__.py
+pixelblaze/pixelblaze.py
+pixelblaze_client.egg-info/PKG-INFO
+pixelblaze_client.egg-info/SOURCES.txt
+pixelblaze_client.egg-info/dependency_links.txt
+pixelblaze_client.egg-info/requires.txt
+pixelblaze_client.egg-info/top_level.txt

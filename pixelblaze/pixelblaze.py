@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 """
  pixelblaze.py
 
@@ -27,7 +28,8 @@
  Version  Date         Author Comment
  v0.0.1   11/20/2020   JEM(ZRanger1)    Created
  v0.0.2   12/1/2020    JEM(ZRanger1)    Name change + color control methods
- v0.1.0   12/6/2020    JEM(ZRanger1)    Added PixelblazeEnumerator class
+ v0.9.0   12/6/2020    JEM(ZRanger1)    Added PixelblazeEnumerator class
+ v0.9.1   12/16/2020   JEM(ZRanger1)    Support for pypi upload
 """
 import websocket
 import socket
@@ -36,6 +38,7 @@ import time
 import struct
 import threading
 
+__version__ = "0.9.0"
 
 class Pixelblaze:
     """
