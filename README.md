@@ -10,7 +10,7 @@ You can now install pixelblaze-client with pip.  Once installed, simply
 "import pixelblaze" in your python programs!
 
 ## Previously...
-See changelog.md for details on previous versions.
+See [changelog.md](https://github.com/zranger1/pixelblaze-client/blob/main/changelog.md) for details on previous versions.
 
 ## Requirements
 Python 3.4-3.8 (written and tested on 3.7.7)
