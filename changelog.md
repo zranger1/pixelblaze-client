@@ -1,5 +1,11 @@
 # pixelblaze-client Change Log
 
+#### v0.9.1
+Support for pypi.
+
+You can now install pixelblaze-client with pip.  Once installed, simply 
+"import pixelblaze" in your python programs!
+
 #### v0.9.0
 **PixelblazeEnumerator class** has been added.  It listens continuously for Pixelblaze beacon
 packets, maintains a list of visible Pixelblazes and supports synchronizing time

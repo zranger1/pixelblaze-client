@@ -3,12 +3,12 @@ A Python library that presents a simple, synchronous interface for communicating
 controlling one or more Pixelblaze LED controllers. Requires Python 3 and the websocket-client
 module.
 
-## Current Version: v0.9.1
-Support for pypi.
+## Current Version: v0.9.2
+Support for Pixelblaze's updated internal pattern sequencer.
 
-You can now install pixelblaze-client with pip.  Once installed, simply 
-"import pixelblaze" in your python programs!
-
+Added support for starting the sequencer in either playlist or shuffle mode,
+and pausing and unpausing.   See API docs for startSequencer(), pauseSequencer() and
+playSequencer below.
 ## Previously...
 See [changelog.md](https://github.com/zranger1/pixelblaze-client/blob/main/changelog.md) for details on previous versions.
 
@@ -124,6 +124,17 @@ when a Pixelblaze object is created - it is not necessary to
 explicitly call open to connect unless the websocket has been closed by the
 user or by the Pixelblaze.
 
+#### pauseSequencer()
+Temporarily pause the Pixelblaze's internal sequencer, without
+losing your place in the shuffle or playlist. Call "playSequencer"
+to restart.  Has no effect if the sequencer is not currently running. 
+        
+#### playSequencer()
+Start the Pixelblaze's internal sequencer in the current mode,
+at the current place in the shuffle or playlist.  Compliment to
+"pauseSequencer".  Will not start the sequencer if it has not
+been enabled via "startSequencer" or the Web UI.
+
 #### setActivePattern(pid)
 Sets the currently running pattern, using either an ID or a text name
 
@@ -176,8 +187,10 @@ the saveFlash parameter to make your new timing (semi) permanent.
 Sets number of milliseconds the Pixelblaze's sequencer will run each pattern
 before switching to the next.
 
-#### startSequencer()
-Enable and start the Pixelblaze's internal sequencer
+#### startSequencer(mode = 1)
+Enable and start the Pixelblaze's internal sequencer. The optional mode parameter
+can be 1 - shuffle all patterns, or 2 - playlist mode.  The playlist
+must be configured through the Pixelblaze's web UI.
 
 #### stopSequencer()
 Stop and disable the Pixelblaze's internal sequencer
