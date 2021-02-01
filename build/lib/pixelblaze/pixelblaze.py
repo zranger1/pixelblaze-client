@@ -30,6 +30,7 @@
  v0.0.2   12/1/2020    JEM(ZRanger1)    Name change + color control methods
  v0.9.0   12/6/2020    JEM(ZRanger1)    Added PixelblazeEnumerator class
  v0.9.1   12/16/2020   JEM(ZRanger1)    Support for pypi upload
+ v0.9.2   01/16/2020   JEM(ZRanger1)    Updated Pixelblaze sequencer support
 """
 import websocket
 import socket
@@ -38,7 +39,7 @@ import time
 import struct
 import threading
 
-__version__ = "0.9.0"
+__version__ = "0.9.2"
 
 class Pixelblaze:
     """
@@ -264,13 +265,34 @@ class Pixelblaze:
         """
         self.send_string('{"sequenceTimer" : %d}' % n)
 
-    def startSequencer(self):
-        """Enable and start the Pixelblaze's internal sequencer"""
-        self.send_string('{"sequencerEnable": true, "runSequencer" : true }')
-
+    def startSequencer(self,mode = 1):
+        """
+        Enable and start the Pixelblaze's internal sequencer. The mode parameters
+        can be 1 - shuffle all patterns, or 2 - playlist mode.  The playlist
+        must be configured through the Pixelblaze's web UI.
+        """
+        self.send_string('{"sequencerMode": %d, "runSequencer" : true }' % mode)
+        
     def stopSequencer(self):
         """Stop and disable the Pixelblaze's internal sequencer"""
-        self.send_string('{"sequencerEnable": false, "runSequencer" : false }')
+        self.send_string('{"sequencerMode": 0, "runSequencer" : false }')
+        
+    def pauseSequencer(self):
+        """
+        Temporarily pause the Pixelblaze's internal sequencer, without
+        losing your place in the shuffle or playlist. Call "playSequencer"
+        to restart.  Has no effect if the sequencer is not currently running. 
+        """
+        self.send_string('{"runSequencer" : false }')
+        
+    def playSequencer(self):
+        """
+        Start the Pixelblaze's internal sequencer in the current mode,
+        at the current place in the shuffle or playlist.  Compliment to
+        "pauseSequencer".  Will not start the sequencer if it has not
+        been enabled via "startSequencer" or the Web UI.
+        """
+        self.send_string('{"runSequencer" : true }')        
 
     def getHardwareConfig(self):
         """Returns a JSON object containing all the available hardware configuration data"""

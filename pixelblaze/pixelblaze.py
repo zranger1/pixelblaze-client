@@ -243,7 +243,7 @@ class Pixelblaze:
 
     def getActivePattern(self):
         """
-        Returns the ID the pattern currently running on
+        Returns the ID of the pattern currently running on
         the Pixelblaze if available.  Otherwise returns an empty dictionary
         object
         """

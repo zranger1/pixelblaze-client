@@ -33,6 +33,11 @@ Install with pip, or if you prefer -- pixelblaze-client consists of a single fil
 directory and import it into your project.  That's all.  Sample code illustrating usage
 is provided in the [examples directory](https://github.com/zranger1/pixelblaze-client/blob/main/pixelblaze-client/examples) 
 
+## Donation
+If this project saves you time and effort, please consider donating to help support further development.  Every donut or cup of coffee helps!  :-)
+
+[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate/?hosted_button_id=YM9DKUT5V34G8)
+
 # API Documentation
 (roughly alphabetical except for object constructors)
 
