@@ -27,10 +27,11 @@
 
  Version  Date         Author Comment
  v0.0.1   11/20/2020   JEM(ZRanger1)    Created
- v0.0.2   12/1/2020    JEM(ZRanger1)    Name change + color control methods
- v0.9.0   12/6/2020    JEM(ZRanger1)    Added PixelblazeEnumerator class
- v0.9.1   12/16/2020   JEM(ZRanger1)    Support for pypi upload
- v0.9.2   01/16/2020   JEM(ZRanger1)    Updated Pixelblaze sequencer support
+ v0.0.2   12/1/2020    "                Name change + color control methods
+ v0.9.0   12/6/2020    "                Added PixelblazeEnumerator class
+ v0.9.1   12/16/2020   "                Support for pypi upload
+ v0.9.2   01/16/2021   "                Updated Pixelblaze sequencer support
+ v0.9.3   04/13/2021   "                waitForEmptyQueue() return now agrees w/docs  
 """
 import websocket
 import socket
@@ -39,7 +40,7 @@ import time
 import struct
 import threading
 
-__version__ = "0.9.2"
+__version__ = "0.9.3"
 
 class Pixelblaze:
     """
@@ -69,7 +70,7 @@ class Pixelblaze:
         explicitly call open to connect unless the websocket has been closed by the
         user or by the Pixelblaze.
         """
-        if (self.connected is False):
+        if self.connected is False:
             uri = "ws://" + addr + ":81"
             self.ws = websocket.create_connection(uri, sockopt=((socket.SOL_SOCKET, socket.SO_REUSEADDR, 1),
                                                                 (socket.IPPROTO_TCP, socket.TCP_NODELAY, 1),))
@@ -79,7 +80,7 @@ class Pixelblaze:
 
     def close(self):
         """Close websocket connection"""
-        if (self.connected is True):
+        if self.connected is True:
             self.ws.close()
             self.connected = False
 
@@ -114,20 +115,24 @@ class Pixelblaze:
         packets before sending requests for data w/send_string(). We do not call it
         before simply sending commands because it has a small performance cost.
         
-        This is one of the treacherously "clever" things done to make pyblaze
+        This is one of the treacherously "clever" things done to make pixelblaze-client
         work as a synchronous API when the Pixelblaze may be sending out unexpected
         packets or talking to multiple devices.  We do some extra work to make sure
         we're only receiving the packets we want.
         """
 
-        self.ws.settimeout(0.1)  # set very short timeout
-
+        # set very short timeout.
+        self.ws.settimeout(0.1)  
+            
+        # eat packets until we get a timeout exception on recv(), indicating 
+        # that there are no more pending packets
         try:
-            while (True):
-                self.ws.recv()
+            while True:
+                self.ws.recv()                         
         except websocket._exceptions.WebSocketTimeoutException:
-            self.ws.settimeout(self.default_recv_timeout)  # restore normal timeout
-            return  # if we get a timeout, there are no more pending packets
+            # restore normal timeout when done
+            self.ws.settimeout(self.default_recv_timeout)  
+        return  
 
     def ws_recv(self, wantBinary=False):
         """
@@ -136,11 +141,11 @@ class Pixelblaze:
         """
         result = None
         try:
-            while (True):  # loop until we hit timeout or have the packet we want
+            while True:  # loop until we hit timeout or have the packet we want
                 result = self.ws.recv()
-                if ((wantBinary is False) and (type(result) is str)):  # JSON string
+                if (wantBinary is False) and (type(result) is str):  # JSON string
                     break
-                elif ((wantBinary is True) and (result[0] == 0x07)):  # binary pattern list packet
+                elif (wantBinary is True) and (result[0] == 0x07):  # binary pattern list packet
                     break
                 else:
                     result = None  # unhandled binary - ignore
@@ -162,18 +167,26 @@ class Pixelblaze:
         """
         Wait until the Pixelblaze's websocket message queue is empty, or until
         timeout_ms milliseconds have elapsed.  Returns True if an empty queue
-        acknowldgement was received, False if timeout or error occurs.
+        acknowledgement was received, False otherwise.  Throws an exception
+        if the socket is disconnected.
         """
         self.ws_flush()
         self.ws.settimeout(timeout_ms / 1000)
-        self.send_string('{"ping": true}')
-        result = self.ws.recv()
-        self.ws.settimeout(self.default_recv_timeout)
-
-        return True if ((result is not None) and (result.startswith('{"ack"'))) else False
+        try:
+            self.send_string('{"ping": true}')
+            result = self.ws.recv()
+            self.ws.settimeout(self.default_recv_timeout)
+            
+            return True if ((result is not None) and (result.startswith('{"ack"'))) else False       
+        except websocket._exceptions.WebSocketTimeoutException:
+            self.ws.settimeout(self.default_recv_timeout)
+          
+        return False
 
     def getVars(self):
-        """Returns JSON object containing all vars exported from the active pattern"""
+        """
+        Returns JSON object containing all vars exported from the active pattern
+        """
         self.ws_flush()  # make sure there are no pending packets    
         self.send_string('{"getVars": true}')
         return json.loads(self.ws.recv()).get('vars')
@@ -200,7 +213,7 @@ class Pixelblaze:
         False otherwise.
         """
         val = self.getVars()
-        if (val is None):
+        if val is None:
             return False
 
         return True if var_name in val else False
@@ -217,7 +230,7 @@ class Pixelblaze:
         """Utility Method: Returns a pattern ID if passed either a valid ID or a text name"""
         patterns = self.getPatternList()
 
-        if (patterns.get(pid) is None):
+        if patterns.get(pid) is None:
             pid = self._id_from_name(patterns, pid)
 
         return pid
@@ -238,7 +251,7 @@ class Pixelblaze:
         """Sets the currently running pattern, using either an ID or a text name"""
         p = self._get_pattern_id(pid)
 
-        if (p is not None):
+        if p is not None:
             self.setActivePatternId(p)
 
     def getActivePattern(self):
@@ -265,7 +278,7 @@ class Pixelblaze:
         """
         self.send_string('{"sequenceTimer" : %d}' % n)
 
-    def startSequencer(self,mode = 1):
+    def startSequencer(self, mode=1):
         """
         Enable and start the Pixelblaze's internal sequencer. The mode parameters
         can be 1 - shuffle all patterns, or 2 - playlist mode.  The playlist
@@ -301,7 +314,7 @@ class Pixelblaze:
         hw = dict()
 
         p1 = self.ws_recv()
-        while (p1 is not None):
+        while p1 is not None:
             p2 = json.loads(p1)
             hw = {**hw, **p2}
             p1 = self.ws_recv()
@@ -340,14 +353,14 @@ class Pixelblaze:
         # and get stored values for that program
         else:
             pattern = self._get_pattern_id(pattern)
-            if (pattern is None):
+            if pattern is None:
                 return None
 
             self.send_string('{"getControls": "%s"}' % pattern)
             ctl = json.loads(self.ws.recv())
 
         # extract controls and their values
-        if (len(ctl.get('controls')) > 0):
+        if len(ctl.get('controls')) > 0:
             x = next(iter(ctl['controls']))
             return ctl['controls'][x]
         else:
@@ -411,7 +424,7 @@ class Pixelblaze:
         argument is not specified, check the currently running pattern
         """
         controls = self.getControls(pattern)
-        if (controls is None):
+        if controls is None:
             return None
 
         # check for hsvPicker        
@@ -431,7 +444,7 @@ class Pixelblaze:
         argument is not specified, checks in the currently running pattern
         """
         result = self.getColorControlNames(pattern)
-        if (result is None):
+        if result is None:
             return result
         else:
             return result[0]
@@ -462,16 +475,16 @@ class Pixelblaze:
         self.send_string("{ \"listPrograms\" : true }")
 
         frame = self.ws_recv(True)
-        while (frame is not None):
+        while frame is not None:
             listFrame = frame[2:].decode("utf-8")
             listFrame = listFrame.split("\n")
             listFrame = [m.split("\t") for m in listFrame]
 
             for pat in listFrame:
-                if (len(pat) == 2):
+                if len(pat) == 2:
                     patterns[pat[0]] = pat[1]
 
-            if (frame[1] & 0x04):
+            if frame[1] & 0x04:
                 break
             frame = self.ws_recv(True)
 
@@ -533,7 +546,7 @@ class PixelblazeEnumerator:
         return struct.pack("LLLLL", self.TIMESYNC_PACKET, self.SYNC_ID,
                            now, sender_id, sender_time)
     
-    def _set_timesync_id(self,id):
+    def _set_timesync_id(self, id):
         """Utility Method:  Sets the PixelblazeEnumerator object's network
            id for time synchronization. At the moment, any 32 bit value will
            do, and calling this method does (almost) nothing.  In the
@@ -591,7 +604,7 @@ class PixelblazeEnumerator:
         """
         Stop listening for datagrams, terminate listener thread and close socket.
         """
-        if (self.listener is None):
+        if self.listener is None:
             return
         else:
             self.isRunning = False
@@ -601,12 +614,12 @@ class PixelblazeEnumerator:
             self.threadObj = None
             self.listener = None
 
-    def _send_timesync(self,now,sender_id,sender_time,addr):
+    def _send_timesync(self, now, sender_id, sender_time, addr):
         """
         Utility Method: Composes and sends a timesync packet to a single Pixelblaze
         """
         try:
-            self.listener.sendto(self._pack_timesync(now,sender_id,sender_time),addr)
+            self.listener.sendto(self._pack_timesync(now, sender_id, sender_time), addr)
 
         except socket.error as e:
             print(e)
@@ -624,8 +637,8 @@ class PixelblazeEnumerator:
             # when we receive a beacon packet from a Pixelblaze,
             # update device record and timestamp in our device list
             pkt = self._unpack_beacon(data)
-            if (pkt[0] == self.BEACON_PACKET):
-                #add pixelblaze to list of devices
+            if pkt[0] == self.BEACON_PACKET:
+                # add pixelblaze to list of devices
                 self.devices[pkt[1]] = {"address": addr,
                                         "timestamp": now,
                                         "sender_id": pkt[1],
@@ -633,23 +646,22 @@ class PixelblazeEnumerator:
                 
                 # immediately send timesync if enabled
                 if self.autoSync:
-                    self._send_timesync(now,pkt[1],pkt[2],addr)
+                    self._send_timesync(now, pkt[1], pkt[2], addr)
 
                 # remove devices we haven't seen in a while
-                if ((now - self.listTimeoutCheck) >= self.LIST_CHECK_INTERVAL):
+                if (now - self.listTimeoutCheck) >= self.LIST_CHECK_INTERVAL:
                     newlist = dict()
 
                     for dev, record in self.devices.items():
-                        if ((now - record["timestamp"]) <= self.DEVICE_TIMEOUT):
+                        if (now - record["timestamp"]) <= self.DEVICE_TIMEOUT:
                             newlist[dev] = record
 
                     self.devices = newlist
                     self.listTimeoutCheck = now
                     
-            elif (pkt[0] == self.TIMESYNC_PACKET):   # always defer to other time sources
+            elif pkt[0] == self.TIMESYNC_PACKET:   # always defer to other time sources
                 if self.autoSync:
                     self.disableTimesync()
-
 
     def getPixelblazeList(self):
         dev = []

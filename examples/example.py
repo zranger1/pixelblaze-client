@@ -36,7 +36,7 @@ from pixelblaze import *
 if __name__ == "__main__":
     # When testing, change these pattern, variable and control names as necessary for
     # your Pixelblaze.
-    pixelblazeIP = "192.168.1.15"     # insert your own IP address here
+    pixelblazeIP = "192.168.1.19"     # insert your own IP address here
     basicPatternName = "KITT"         # everybody has KITT!
     vartestPatternName = "Bouncer3D"  # a pattern with exported variables
     controlPatternName1 = "Bouncer3D" # a pattern with UI controls

@@ -3,12 +3,10 @@ A Python library that presents a simple, synchronous interface for communicating
 controlling one or more Pixelblaze LED controllers. Requires Python 3 and the websocket-client
 module.
 
-## Current Version: v0.9.2
-Support for Pixelblaze's updated internal pattern sequencer.
-
-Added support for starting the sequencer in either playlist or shuffle mode,
-and pausing and unpausing.   See API docs for startSequencer(), pauseSequencer() and
-playSequencer below.
+## Current Version: v0.9.3
+Minor update - fixed Pixelblaze.waitforEmptyQueue() to actually do what it says in the
+documentation.  (It was throwing an exception on timeouts, rather than returning False
+as described.  Thanks to [Nick_W](https://github.com/NickWaterton) for finding the bug and suggesting a fix!)
 ## Previously...
 See [changelog.md](https://github.com/zranger1/pixelblaze-client/blob/main/changelog.md) for details on previous versions.
 

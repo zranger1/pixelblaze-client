@@ -1,5 +1,12 @@
 # pixelblaze-client Change Log
 
+## Current Version: v0.9.2
+Support for Pixelblaze's updated internal pattern sequencer.
+
+Added support for starting the sequencer in either playlist or shuffle mode,
+and pausing and unpausing.   See API docs for startSequencer(), pauseSequencer() and
+playSequencer below.
+
 #### v0.9.1
 Support for pypi.
 
