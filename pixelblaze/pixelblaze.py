@@ -536,14 +536,14 @@ class PixelblazeEnumerator:
         packet, returning a 3 element list which contains
         (packet_type, sender_id, sender_time)
         """
-        return struct.unpack("LLL", data)
+        return struct.unpack("<LLL", data)
 
     def _pack_timesync(self, now, sender_id, sender_time):
         """
         Utility Method: Builds a Pixelblaze timesync packet from
         supplied data.
         """
-        return struct.pack("LLLLL", self.TIMESYNC_PACKET, self.SYNC_ID,
+        return struct.pack("<LLLLL", self.TIMESYNC_PACKET, self.SYNC_ID,
                            now, sender_id, sender_time)
     
     def _set_timesync_id(self, id):
