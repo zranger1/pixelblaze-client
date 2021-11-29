@@ -633,6 +633,17 @@ class PixelblazeEnumerator:
         while self.isRunning:
             data, addr = self.listener.recvfrom(1024)
             now = self._time_in_millis()
+            
+            # check the list periodically,and remove devices we haven't seen in a while
+            if (now - self.listTimeoutCheck) >= self.LIST_CHECK_INTERVAL:
+                newlist = dict()
+
+                for dev, record in self.devices.items():
+                    if (now - record["timestamp"]) <= self.DEVICE_TIMEOUT:
+                        newlist[dev] = record
+
+                self.devices = newlist
+                self.listTimeoutCheck = now                        
 
             # when we receive a beacon packet from a Pixelblaze,
             # update device record and timestamp in our device list
@@ -645,19 +656,8 @@ class PixelblazeEnumerator:
                                         "sender_time": pkt[2]}
                 
                 # immediately send timesync if enabled
-                if self.autoSync:
+                if self.autoSync:send
                     self._send_timesync(now, pkt[1], pkt[2], addr)
-
-                # remove devices we haven't seen in a while
-                if (now - self.listTimeoutCheck) >= self.LIST_CHECK_INTERVAL:
-                    newlist = dict()
-
-                    for dev, record in self.devices.items():
-                        if (now - record["timestamp"]) <= self.DEVICE_TIMEOUT:
-                            newlist[dev] = record
-
-                    self.devices = newlist
-                    self.listTimeoutCheck = now
                     
             elif pkt[0] == self.TIMESYNC_PACKET:   # always defer to other time sources
                 if self.autoSync:
