@@ -7,7 +7,7 @@
  controlling Pixelblaze LED controllers.  Requires Python 3 and the websocket-client
  module.
 
- Copyright 2020 JEM (ZRanger1)
+ Copyright 2020-2022 JEM (ZRanger1)
 
  Permission is hereby granted, free of charge, to any person obtaining a copy of this
  software and associated documentation files (the "Software"), to deal in the Software
@@ -26,12 +26,13 @@
  THE SOFTWARE.
 
  Version  Date         Author Comment
- v0.0.1   11/20/2020   JEM(ZRanger1)    Created
- v0.0.2   12/1/2020    "                Name change + color control methods
- v0.9.0   12/6/2020    "                Added PixelblazeEnumerator class
- v0.9.1   12/16/2020   "                Support for pypi upload
- v0.9.2   01/16/2021   "                Updated Pixelblaze sequencer support
- v0.9.3   04/13/2021   "                waitForEmptyQueue() return now agrees w/docs  
+ v0.0.1   11/20/2020   JEM(ZRanger1)  Created
+ v0.0.2   12/1/2020    "              Name change + color control methods
+ v0.9.0   12/6/2020    "              Added PixelblazeEnumerator class
+ v0.9.1   12/16/2020   "              Support for pypi upload
+ v0.9.2   01/16/2021   "              Updated Pixelblaze sequencer support
+ v0.9.3   04/13/2021   "              waitForEmptyQueue() return now agrees w/docs
+ v0.9.4   02/04/2022   "              Added setPixelcount(),pause(), unpause(), pattern cache
 """
 import websocket
 import socket
@@ -40,7 +41,7 @@ import time
 import struct
 import threading
 
-__version__ = "0.9.3"
+__version__ = "0.9.4"
 
 class Pixelblaze:
     """
@@ -55,12 +56,17 @@ class Pixelblaze:
     flash_save_enabled = False
     default_recv_timeout = 1
     ipAddr = None
-
+    
+    cacheRefreshTime = 0
+    cacheRefreshInterval = 1000; # milliseconds used internally
+    patternCache = None
+    
     def __init__(self, addr):
         """
         Create and open Pixelblaze object. Takes the Pixelblaze's IPv4 address in the
         usual 12 digit numeric form (for example, 192.168.1.xxx) 
         """
+        self.setCacheRefreshTime(600)  # seconds used in public api
         self.open(addr)
 
     def open(self, addr):
@@ -234,8 +240,7 @@ class Pixelblaze:
             pid = self._id_from_name(patterns, pid)
 
         return pid
-
-    def setActivePatternId(self, pid):
+    def setActivePatternId(self, pid,  saveFlash=False):
         """
         Sets the active pattern by pattern ID, without the name lookup option
         supported by setActivePattern().  This method is faster and more
@@ -245,14 +250,20 @@ class Pixelblaze:
         It does not validate the input id, or determine if the pattern is
         available on the Pixelblaze.
         """
-        self.send_string('{"activeProgramId" : "%s"}' % pid)
+        saveStr = self.__get_save_string(saveFlash)
+        self.send_string('{"activeProgramId" : "%s" %s}' % (pid, saveStr))
+        
+        # give the Pixelblaze a moment to load the pattern
+        self.waitForEmptyQueue(1000)         
 
-    def setActivePattern(self, pid):
+    def setActivePattern(self, pid, saveFlash=False):
         """Sets the currently running pattern, using either an ID or a text name"""
         p = self._get_pattern_id(pid)
 
         if p is not None:
-            self.setActivePatternId(p)
+            self.setActivePatternId(p, saveFlash)
+        else:
+            print("Pattern %s not found" % pid)
 
     def getActivePattern(self):
         """
@@ -266,10 +277,47 @@ class Pixelblaze:
         except:
             return {}
 
-    def setBrightness(self, n):
-        """Set the Pixelblaze's global brightness.  Valid range is 0-1"""
+    def setBrightness(self, n, saveFlash=False):
+        """
+        Set the Pixelblaze's global brightness.  Valid range is 0-1
+        
+        The optional saveFlash parameter controls whether or not the
+        new brightness value is saved. By default, saveFlash is False, so
+        brightness values set with this method will not persist
+        through reboots.
+        
+        To reduce wear on the Pixelblaze's flash memory, the saveFlash parameter is ignored
+        by default.  See documentation for _enable_flash_save() for
+        more information.        
+        """
         n = max(0, min(n, 1))  # clamp to proper 0-1 range
-        self.send_string('{"brightness" : %f}' % n)
+        
+        saveStr = self.__get_save_string(saveFlash)
+        self.send_string('{"brightness" : %f %s}' % (n, saveStr))
+        
+    def setPixelCount(self, nPixels):
+        """
+        Sets the number of LEDs attached to the Pixelblaze. Does
+        not change the current pixel map. CAUTION: Recommended for
+        advanced users only. 
+        """       
+        # slow and careful, pausing rendering before we reset
+        # the pixel count, to avoid disruption.
+        self.pause();
+        self.ws_flush()
+        self.send_string('{"pixelCount":%d}' % nPixels)        
+        time.sleep(0.5)
+        self.unpause();
+        
+    def getPixelCount(self):
+        """
+        Returns the number of LEDs attached to the Pixelblaze.
+        """       
+        hw = self.getHardwareConfig()
+        try:
+            return hw['pixelCount']
+        except:
+            return {}       
 
     def setSequenceTimer(self, n):
         """
@@ -358,13 +406,16 @@ class Pixelblaze:
 
             self.send_string('{"getControls": "%s"}' % pattern)
             ctl = json.loads(self.ws.recv())
-
+            
         # extract controls and their values
-        if len(ctl.get('controls')) > 0:
-            x = next(iter(ctl['controls']))
-            return ctl['controls'][x]
-        else:
-            return {}
+        try:
+            if len(ctl.get('controls')) > 0:
+                x = next(iter(ctl['controls']))
+                return ctl['controls'][x]
+            else:
+                return {}
+        except:
+            return None
 
     def setControls(self, json_ctl, saveFlash=False):
         """
@@ -464,13 +515,71 @@ class Pixelblaze:
         saveStr = self.__get_save_string(saveFlash)
         self.ws_flush()
         self.send_string('{"dataSpeed":%d %s}' % (speed, saveStr))
-
-    def getPatternList(self):
+        
+    def pause(self):
+        """
+        Pause rendering. Lasts until unpause() is called or
+        the Pixelblaze is reset.
+        CAUTION: For advanced users only.  If you don't know
+        exactly why you want to do this, DON'T DO IT.
+        """
+        self.ws_flush()
+        self.send_string('{"pause" : true}')
+        
+    def unpause(self):
+        """
+        Resume rendering if halted by pause(). No effect otherwise.
+        CAUTION: For advanced users only.  If you don't know
+        exactly why you want to do this, DON'T DO IT.
+        """
+        self.ws_flush()
+        self.send_string('{"pause" : false}')
+        
+        
+    def getPatternList(self,refresh = False):
         """
         Returns a dictionary containing the unique ID and the text name of all
-        saved patterns on the Pixelblaze
+        saved patterns on the Pixelblaze. Normally reads from the cached pattern
+        list, which is refreshed every 10 minutes by default.
+        
+        To force a cache refresh, set the optional "refresh" parameter to True
+        
+        To change the cache refresh interval, call setCacheRefreshTime(seconds)
         """
-        patterns = dict()
+        if refresh is True or ((self._time_in_millis() - self.cacheRefreshTime) > self.cacheRefreshInterval):
+            self._refreshPatternCache()
+            self.cacheRefreshTime = self._time_in_millis()
+        
+        return self.patternCache
+    
+    def _clamp(self,n, smallest, largest):
+        """
+        Utility Method: Why doesn't Python have clamp()?
+        """ 
+        return max(smallest, min(n, largest))
+  
+    def _time_in_millis(self):
+        """
+        Utility Method: Returns current time in milliseconds
+        """
+        return int(round(time.time() * 1000))
+    
+    def setCacheRefreshTime(self,seconds):
+        """
+        Set the interval, in seconds, at which the pattern cache is cleared and
+        a new pattern list is loaded from the Pixelblaze.  Default is 600 (10 minutes)
+        """        
+        # a million seconds is about 277 hours
+        # or about 11.5 days.  Probably long enough.
+        self.cacheRefreshInterval = self._clamp(seconds,0,1000000) * 1000;      
+
+    def _refreshPatternCache(self):
+        """
+        Reads a dictionary containing the unique ID and the text name of all
+        saved patterns on the Pixelblaze into the pattern cache.
+        """
+        print("_refreshPatternCache()")
+        self.patternCache = dict()
         self.ws_flush()  # make sure there are no pending packets    
         self.send_string("{ \"listPrograms\" : true }")
 
@@ -482,14 +591,11 @@ class Pixelblaze:
 
             for pat in listFrame:
                 if len(pat) == 2:
-                    patterns[pat[0]] = pat[1]
+                    self.patternCache[pat[0]] = pat[1]
 
             if frame[1] & 0x04:
                 break
             frame = self.ws_recv(True)
-
-        return patterns
-
 
 class PixelblazeEnumerator:
     """
@@ -656,7 +762,7 @@ class PixelblazeEnumerator:
                                         "sender_time": pkt[2]}
                 
                 # immediately send timesync if enabled
-                if self.autoSync:send
+                if self.autoSync: # send
                     self._send_timesync(now, pkt[1], pkt[2], addr)
                     
             elif pkt[0] == self.TIMESYNC_PACKET:   # always defer to other time sources
