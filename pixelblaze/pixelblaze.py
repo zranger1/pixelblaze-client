@@ -262,8 +262,6 @@ class Pixelblaze:
 
         if p is not None:
             self.setActivePatternId(p, saveFlash)
-        else:
-            print("Pattern %s not found" % pid)
 
     def getActivePattern(self):
         """
@@ -578,7 +576,6 @@ class Pixelblaze:
         Reads a dictionary containing the unique ID and the text name of all
         saved patterns on the Pixelblaze into the pattern cache.
         """
-        print("_refreshPatternCache()")
         self.patternCache = dict()
         self.ws_flush()  # make sure there are no pending packets    
         self.send_string("{ \"listPrograms\" : true }")
