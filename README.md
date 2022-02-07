@@ -3,23 +3,32 @@ A Python library that presents a simple, synchronous interface for communicating
 controlling one or more Pixelblaze LED controllers. Requires Python 3 and the websocket-client
 module.
 
-## Current Version: v0.9.3
-Minor update - fixed Pixelblaze.waitforEmptyQueue() to actually do what it says in the
-documentation.  (It was throwing an exception on timeouts, rather than returning False
+## Current Version: v0.9.4
+Behavior changes around writes to flash, pattern caching, a few new commands...
+
+- Documented getPixelCount/setPixelCount(), which lets you get and set the number of LEDs attached to your Pixelblaze.
+- added the pause() and unpause() commands. 
+- getPatternList() is now cached, for greatly improved performance. The cache timeout can be set by calling setCacheRefreshTime(seconds). The default is 600 seconds, or 10 minutes.
+- Reduced unneccessary flash writes - setActivePattern(), setActivePatternId() and setBrightness() now take
+ an optional saveFlash parameter, which is False by default, and uses the enable_flash_save() safety
+ mechanism (described in the API documentation) to prevent inadvertent flash saves.
+
+## v0.9.3
+Minor update - fixed endian-ness related bug in the enumerator, and changed Pixelblaze.waitforEmptyQueue() to actually do what
+it says in the documentation.  (It was throwing an exception on timeouts, rather than returning False
 as described.  Thanks to [Nick_W](https://github.com/NickWaterton) for finding the bug and suggesting a fix!)
+
 ## Previously...
 See [changelog.md](https://github.com/zranger1/pixelblaze-client/blob/main/changelog.md) for details on previous versions.
 
 ## Requirements
-Python 3.4-3.8 (written and tested on 3.7.7)
+Python 3.4-3.10
 
 websocket-client (installable via pip, or from https://github.com/websocket-client/websocket-client
-(Python 3.8 and above are not yet officially supported by websocket-client module)
 
 ## Known Issues
-Will not work if you've got the Pixelblaze web UI running on the same computer (actually, the same network interface).
-Trying to create a Pixelblaze object under those circumstances will generate an exception.  The browser 
-does not want to share the socket, and strange things might happen even if it did. 
+May be cranky if you have multiple programs/computers/browsers connected to your Pixelblaze. In the end, this
+is due to an ESP32 limitation on simultaneous connections, but having the latest Pixelblaze firmware can help things.
 
 I've gone to a some length to put an easy-to-program synchronous interface over what is essentially an
 asynchronous communication system. At this point, it's good, but not perfect. It may behave oddly if you are 
@@ -114,9 +123,11 @@ Pixelblaze until the pattern has been explicitly set.)
 #### getHardwareConfig()
 Returns a JSON object containing all the available hardware configuration data
 
-#### getPatternList()
+#### getPatternList(refresh = False)
 Returns a dictionary containing the unique ID and the text name of all
-saved patterns on the Pixelblaze
+saved patterns on the Pixelblaze.   The optional 'refresh' parameter
+allows you to override the pattern caching mechanism if you wish.  To
+force a pattern list cache refresh, call getPatternList(True).
 
 #### getVars()
 Returns JSON object containing all vars exported from the active pattern
@@ -127,6 +138,9 @@ when a Pixelblaze object is created - it is not necessary to
 explicitly call open to connect unless the websocket has been closed by the
 user or by the Pixelblaze.
 
+#### pause():
+Pauses rendering. Lasts until unpause() is called or the Pixelblaze is reset.
+        
 #### pauseSequencer()
 Temporarily pause the Pixelblaze's internal sequencer, without
 losing your place in the shuffle or playlist. Call "playSequencer"
@@ -138,17 +152,48 @@ at the current place in the shuffle or playlist.  Compliment to
 "pauseSequencer".  Will not start the sequencer if it has not
 been enabled via "startSequencer" or the Web UI.
 
-#### setActivePattern(pid)
+#### setActivePattern(pid, saveFlash = False)
 Sets the currently running pattern, using either an ID or a text name
 
-#### setActivePatternId(pid):
+The optional saveFlash parameter controls whether or not the
+new brightness value is saved. By default, saveFlash is False, so
+brightness values set with this method will not persist
+through reboots.
+
+To reduce wear on the Pixelblaze's flash memory, the saveFlash parameter is ignored
+by default.  See documentation for _enable_flash_save() for
+more information.   
+
+#### setActivePatternId(pid, saveFlash = False):
 Sets the active pattern by pattern ID, without the name lookup option
 supported by setActivePattern(). This method is faster and more network efficient than SetActivePattern()
 if you already know a pattern's ID. It does not validate the input id, or determine if the pattern is
  available on the Pixelblaze.
+ 
+The optional saveFlash parameter controls whether or not the
+new brightness value is saved. By default, saveFlash is False, so
+brightness values set with this method will not persist
+through reboots.
 
-#### setBrightness(n)
+To reduce wear on the Pixelblaze's flash memory, the saveFlash parameter is ignored
+by default.  See documentation for _enable_flash_save() for
+more information.    
+
+#### setBrightness(n, saveFlash = False)
 Set the Pixelblaze's global brightness.  Valid range is 0-1
+
+The optional saveFlash parameter controls whether or not the
+new brightness value is saved. By default, saveFlash is False, so
+brightness values set with this method will not persist
+through reboots.
+
+To reduce wear on the Pixelblaze's flash memory, the saveFlash parameter is ignored
+by default.  See documentation for _enable_flash_save() for
+more information.   
+
+#### setCacheRefreshTime(seconds)
+Set the interval, in seconds, at which the pattern cache is cleared and
+a new pattern list is loaded from the Pixelblaze.  Default is 600 seconds (10 minutes).
 
 #### setColorControl(ctl_name, color, saveFlash = False)
 Sets the 3-element color of the specified HSV or RGB color picker.
@@ -186,6 +231,16 @@ https://forum.electromage.com/t/timing-of-a-cheap-strand/739
 Note that you must call _enable_flash_save() in order to use
 the saveFlash parameter to make your new timing (semi) permanent.
 
+#### setPixelCount(nPixels):
+Sets the number of LEDs attached to the Pixelblaze. Does not alter the
+current pixel map, which may then be incorrect after pixelCount has 
+changed.
+
+CAUTION: This always causes a flash write, and should be used
+only if you have a specific need to change the LED count
+dynamically. For normal uses the "Settings" page of Pixelblaze
+Web UI is the recommended way to configure this value.
+
 #### setSequenceTimer(n)
 Sets number of milliseconds the Pixelblaze's sequencer will run each pattern
 before switching to the next.
@@ -205,6 +260,9 @@ variable is actually exported by the current active pattern.
 #### setVars(json_vars)
 Sets pattern variables contained in the json_vars (JSON object) argument.
 Does not check to see if the variables are exported by the current active pattern.
+
+#### unpause():
+Resume rendering if halted by pause(). No effect otherwise.
 
 #### variableExists(var_name)
 Returns True if the specified variable exists in the active pattern, False otherwise.

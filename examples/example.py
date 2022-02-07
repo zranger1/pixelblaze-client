@@ -6,7 +6,7 @@
  for communicating with and controlling Pixelblaze LED controllers.
  Requires Python 3 and the websocket-client module.
  
- Copyright 2020 JEM (ZRanger1)
+ Copyright 2020-2022 JEM (ZRanger1)
 
  Permission is hereby granted, free of charge, to any person obtaining a copy of this
  software and associated documentation files (the "Software"), to deal in the Software
@@ -36,7 +36,7 @@ from pixelblaze import *
 if __name__ == "__main__":
     # When testing, change these pattern, variable and control names as necessary for
     # your Pixelblaze.
-    pixelblazeIP = "192.168.1.19"     # insert your own IP address here
+    pixelblazeIP = "192.168.1.18"     # insert your own IP address here
     basicPatternName = "KITT"         # everybody has KITT!
     vartestPatternName = "Bouncer3D"  # a pattern with exported variables
     controlPatternName1 = "Bouncer3D" # a pattern with UI controls
@@ -65,18 +65,16 @@ if __name__ == "__main__":
     print("Testing: setActivePattern")
     pb.setActivePattern("*OBVIOUSLY BOGUS PATTERN*")  # just to make sure nothing bad happens
     pb.setActivePattern(basicPatternName)
-    pb.waitForEmptyQueue(1000)
     time.sleep(1)
     
     print("Testing: getVars")
-    pb.setActivePattern(vartestPatternName) 
-    pb.waitForEmptyQueue(1000)       
+    pb.setActivePattern(vartestPatternName)
     print("Variables: ",pb.getVars())
     time.sleep(1)    
            
     print("Testing: setBrightness")
     pb.setActivePattern(basicPatternName)
-    pb.waitForEmptyQueue(1000)    
+  
     time.sleep(0.2)
     for i in range(4):
         print('.', end='')
@@ -105,16 +103,21 @@ if __name__ == "__main__":
     time.sleep(1)
     
     print("Testing: getControls")
-    pb.setActivePattern(controlPatternName1)   
-    pb.waitForEmptyQueue(1000)    
-    result = pb.getControls(controlPatternName1) 
-    val = result[testControlName]    
+    pb.setActivePattern(controlPatternName1)
+    result = pb.getControls(controlPatternName1)
+    
+    try:
+        val = result[testControlName]   
+    except:
+        val = -1
+ 
     print("Controls: ",result)
     
     
     print("Testing Color Picker Methods")
     time.sleep(1)
-    pb.setActivePattern(controlPatternName2)    
+    pb.setActivePattern(controlPatternName2)
+    time.sleep(1)    
     print("Empty Control List: ", pb.getColorControlNames("KITT"))
     print("Control Name List: ",pb.getColorControlNames())
     print("First Color Control: ",pb.getColorControlName()) 
@@ -130,7 +133,10 @@ if __name__ == "__main__":
         print('.', end='')    
         time.sleep(1)
     print("")
-    pb.setControl(testControlName,val,False); # restore previous setting
+    
+    #restore previous setting if there was one
+    if (val >= 0):
+        pb.setControl(testControlName,val,False); 
     time.sleep(2)
     
     pb.setActivePattern(basicPatternName) # Set pattern back to something reasonable
