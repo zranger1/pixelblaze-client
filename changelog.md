@@ -1,5 +1,10 @@
 # pixelblaze-client Change Log
 
+## v0.9.3
+Minor update - fixed endian-ness related bug in the enumerator, and changed Pixelblaze.waitforEmptyQueue() to actually do what
+it says in the documentation.  (It was throwing an exception on timeouts, rather than returning False
+as described.  Thanks to [Nick_W](https://github.com/NickWaterton) for finding the bug and suggesting a fix!)
+
 ## Current Version: v0.9.2
 Support for Pixelblaze's updated internal pattern sequencer.
 

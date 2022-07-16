@@ -33,6 +33,7 @@
  v0.9.2   01/16/2021   "              Updated Pixelblaze sequencer support
  v0.9.3   04/13/2021   "              waitForEmptyQueue() return now agrees w/docs
  v0.9.4   02/04/2022   "              Added setPixelcount(),pause(), unpause(), pattern cache
+ v0.9.5   07/16/2022   @pixie         Update ws_recv to receive long preview packets
 """
 import websocket
 import socket
@@ -41,7 +42,7 @@ import time
 import struct
 import threading
 
-__version__ = "0.9.4"
+__version__ = "0.9.5"
 
 class Pixelblaze:
     """
@@ -140,7 +141,7 @@ class Pixelblaze:
             self.ws.settimeout(self.default_recv_timeout)  
         return  
 
-    def ws_recv(self, wantBinary=False):
+    def ws_recv(self, wantBinary=False, packetType=0x07):
         """
         Utility method: Blocking websocket receive that waits for a packet of a given type
         and gracefully handles errors and stray extra packets. 
@@ -151,7 +152,7 @@ class Pixelblaze:
                 result = self.ws.recv()
                 if (wantBinary is False) and (type(result) is str):  # JSON string
                     break
-                elif (wantBinary is True) and (result[0] == 0x07):  # binary pattern list packet
+                elif (wantBinary is True) and (result[0] == packetType):  # binary packet
                     break
                 else:
                     result = None  # unhandled binary - ignore
