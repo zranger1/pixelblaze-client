@@ -3,6 +3,11 @@ A Python library that presents a simple, synchronous interface for communicating
 controlling one or more Pixelblaze LED controllers. Requires Python 3 and the websocket-client
 module.
 
+## Current Version: v0.9.5
+Changed ws_recv() to take an optional packetType parameter so that it can recieve
+arbitrary binary packets.  This will allow callers to read data from things like
+the Pixelblaze's new 1000 pixel preview frames. Fun!  Thanks, @pixie!
+
 ## Current Version: v0.9.4
 Behavior changes around writes to flash, pattern caching, a few new commands...
 
@@ -13,10 +18,6 @@ Behavior changes around writes to flash, pattern caching, a few new commands...
  an optional saveFlash parameter, which is False by default, and uses the enable_flash_save() safety
  mechanism (described in the API documentation) to prevent inadvertent flash saves.
 
-## v0.9.3
-Minor update - fixed endian-ness related bug in the enumerator, and changed Pixelblaze.waitforEmptyQueue() to actually do what
-it says in the documentation.  (It was throwing an exception on timeouts, rather than returning False
-as described.  Thanks to [Nick_W](https://github.com/NickWaterton) for finding the bug and suggesting a fix!)
 
 ## Previously...
 See [changelog.md](https://github.com/zranger1/pixelblaze-client/blob/main/changelog.md) for details on previous versions.
