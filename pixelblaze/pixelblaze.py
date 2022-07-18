@@ -582,9 +582,10 @@ class Pixelblaze:
         self.ws_flush()  # make sure there are no pending packets    
         self.send_string("{ \"listPrograms\" : true }")
 
-        frame = None
-        while frame is None:   # Sometimes V3s are slow to respond.
-            frame = self.ws_recv(True)
+        # Temporarily increase the timeout to cope with slowed-down Pixelblazes.
+        self.ws.settimeout(3 * self.default_recv_timeout)
+        frame = self.ws_recv(True)
+        self.ws.settimeout(self.default_recv_timeout) 
         while frame is not None:
             listFrame = frame[2:].decode("utf-8")
             listFrame = listFrame.split("\n")
