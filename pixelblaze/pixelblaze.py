@@ -34,6 +34,7 @@
  v0.9.3   04/13/2021   "              waitForEmptyQueue() return now agrees w/docs
  v0.9.4   02/04/2022   "              Added setPixelcount(),pause(), unpause(), pattern cache
  v0.9.5   07/16/2022   @pixie         Update ws_recv to receive long preview packets
+ v0.9.6   07/17/2022   @pixie         Tweak getPatternList() to handle slower Pixelblazes
 """
 import websocket
 import socket
@@ -42,7 +43,7 @@ import time
 import struct
 import threading
 
-__version__ = "0.9.5"
+__version__ = "0.9.6"
 
 class Pixelblaze:
     """
@@ -581,7 +582,10 @@ class Pixelblaze:
         self.ws_flush()  # make sure there are no pending packets    
         self.send_string("{ \"listPrograms\" : true }")
 
+        # Temporarily increase the timeout to cope with slowed-down Pixelblazes.
+        self.ws.settimeout(3 * self.default_recv_timeout)
         frame = self.ws_recv(True)
+        self.ws.settimeout(self.default_recv_timeout) 
         while frame is not None:
             listFrame = frame[2:].decode("utf-8")
             listFrame = listFrame.split("\n")
