@@ -3,6 +3,10 @@ A Python library that presents a simple, synchronous interface for communicating
 controlling one or more Pixelblaze LED controllers. Requires Python 3 and the websocket-client
 module.
 
+## Current Version: v0.9.6
+Adjusted internal timeout in GetPatternList() to allow more time for slower 
+responding Pixelblazes.  
+
 ## Current Version: v0.9.5
 Changed ws_recv() to take an optional packetType parameter so that it can recieve
 arbitrary binary packets.  This will allow callers to read data from things like
