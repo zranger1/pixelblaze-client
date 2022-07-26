@@ -42,6 +42,7 @@ import json
 import time
 import struct
 import threading
+from queue import Queue
 
 __version__ = "0.9.6"
 
@@ -615,6 +616,7 @@ class PixelblazeEnumerator:
     listTimeoutCheck = 0
     isRunning = False
     threadObj = None
+    queueObj = None
     listener = None
     devices = dict()
     autoSync = False
@@ -697,7 +699,8 @@ class PixelblazeEnumerator:
             self.listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.listener.bind((hostIP, self.PORT))
 
-            self.threadObj = threading.Thread(target=self._listen)
+            self.queueObj = Queue()
+            self.threadObj = threading.Thread(target=self._listen, args=(self.queueObj, ))
             self.isRunning = True
             self.listTimeoutCheck = 0
             self.threadObj.start()
@@ -733,7 +736,7 @@ class PixelblazeEnumerator:
             print(e)
             self.stop()
 
-    def _listen(self):
+    def _listen(self, q):
         """
         Internal Method: Datagram listener thread handler -- loop and listen.
         """
@@ -758,10 +761,12 @@ class PixelblazeEnumerator:
             pkt = self._unpack_beacon(data)
             if pkt[0] == self.BEACON_PACKET:
                 # add pixelblaze to list of devices
-                self.devices[pkt[1]] = {"address": addr,
-                                        "timestamp": now,
-                                        "sender_id": pkt[1],
-                                        "sender_time": pkt[2]}
+                if not pkt[1] in self.devices:
+                  self.devices[pkt[1]] = {"address": addr,
+                                          "timestamp": now,
+                                          "sender_id": pkt[1],
+                                          "sender_time": pkt[2]}
+                  self.queueObj.put(self.devices[pkt[1]])
                 
                 # immediately send timesync if enabled
                 if self.autoSync: # send
