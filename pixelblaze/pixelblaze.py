@@ -38,7 +38,7 @@
  v0.9.6   07/17/2022   @pixie         Tweak getPatternList() to handle slower Pixelblazes
  v1.9.7   01/09/2022   @pixie         large-scale refactoring to add new features; minor loss of compatibility
 """
-from re import T
+
 import websocket
 import socket
 import json
@@ -50,7 +50,8 @@ import requests
 import pytz
 import math
 import pathlib
-
+from re import T
+from urllib.parse import urlparse, urljoin
 from enum import Enum, Flag, IntEnum
 
 __version__ = "1.9.7"
@@ -69,7 +70,8 @@ class Pixelblaze:
     ws = None
     connected = False
     ipAddress = None
-    proxy = None
+    proxyUrl = None
+    proxyDict = None
 
     # Pattern cache
     cacheRefreshTime = 0
@@ -85,12 +87,14 @@ class Pixelblaze:
 
     # --- OBJECT LIFETIME MANAGEMENT (CREATION/DELETION)
 
-    def __init__(self, addr, proxy=None):
+    def __init__(self, addr, proxyUrl=None):
         """
         Create and open Pixelblaze object. Takes the Pixelblaze's IPv4 address in the
         usual 12 digit numeric form (for example, 192.168.1.xxx)
         """
-        self.proxy = proxy
+        self.proxyUrl = proxyUrl
+        if not proxyUrl is None:
+            self.proxyDict = { "http": proxyUrl, "https": proxyUrl }
         self.ipAddress = addr
         self.open()
         self.setCacheRefreshTime(600)  # seconds used in public api
@@ -107,19 +111,19 @@ class Pixelblaze:
     
     # Static methods:
     @staticmethod
-    def EnumerateAddresses(hostIP="0.0.0.0", timeout=5000, proxy=None):
+    def EnumerateAddresses(hostIP="0.0.0.0", timeout=5000, proxyUrl=None):
         """Returns an enumerator that will iterate through all the Pixelblazes on 
         the network, until {timeout} seconds have passed with no new devices appearing."""
         newOne = object.__new__(Pixelblaze.LightweightEnumerator)
-        newOne.__init__(Pixelblaze.LightweightEnumerator.EnumeratorTypes.ipAddress, hostIP, timeout, proxy)
+        newOne.__init__(Pixelblaze.LightweightEnumerator.EnumeratorTypes.ipAddress, hostIP, timeout, proxyUrl)
         return newOne
 
     @staticmethod
-    def EnumerateDevices(hostIP="0.0.0.0", timeout=5000, proxy=None):
+    def EnumerateDevices(hostIP="0.0.0.0", timeout=5000, proxyUrl=None):
         """Returns an enumerator that will iterate through all the Pixelblazes on 
         the network, until {timeout} seconds have passed with no new devices appearing."""
         newOne = object.__new__(Pixelblaze.LightweightEnumerator)
-        newOne.__init__(Pixelblaze.LightweightEnumerator.EnumeratorTypes.pixelblazeObject, hostIP, timeout, proxy)
+        newOne.__init__(Pixelblaze.LightweightEnumerator.EnumeratorTypes.pixelblazeObject, hostIP, timeout, proxyUrl)
         return newOne
 
     # The different types of iterators:
@@ -131,7 +135,7 @@ class Pixelblaze:
         timeStop = 0
         seenPixelblazes = []
         enumeratorType = 0 # can't assign self.LightweightEnumerator.EnumeratorTypes.noType
-        proxy = None
+        proxyUrl = None
 
         class EnumeratorTypes(IntEnum):
             noType = 0
@@ -139,7 +143,7 @@ class Pixelblaze:
             pixelblazeObject = 2
 
         # private constructor:
-        def __init__(self, enumeratorType, hostIP="0.0.0.0", timeout=5000, proxy=None):
+        def __init__(self, enumeratorType, hostIP="0.0.0.0", timeout=5000, proxyUrl=None):
             """    
             Create an interable object that listens for Pixelblaze beacon packets, returning
             a Pixelblaze object for each unique beacon seen during the timeout period.
@@ -148,7 +152,7 @@ class Pixelblaze:
             try:
                 self.enumeratorType = enumeratorType
                 self.timeout = timeout
-                self.proxy = proxy
+                self.proxyUrl = proxyUrl
                 self.listenSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 self.listenSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 self.listenSocket.bind((hostIP, 1889))
@@ -186,7 +190,7 @@ class Pixelblaze:
                             return addr[0]
                         elif self.enumeratorType == Pixelblaze.LightweightEnumerator.EnumeratorTypes.pixelblazeObject:
                             newOne = object.__new__(Pixelblaze)
-                            newOne.__init__(addr[0], proxy=self.proxy)
+                            newOne.__init__(addr[0], proxyUrl=self.proxyUrl)
                             return newOne
                         else: 
                             # No such type...How did that happen?
@@ -215,8 +219,9 @@ class Pixelblaze:
             retryCount = 0
             while True:
                 try:
-                    if self.proxy is not None:
-                        self.ws = websocket.create_connection(uri, sockopt=((socket.SOL_SOCKET, socket.SO_REUSEADDR, 1), (socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)), http_proxy_host=self.proxy[0], http_proxy_port=self.proxy[1], proxy_type=self.proxy[2])
+                    if self.proxyUrl is not None:
+                        url = urlparse(self.proxyUrl)
+                        self.ws = websocket.create_connection(uri, sockopt=((socket.SOL_SOCKET, socket.SO_REUSEADDR, 1), (socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)), proxy_type=url.scheme, http_proxy_host=url.hostname, http_proxy_port=url.port)
                     else:
                         self.ws = websocket.create_connection(uri, sockopt=((socket.SOL_SOCKET, socket.SO_REUSEADDR, 1), (socket.IPPROTO_TCP, socket.TCP_NODELAY, 1),))
                     break
@@ -277,7 +282,7 @@ class Pixelblaze:
                 else:
                     frameType = frame[0]
                     if frameType == self.messageTypes.previewFrame.value: 
-                        # This packet type doesn't have frameFlags.
+                        # This packet type doesn't have frameType flags.
                         if binaryMessageType == self.messageTypes.previewFrame: 
                             return frame[1:] 
                         else:
@@ -395,62 +400,23 @@ class Pixelblaze:
                 self.open()
                 #raise
 
-# ------------------------------------------------
-
-    # --- OTHER PIXELBLAZE COMMANDS: 
-
-    def reboot(self):
-        """Restart the Pixelblaze (necessary sometimes to recognize changes to configuration files)."""
-        with requests.post(f"http://{self.ipAddress}/reboot") as rReboot:
-            if rReboot.status_code not in [200, 404]:
-                rReboot.raise_for_status()
-
-    def setSendPreviewFrames(self, doUpdates):
-        assert type(doUpdates) is bool
-        if doUpdates is True: 
-            response = self.messageTypes.previewFrame
-        else:
-            response = None
-        self.wsSendJson({"sendUpdates": doUpdates}, expectedResponse=response)
-
     def getPeers(self):
-        """A new command, not yet implemented, that will return a list 
-        of all the Pixelblazes visible on the local network segment."""
+        """A new command, added to the API but not yet implemented as of v2.29/v3.24, 
+        that will return a list of all the Pixelblazes visible on the local network segment."""
         self.wsSendJson({"getPeers": True})
         return self.wsReceive(binaryMessageType=None)
 
-    def getStatistics(self):
-        """Grab one of the statistical packets that Pixelblaze sends every second."""
-        self.setSendPreviewFrames(True)
-        while True:
-            if not self.latestStats is None: return json.loads(self.latestStats)
-            ignored = self.wsReceive(binaryMessageType=None)
-
-    def getPreviewFrame(self):
-        """Grab one of the preview frames that Pixelblaze sends after every render cycle."""
-        oldTimeout = self.ws.gettimeout()
-        self.ws.settimeout(2 * self.default_recv_timeout)
-        response = self.wsReceive(binaryMessageType=self.messageTypes.previewFrame)
-        self.ws.settimeout(oldTimeout)
-        return response
-
-    def pauseRenderer(self, doPause):
-        """
-        Pause rendering. Lasts until unpause() is called or
-        the Pixelblaze is reset.
-        CAUTION: For advanced users only.  If you don't know
-        exactly why you want to do this, DON'T DO IT.
-        """
-        self.wsSendJson({"pause": doPause}, expectedResponse='{"ack":')
-
     # --- PIXELBLAZE FILESYSTEM FUNCTIONS:
+
+    def getUrl(self, endpoint=None):
+        return urljoin(f"http://{self.ipAddress}", endpoint)
 
     def getFileList(self):
         """Returns a list of all the files contained on this Pixelblaze; for Pixelblazes running firmware 
         versions lower than 2.29/3.24, the list includes the names of optional configuration files that may 
         or may not exist on this particular Pixelblaze, depending on its setup."""
         fileList = []
-        with requests.get(f"http://{self.ipAddress}/list") as rList:
+        with requests.get(self.getUrl("list"), proxies=self.proxyDict) as rList:
             if rList.status_code == 200:
                 fileList = rList.text.split('\n') # returns a number of lines, each containing [filename][tab][size][newline]
             elif rList.status_code == 404:
@@ -471,8 +437,7 @@ class Pixelblaze:
     def getFile(self, fileName):
         """Downloads a file from this Pixelblaze using the HTTP API."""
         # Strip any leading slash from the filename.
-        if fileName.startswith("/"): fileName = fileName[1:]
-        with requests.get(f"http://{self.ipAddress}/{fileName}") as rGet:
+        with requests.get(self.getUrl(fileName), proxies=self.proxyDict) as rGet:
             if rGet.status_code not in [200, 404]:
                 rGet.raise_for_status()
                 return None
@@ -481,8 +446,7 @@ class Pixelblaze:
     def putFile(self, fileName, fileContents):
         """Uploads a file to this Pixelblaze using the HTTP API."""
         fileData = {'data': (fileName, fileContents)}
-        #with requests.post(f"http://{ip_address}/edit", files=fileData, proxies=proxy) as rPost:
-        with requests.post(f"http://{self.ipAddress}/edit", files=fileData) as rPost:
+        with requests.post(self.getUrl("edit"), files=fileData, proxies=self.proxyDict) as rPost:
             if rPost.status_code != 200:
                 rPost.raise_for_status()
                 return False
@@ -490,112 +454,58 @@ class Pixelblaze:
 
     def deleteFile(self, fileName):
         """Deletes a file from this Pixelblaze using the HTTP API."""
-        with requests.get(f"http://{self.ipAddress}/delete?path={fileName}") as rFile:
+        with requests.get(self.getUrl(f"delete?path={fileName}"), proxies=self.proxyDict) as rFile:
             if rFile.status_code not in [200, 404]:
                 rFile.raise_for_status()
                 return False
         return True
 
-    # --- PRIVATE HELPER FUNCTIONS
+    # --- GLOBAL functions: RENDERER STATISTICS:
 
-    class deprecationReasons(IntEnum):
-        renamed = 1
-        functionalityChanged = 2
-        notRequired = 3
+    def getStatistics(self):
+        """Grab one of the statistical packets that Pixelblaze sends every second."""
+        #self.setSendPreviewFrames(True)
+        while True:
+            if not self.latestStats is None: return json.loads(self.latestStats)
+            ignored = self.wsReceive(binaryMessageType=None)
 
-    warningsGiven = []
-    def __printDeprecationMessage(self, deprecationReason, oldFunction, newFunction):
-        if not oldFunction in self.warningsGiven:
-            self.warningsGiven.append(oldFunction)
-            if deprecationReason == self.deprecationReasons.renamed:
-                print(f'[pixelblaze-client] Warning: function "{oldFunction}" has been renamed and this compatibility stub will be removed in a future release; to avoid disruption, modify your code to use the replacement function "{newFunction}".')
-            elif deprecationReason == self.deprecationReasons.functionalityChanged:
-                print(f'[pixelblaze-client] Warning: function "{oldFunction}" has been changed and may not have the same behavior; review the changelog and (if necessary) modify your code to use the replacement function "{newFunction}".')
-            elif deprecationReason == self.deprecationReasons.notRequired:
-                print(f'[pixelblaze-client] Warning: function "{oldFunction}" is no longer required and will be removed in a future release; you may safely remove it from your code.')
+    def setSendPreviewFrames(self, doUpdates):
+        assert type(doUpdates) is bool
+        if doUpdates is True: response = self.messageTypes.previewFrame
+        else: response = None
+        self.wsSendJson({"sendUpdates": doUpdates}, expectedResponse=response)
 
-    def _clamp(self, n, smallest, largest):
-        """
-        Utility Method: Why doesn't Python have clamp()?
-        """
-        return max(smallest, min(n, largest))
+    def getPreviewFrame(self):
+        """Grab one of the preview frames that Pixelblaze sends after every render cycle."""
+        oldTimeout = self.ws.gettimeout()
+        self.ws.settimeout(2 * self.default_recv_timeout)
+        response = self.wsReceive(binaryMessageType=self.messageTypes.previewFrame)
+        self.ws.settimeout(oldTimeout)
+        return response
 
-    def _time_in_millis(self):
-        """
-        Utility Method: Returns current time in milliseconds
-        """
-        return int(round(time.time() * 1000))
+    # --- GLOBAL functions: RENDERER STATISTICS: helper functions:
+    """The Pixelblaze API has functions to 'set' individual property values, 
+    but can only 'get' property values as part of a JSON dictionary containing all the settings
+    on a particular UI page. These functions will extract the property value from a 
+    previously-fetched dictionary, if provided; otherwise they will fetch the settings anew."""
 
-    def __decodeExpanderData(self, data):
-        # We can't store bytes into JSON so we'll have to encode it...
-        # return base64.b64encode(data).decode('utf-8')
-        # ...but it might be more user-friendly to convert it into something readable.
+    def getFPS(self, savedStatistics=None):
+        if savedStatistics is None: savedStatistics = self.getStatistics()
+        return savedStatistics.get('fps')
 
-        # Check the magic number.
-        versionNumber = data[0]
-        #versionNumber = struct.unpack('<B', binaryData)[0]
-        if versionNumber != 5:
-            return {'expanders': [], 'error': f"expander data has incorrect magic number (expected 5, received {versionNumber})"}
-        
-        # Parse the rest of the file.
-        binaryData = data[1:]
-        binarySize = len(binaryData)
-        if binarySize % 96 != 0:
-            return {'expanders': [], 'error': f"expander data has incorrect length (must be a multiple of 96, received {versionNumber})"}
-        
-        # Convert the file to a human-readable equivalent.
-        rowSize = 12
-        boards = { 'expanders': [ ] }
-        #ledTypes = [ 'notUsed', 'WS2812B', 'drawAll', 'APA102 Data', 'APA102 Clock' ]
-        colorOrders = { 0x24: 'RGB', 0x18: 'RBG', 0x09: 'BRG', 0x06: 'BGR', 0x21: 'GRB', 0x12: 'GBR', 0xE4: 'RGBW', 0xE1: 'GRBW' }
-        for row in range(binarySize // rowSize):
-            offsets = struct.unpack('<4B2H4x', binaryData[(row * rowSize):(row + 1) * rowSize])
-            boardAddress = offsets[0] >> 3
-            channel = offsets[0] % 8
-            ledType = offsets[1]
-            numElements = offsets[2]
-            colorOrder = offsets[3]
-            pixelCount = offsets[4]
-            startIndex = offsets[5]
-            dataSpeed = offsets[6:10]
+    def getUptime(self, savedStatistics=None):
+        if savedStatistics is None: savedStatistics = self.getStatistics()
+        return savedStatistics.get('uptime')
 
-            #   boardAddress
-            #       channel | type | startIndex | pixelCount | colorOrder | dataSpeed
-            board = row // 8
-            rowNumber = row % 8
-            if rowNumber == 0: # start a new board
-                boards['expanders'].append( { 'address': boardAddress, 'rows': { } } )
-            boards['expanders'][board]['rows'][rowNumber] = [ ]
-            if ledType == 1 or ledType == 3:
-                boards['expanders'][board]['rows'][rowNumber].append( { 'channel': channel, 'type': ledType, 'startIndex': startIndex, 'count': pixelCount, 'options': colorOrders[colorOrder], 'dataSpeed': dataSpeed } )
-                #boards['boards'][board]['rows'][rowNumber].append( { 'channel': channel, 'type': ledTypes[ledType], 'startIndex': startIndex, 'count': pixelCount, 'options': colorOrders[colorOrder], 'dataSpeed': dataSpeed } )
-            else:
-                boards['expanders'][board]['rows'][rowNumber].append( { 'channel': channel, 'type': ledType } )
-                #boards['boards'][board]['rows'][rowNumber].append( { 'channel': channel, 'type': ledTypes[ledType] } )
+    def getStorageUsed(self, savedStatistics=None):
+        if savedStatistics is None: savedStatistics = self.getStatistics()
+        return savedStatistics.get('storageUsed')
 
-        return boards #json.dumps(boards, indent=2)
+    def getStorageSize(self, savedStatistics=None):
+        if savedStatistics is None: savedStatistics = self.getStatistics()
+        return savedStatistics.get('storageSize')
 
-    # --- LEGACY FUNCTIONS (may be deprecated in the near future)
-
-    def _id_from_name(self, patterns, name):
-        """Utility Method: Given the list of patterns and text name of a pattern, returns that pattern's ID"""
-        for key, value in patterns.items():
-            if name == value:
-                return key
-        return None
-
-    def _get_pattern_id(self, pid):
-        """Utility Method: Returns a pattern ID if passed either a valid ID or a text name"""
-        patterns = self.getPatternList()
-        if patterns.get(pid) is None:
-            pid = self._id_from_name(patterns, pid)
-        return pid
-
-    def setActivePatternByName(self, patternName, save=False):
-        """Sets the currently running pattern using a text name"""
-        self.setActivePattern(self._get_pattern_id(patternName), save)
-
-    # --- GLOBAL controls (available on all tabs):
+    # --- GLOBAL functions: CONTROLS (available on all tabs):
 
     def setBrightnessSlider(self, brightness, save=False):
         """
@@ -603,8 +513,15 @@ class Pixelblaze:
         """
         self.wsSendJson({"brightness": self._clamp(brightness, 0, 1), "save": save}, expectedResponse=None)
 
-    def getBrightnessSlider(self):
-        return self.getConfigSettings().get('brightness')
+    # --- GLOBAL functions: CONTROLS: helper functions:
+    """The Pixelblaze API has functions to 'set' individual property values, 
+    but can only 'get' property values as part of a JSON dictionary containing all the settings
+    on a particular UI page. These functions will extract the property value from a 
+    previously-fetched dictionary, if provided; otherwise they will fetch the settings anew."""
+
+    def getBrightnessSlider(self, configSettings=None):
+        if configSettings is None: configSettings = self.getConfigSettings()
+        return configSettings.get('brightness')
 
     # --- PATTERNS tab: SEQUENCER section
 
@@ -617,8 +534,15 @@ class Pixelblaze:
         """Sets the sequencer mode to Off, ShuffleAll, or Playlist."""
         self.wsSendJson({"sequencerMode": sequencerMode, "save": save}, expectedResponse=None)
 
-    def getSequencerMode(self):
-        return self.getConfigSequencer().get('sequencerMode')
+    # --- PATTERNS tab: SEQUENCER section: helper functions:
+    """The Pixelblaze API has functions to 'set' individual property values, 
+    but can only 'get' property values as part of a JSON dictionary containing all the settings
+    on a particular UI page. These functions will extract the property value from a 
+    previously-fetched dictionary, if provided; otherwise they will fetch the settings anew."""
+
+    def getSequencerMode(self, configSequencer=None):
+        if configSequencer is None: configSequencer = self.getConfigSequencer()
+        return configSequencer.get('sequencerMode')
 
     # --- PATTERNS tab: SEQUENCER section: SHUFFLE ALL mode
 
@@ -641,27 +565,36 @@ class Pixelblaze:
         """
         self.wsSendJson({"sequenceTimer": nMillis}, expectedResponse=None)
 
-    def getSequencerShuffleTime(self):
-        return self.getConfigSequencer().get("ms")
+    # --- PATTERNS tab: SEQUENCER section: helper functions:
+    """The Pixelblaze API has functions to 'set' individual property values, 
+    but can only 'get' property values as part of a JSON dictionary containing all the settings
+    on a particular UI page. These functions will extract the property value from a 
+    previously-fetched dictionary, if provided; otherwise they will fetch the settings anew."""
+
+    def getSequencerShuffleTime(self, configSequencer=None):
+        if configSequencer is None: configSequencer = self.getConfigSequencer()
+        return configSequencer.get("ms")
 
     # --- PATTERNS tab: SEQUENCER section: PLAYLIST mode
 
-    def getSequencerPlaylist(self, playlist="_defaultplaylist_"):
-        return json.loads(self.wsSendJson({"getPlaylist": playlist}, expectedResponse='{"playlist":'))
+    def getSequencerPlaylist(self, playlistId="_defaultplaylist_"):
+        """This function fetches the named playlist."""
+        return json.loads(self.wsSendJson({"getPlaylist": playlistId}, expectedResponse='{"playlist":'))
 
-    def setSequencerPlaylist(self, playlist="_defaultplaylist_"):
-        if type(playlist) is str: playlist = json.loads(playlist)
-        self.latestSequencer = None
-        ignored = self.wsSendJson(playlist, expectedResponse=None)
+    def setSequencerPlaylist(self, playlistContents, playlistId="_defaultplaylist_"):
+        """This function replaces the entire contents of the named playlist."""
+        self.latestSequencer = None # clear cache to force refresh
+        ignored = self.wsSendJson(playlistContents, expectedResponse=None)
 
     def addToSequencerPlaylist(self, patternId, duration, playlist="_defaultplaylist_"):
+        """This function fetches the named playlist and appends a new item to it."""
         playlist = self.getSequencerPlaylist(playlist)
         playlist.get('playlist').get('items').append({'id': patternId, 'ms': duration})
         return self.setSequencerPlaylist(playlist)
 
     # --- PATTERNS tab: SEQUENCER section: convenience functions
 
-    def startSequencer(self, mode=1):
+    def startSequencer(self, mode=sequencerModes.ShuffleAll):
         """
         Enable and start the Pixelblaze's internal sequencer. The mode parameters
         can be 1 - shuffle all patterns, or 2 - playlist mode.  The playlist
@@ -790,13 +723,14 @@ class Pixelblaze:
             return False
         return True if var_name in val else False
 
-    def getActivePatternId(self):
+    def getActivePattern(self, configSequencer=None):
         """
         Returns the ID of the pattern currently running on the Pixelblaze (if available).  
         Otherwise returns an empty dictionary object.
         WHY AN EMPTY DICTIONARY OBJECT, when the activeID is a string?
         """
-        return self.getConfigSequencer().get('activeProgram', {}).get('activeProgramId', {})
+        if configSequencer is None: configSequencer = self.getConfigSequencer()
+        return configSequencer.get('activeProgram', {}).get('activeProgramId', {})
 
     def _get_current_controls(self):
         """
@@ -909,19 +843,26 @@ class Pixelblaze:
 
     # --- EDIT tab:
 
-    def getSourceCode(self, patternId):
-        sources = self.wsSendJson({"getSources":patternId}, expectedResponse=self.messageTypes.getSourceCode)
-        if sources is not None: return LZstring.decompress(sources)
-        return None
-
     def sendToRenderer(self, bytecode, controls={}):
+        """Sends a blob of bytecode and a JSON dictionary of UI controls to the Renderer.
+        Mimics the actions of the webUI code editor.  Can also be used to change the displayed
+        pattern (including to a pattern not saved on the Pixelblaze's filesystem!) without 
+        actually setting the activePattern. """
         self.wsSendJson({"pause":True,"setCode":{ "size": len(bytecode)}}, expectedResponse='{"ack":')
         self.wsSendBinary(self.messageTypes.putByteCode, bytecode, expectedResponse='{"ack":')
         self.wsSendJson({"setControls": controls}, expectedResponse='{"ack":')
         self.wsSendJson({"pause":False}, expectedResponse='{"ack":')
 
+    def getSourceCode(self, patternId):
+        """Gets the sourceCode of a saved pattern from the Pixelblaze.  Can be used 
+        to mimic the effects of the webUI's "Export" function. """
+        sources = self.wsSendJson({"getSources":patternId}, expectedResponse=self.messageTypes.getSourceCode)
+        if sources is not None: return LZstring.decompress(sources)
+        return None
+
     def savePattern(self, previewImage, sourceCode, byteCode):
-        """This mimics the effects of the 'Save' button."""
+        """Saves the components of a pattern to the Pixelblaze filesystem. 
+        Mimics the effects of the 'Save' button."""
         self.wsSendBinary(self.messageTypes.previewImage, previewImage, expectedResponse='{"ack":')
         self.wsSendBinary(self.messageTypes.putSourceCode, LZstring.compress(sourceCode), expectedResponse='{"ack":')
         self.wsSendBinary(self.messageTypes.putByteCode, byteCode, expectedResponse='{"ack":')
@@ -946,21 +887,108 @@ class Pixelblaze:
         return self.putFile('/pixelmap.txt', mapFunction)
 
     def getMapData(self):
+        """Gets the binary representation of the pixelMap entered on the 'Mapper' tab."""
         return self.getFile('/pixelmap.dat')
 
-    def setMapData(self, mapData):
+    def setMapData(self, mapData, save=True):
         # Send the mapData...
         self.wsSendBinary(self.messageTypes.putPixelMap, mapData, expectedResponse='{"ack":')
         # ...and make it permanent (same as pressing "Save" in the map editor).
-        self.wsSendJson({"savePixelMap":True}, expectedResponse=None)
+        if save: self.wsSendJson({"savePixelMap":True}, expectedResponse=None)
+
+    # --- SETTINGS menu
+
+    def getConfigSettings(self):
+        """Returns a JSON dictionary containing the configuration of the Pixelblaze 
+        settings, render engine, and the outputExpander (if it exists)."""
+        # The configuration comes in the form of three packets; two text and one binary.
+        # The second and third packets can come out of order so we'll have to be flexible.
+        self.latestSequencer = None  # clear cache to force refresh
+        self.latestExpander = None  # clear cache to force refresh
+        self.wsSendJson({"getConfig": True}, expectedResponse=None)
+
+        # First the config packet.
+        settings = {}
+        while True:
+            response = self.wsReceive(binaryMessageType=None)
+            if not response is None:
+                settings = json.loads(response)
+                break
+
+        # Now the others, in any order.
+        while True:
+            if (self.latestSequencer is None) or (self.latestExpander is None):
+                ignored = self.wsReceive(binaryMessageType=None)
+                break
+
+        # Now that we've got them all, return the settings.
+        return settings
+
+    def getConfigSequencer(self):
+        """Retrieve the most recent Sequencer state."""
+        while True:
+            if not self.latestSequencer is None: return json.loads(self.latestSequencer)
+            ignored = self.getConfigSettings()
+
+    def getConfigExpander(self):
+        """Retrieve any Expander configuration block that came along with the Settings."""
+        while True:
+            if not self.latestExpander is None: return self.latestExpander
+            ignored = self.getConfigSettings()
+
+    def __decodeExpanderData(self, data):
+        # We can't store bytes into JSON so we'll have to encode it...
+        # return base64.b64encode(data).decode('utf-8')
+        # ...but it might be more user-friendly to convert it into something readable.
+
+        # Check the magic number.
+        versionNumber = data[0]
+        #versionNumber = struct.unpack('<B', binaryData)[0]
+        if versionNumber != 5:
+            return {'expanders': [], 'error': f"expander data has incorrect magic number (expected 5, received {versionNumber})"}
+        
+        # Parse the rest of the file.
+        binaryData = data[1:]
+        binarySize = len(binaryData)
+        if binarySize % 96 != 0:
+            return {'expanders': [], 'error': f"expander data has incorrect length (must be a multiple of 96, received {versionNumber})"}
+        
+        # Convert the file to a human-readable equivalent.
+        rowSize = 12
+        boards = { 'expanders': [ ] }
+        #ledTypes = [ 'notUsed', 'WS2812B', 'drawAll', 'APA102 Data', 'APA102 Clock' ]
+        colorOrders = { 0x24: 'RGB', 0x18: 'RBG', 0x09: 'BRG', 0x06: 'BGR', 0x21: 'GRB', 0x12: 'GBR', 0xE4: 'RGBW', 0xE1: 'GRBW' }
+        for row in range(binarySize // rowSize):
+            offsets = struct.unpack('<4B2H4x', binaryData[(row * rowSize):(row + 1) * rowSize])
+            boardAddress = offsets[0] >> 3
+            channel = offsets[0] % 8
+            ledType = offsets[1]
+            numElements = offsets[2]
+            colorOrder = offsets[3]
+            pixelCount = offsets[4]
+            startIndex = offsets[5]
+            dataSpeed = offsets[6:10]
+
+            #   boardAddress
+            #       channel | type | startIndex | pixelCount | colorOrder | dataSpeed
+            board = row // 8
+            rowNumber = row % 8
+            if rowNumber == 0: # start a new board
+                boards['expanders'].append( { 'address': boardAddress, 'rows': { } } )
+            boards['expanders'][board]['rows'][rowNumber] = [ ]
+            if ledType == 1 or ledType == 3:
+                boards['expanders'][board]['rows'][rowNumber].append( { 'channel': channel, 'type': ledType, 'startIndex': startIndex, 'count': pixelCount, 'options': colorOrders[colorOrder], 'dataSpeed': dataSpeed } )
+                #boards['boards'][board]['rows'][rowNumber].append( { 'channel': channel, 'type': ledTypes[ledType], 'startIndex': startIndex, 'count': pixelCount, 'options': colorOrders[colorOrder], 'dataSpeed': dataSpeed } )
+            else:
+                boards['expanders'][board]['rows'][rowNumber].append( { 'channel': channel, 'type': ledType } )
+                #boards['boards'][board]['rows'][rowNumber].append( { 'channel': channel, 'type': ledTypes[ledType] } )
+
+        return boards #json.dumps(boards, indent=2)
 
     # --- SETTINGS menu: CONTROLLER section: NAME settings
 
     def setDeviceName(self, name):
         self.wsSendJson({"name":name}, expectedResponse=None)
-
-    def getDeviceName(self):
-        return self.getConfigSettings().get('name')
 
     def setDiscovery(self, enableDiscovery, timezoneName=None):
         if timezoneName is not None: 
@@ -990,6 +1018,36 @@ class Pixelblaze:
         if type(timeValue) is time:
             timeValue = timeValue.strftime('%H:%M')
         self.wsSendJson({"autoOffEnd": timeValue, "save": save}, expectedResponse=None)
+
+    # --- SETTINGS menu: CONTROLLER section: NAME settings: helper functions:
+    """The Pixelblaze API has functions to 'set' individual property values, 
+    but can only 'get' property values as part of a JSON dictionary containing all the settings
+    on a particular UI page. These functions will extract the property value from a 
+    previously-fetched dictionary, if provided; otherwise they will fetch the settings anew."""
+
+    def getDeviceName(self, configSettings=None):
+        if configSettings is None: configSettings = self.getConfigSettings()
+        return configSettings.get('name')
+
+    def getDiscovery(self, configSettings=None):
+        if configSettings is None: configSettings = self.getConfigSettings()
+        return configSettings.get('discoveryEnable')
+
+    def getTimezone(self, configSettings=None):
+        if configSettings is None: configSettings = self.getConfigSettings()
+        return configSettings.get('timezone')
+
+    def getAutoOffEnable(self, configSettings=None):
+        if configSettings is None: configSettings = self.getConfigSettings()
+        return configSettings.get('autoOffEnable')
+
+    def getAutoOffStart(self, configSettings=None):
+        if configSettings is None: configSettings = self.getConfigSettings()
+        return configSettings.get('autoOffStart')
+
+    def getAutoOffEnd(self, configSettings=None):
+        if configSettings is None: configSettings = self.getConfigSettings()
+        return configSettings.get('autoOffEnd')
 
     # --- SETTINGS menu: CONTROLLER section: LED settings
 
@@ -1044,13 +1102,7 @@ class Pixelblaze:
         self.wsSendJson({"pixelCount": nPixels, "save": save}, expectedResponse=None)
         # The Pixelblaze UI also re-evaluates the map function and resends the map data...How can we do the same?
 
-    def getPixelCount(self):
-        """
-        Returns the number of LEDs attached to the Pixelblaze.
-        """
-        return self.getConfigSettings().get('pixelCount', None)
-
-    def setDataspeed(self, speed, save=False):
+    def setDataSpeed(self, speed, save=False):
         """
         Sets custom bit timing for WS2812-type LEDs.
         CAUTION: For advanced users only.  If you don't know
@@ -1076,12 +1128,40 @@ class Pixelblaze:
         RGB_W = 'RGB-W'
         GRB_W = 'GRB-W'
 
-    def getColorOrder(self):
-        return self.getConfigSettings().get('colorOrder', None)
-
     def setColorOrder(self, colorOrder, save=False):
         assert type(colorOrder) is self.colorOrders
         self.wsSendJson({"colorOrder": colorOrder.value, "save": save}, expectedResponse=None)
+
+    # --- SETTINGS menu: CONTROLLER section: LED settings: helper functions:
+    """The Pixelblaze API has functions to 'set' individual property values, 
+    but can only 'get' property values as part of a JSON dictionary containing all the settings
+    on a particular UI page. These functions will extract the property value from a 
+    previously-fetched dictionary, if provided; otherwise they will fetch the settings anew."""
+
+    def getBrightnessLimit(self, configSettings=None):
+        """Returns the maximum brightness for the Pixelblaze."""
+        if configSettings is None: configSettings = self.getConfigSettings()
+        return configSettings.get('maxBrightness', None)
+
+    def getLedType(self, configSettings=None):
+        """Returns the type of LEDs connected to the Pixelblaze."""
+        if configSettings is None: configSettings = self.getConfigSettings()
+        return configSettings.get('colorOrder', None)
+
+    def getPixelCount(self, configSettings=None):
+        """Returns the number of LEDs connected to the Pixelblaze."""
+        if configSettings is None: configSettings = self.getConfigSettings()
+        return configSettings.get('pixelCount', None)
+
+    def getDataSpeed(self, configSettings=None):
+        """Returns the data speed of the LEDs connected to the Pixelblaze."""
+        if configSettings is None: configSettings = self.getConfigSettings()
+        return configSettings.get('dataSpeed', None)
+
+    def getColorOrder(self, configSettings=None):
+        """Returns the color order of the LEDs connected to the Pixelblaze."""
+        if configSettings is None: configSettings = self.getConfigSettings()
+        return configSettings.get('colorOrder', None)
 
     # --- SETTINGS menu (v3 only): CONTROLLER section: POWER SAVING settings
 
@@ -1089,10 +1169,6 @@ class Pixelblaze:
         low = "80"
         medium = "160"
         high = "240"
-
-    def getCpuSpeed(self):
-        # The "cpuSpeed" setting doesn't exist on v2, so return the default.
-        return self.getConfigSettings().get('cpuSpeed', 240)
 
     def setCpuSpeed(self, cpuSpeed):
         assert type(cpuSpeed) is self.cpuSpeeds
@@ -1109,43 +1185,21 @@ class Pixelblaze:
         """
         self.wsSendJson({"networkPowerSave": disableWifi}, expectedResponse=None)
 
-    def getConfigSettings(self):
-        """Returns a JSON dictionary containing the configuration of the Pixelblaze 
-        settings, render engine, and the outputExpander (if it exists)."""
-        # The configuration comes in the form of three packets; two text and one binary.
-        # The second and third packets can come out of order so we'll have to be flexible.
-        self.latestSequencer = None
-        self.latestExpander = None
-        self.wsSendJson({"getConfig": True}, expectedResponse=None)
+    # --- GLOBAL functions: CONTROLS: helper functions:
+    """The Pixelblaze API has functions to 'set' individual property values, 
+    but can only 'get' property values as part of a JSON dictionary containing all the settings
+    on a particular UI page. These functions will extract the property value from a 
+    previously-fetched dictionary, if provided; otherwise they will fetch the settings anew."""
 
-        # First the config packet.
-        settings = {}
-        while True:
-            response = self.wsReceive(binaryMessageType=None)
-            if not response is None:
-                settings = json.loads(response)
-                break
+    def getCpuSpeed(self, configSettings=None):
+        # The "cpuSpeed" setting doesn't exist on v2, so return the default.
+        if configSettings is None: configSettings = self.getConfigSettings()
+        return configSettings.get('cpuSpeed', 240)
 
-        # Now the others, in any order.
-        while True:
-            if (self.latestSequencer is None) or (self.latestExpander is None):
-                ignored = self.wsReceive(binaryMessageType=None)
-                break
-
-        # Now that we've got them all, return the settings.
-        return settings
-
-    def getConfigSequencer(self):
-        """Retrieve the most recent Sequencer state."""
-        while True:
-            if not self.latestSequencer is None: return json.loads(self.latestSequencer)
-            ignored = self.getConfigSettings()
-
-    def getConfigExpander(self):
-        """Retrieve any Expander configuration block that came along with the Settings."""
-        while True:
-            if not self.latestExpander is None: return self.latestExpander
-            ignored = self.getConfigSettings()
+    def getNetworkPowerSave(self, configSettings=None):
+        # The "networkPowerSave" setting doesn't exist on v2, so return the default.
+        if configSettings is None: configSettings = self.getConfigSettings()
+        return configSettings.get('networkPowerSave', False)
 
     # --- SETTINGS menu: UPDATES settings
 
@@ -1177,7 +1231,7 @@ class Pixelblaze:
         # We can't do the update if there isn't one available.
         if self.getUpdateState() != self.updateStates.updateAvailable: return self.updateStates.unknown
         # But if there is one available, we'll give it a try.
-        self.latestVersion = None
+        self.latestVersion = None  # clear cache to force refresh
         self.wsSendJson({"upgradeVersion": "update"}, expectedResponse=None)
         state = self.updateStates.unknown
         while True:
@@ -1213,6 +1267,12 @@ class Pixelblaze:
         """Restore the contents of this Pixelblaze from a Pixelblaze Binary Backup file."""
         PBB.toPixelblaze(self)
 
+    def reboot(self):
+        """Restart the Pixelblaze (necessary for the Pixelblaze to recognize changes to configuration files)."""
+        with requests.post(self.getUrl("reboot"), proxies=self.proxyDict) as rReboot:
+            if rReboot.status_code not in [200, 404]:
+                rReboot.raise_for_status()
+
     # --- ADVANCED menu: 
 
     def setBrandName(self, brandName):
@@ -1228,19 +1288,86 @@ class Pixelblaze:
         self.wsSendJson({"learningUiMode": doLearningMode}, expectedResponse=None)
 
     # --- ADVANCED menu: convenience functions
+    """The Pixelblaze API has functions to 'set' individual property values, 
+    but can only 'get' property values as part of a JSON dictionary containing all the settings
+    on a particular UI page. These functions will extract the property value from a 
+    previously-fetched dictionary, if provided; otherwise they will fetch the settings anew."""
 
-    def getBrandName(self):
-        """"""
-        return self.getConfigSettings().get('brandName', None)
+    def getBrandName(self, configSettings=None):
+        """Returns the brand name, if any, of this Pixelblaze (blank unless rebadged by a reseller)."""
+        if configSettings is None: configSettings = self.getConfigSettings()
+        return configSettings.get('brandName', None)
 
-    def getSimpleUiMode(self):
-        """"""
-        return self.getConfigSettings().get('simpleUiMode', None)
+    def getSimpleUiMode(self, configSettings=None):
+        """Returns whether Simple UI mode is enabled."""
+        if configSettings is None: configSettings = self.getConfigSettings()
+        return configSettings.get('simpleUiMode', None)
     
-    def getLearningUiMode(self):
-        """"""
-        return self.getConfigSettings().get('learningUiMode', None)
+    def getLearningUiMode(self, configSettings=None):
+        """Returns whether Learning UI mode is enabled."""
+        if configSettings is None: configSettings = self.getConfigSettings()
+        return configSettings.get('learningUiMode', None)
     
+    # --- PRIVATE HELPER FUNCTIONS
+
+    class deprecationReasons(IntEnum):
+        renamed = 1
+        functionalityChanged = 2
+        notRequired = 3
+
+    warningsGiven = []
+    def __printDeprecationMessage(self, deprecationReason, oldFunction, newFunction):
+        if not oldFunction in self.warningsGiven:
+            self.warningsGiven.append(oldFunction)
+            if deprecationReason == self.deprecationReasons.renamed:
+                print(f'[pixelblaze-client] Warning: function "{oldFunction}" has been renamed and this compatibility stub will be removed in a future release; to avoid disruption, modify your code to use the replacement function "{newFunction}".')
+            elif deprecationReason == self.deprecationReasons.functionalityChanged:
+                print(f'[pixelblaze-client] Warning: function "{oldFunction}" has been changed and may not have the same behavior; review the changelog and (if necessary) modify your code to use the replacement function "{newFunction}".')
+            elif deprecationReason == self.deprecationReasons.notRequired:
+                print(f'[pixelblaze-client] Warning: function "{oldFunction}" is no longer required and will be removed in a future release; you may safely remove it from your code.')
+
+    def _clamp(self, n, smallest, largest):
+        """
+        Utility Method: Why doesn't Python have clamp()?
+        """
+        return max(smallest, min(n, largest))
+
+    def _time_in_millis(self):
+        """
+        Utility Method: Returns current time in milliseconds
+        """
+        return int(round(time.time() * 1000))
+
+    # --- LEGACY FUNCTIONS (may be deprecated in the near future)
+
+    def pauseRenderer(self, doPause):
+        """
+        Pause rendering. Lasts until unpause() is called or
+        the Pixelblaze is reset.
+        CAUTION: For advanced users only.  If you don't know
+        exactly why you want to do this, DON'T DO IT.
+        """
+        assert type(doPause) is bool
+        self.wsSendJson({"pause": doPause}, expectedResponse='{"ack":')
+
+    def _id_from_name(self, patterns, name):
+        """Utility Method: Given the list of patterns and text name of a pattern, returns that pattern's ID"""
+        for key, value in patterns.items():
+            if name == value:
+                return key
+        return None
+
+    def _get_pattern_id(self, pid):
+        """Utility Method: Returns a pattern ID if passed either a valid ID or a text name"""
+        patterns = self.getPatternList()
+        if patterns.get(pid) is None:
+            pid = self._id_from_name(patterns, pid)
+        return pid
+
+    def setActivePatternByName(self, patternName, save=False):
+        """Sets the currently running pattern using a text name"""
+        self.setActivePattern(self._get_pattern_id(patternName), save)
+
     # --- PUBLIC FUNCTIONS TO BE DEPRECATED
 
     @property
@@ -1355,11 +1482,6 @@ class Pixelblaze:
         self.__printDeprecationMessage(self.deprecationReasons.functionalityChanged, "getHardwareConfig", "getConfig{Settings|Sequencer|Expander}")
         return self.getConfigSettings()
 
-    def getActivePattern(self):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.functionalityChanged, "getActivePattern", "getActivePatternId")
-        return self.getActivePatternId()
-
     def set_timeout(self, timeout):
         """Deprecated."""
         self.__printDeprecationMessage(self.deprecationReasons.notRequired, "set_timeout", "{no longer needed}")
@@ -1408,9 +1530,9 @@ class PBB:
         return newOne
 
     @staticmethod
-    def fromIpAddress(ipAddress, verbose=False):
+    def fromIpAddress(ipAddress, proxyUrl=None, verbose=False):
         # Make a connection to the Pixelblaze.
-        with Pixelblaze(ipAddress) as pb:
+        with Pixelblaze(ipAddress, proxyUrl=proxyUrl) as pb:
             return PBB.fromPixelblaze(pb, verbose)
 
     @staticmethod
@@ -1474,17 +1596,17 @@ class PBB:
             for filename in self.contents:
                 # Config files go in the "Configuration" subdirectory...
                 if filename[1:] in ["config.json", "config2.json", "obconf.dat", "pixelmap.txt", "pixelmap.dat"]:
-                    configPath = path.joinpath("Configuration")
+                    configPath = path.joinpath("Configuration/")
                     configPath.mkdir(parents=True, exist_ok=True)
                     configPath.joinpath(filename[1:]).write_bytes(self.getFile(filename))
                 # Playlists go in the "Playlists" subdirectory...
                 elif filename in ["/l/_defaultplaylist_"]:
-                    playlistPath = path.joinpath("Playlists")
+                    playlistPath = path.joinpath("Playlists/")
                     playlistPath.mkdir(parents=True, exist_ok=True)
                     playlistPath.joinpath("defaultPlaylist.json").write_bytes(self.getFile(filename))
                 # Patterns go in the "Patterns" subdirectory...
                 elif filename.startswith('/p/'):
-                    patternPath = path.joinpath("Patterns")
+                    patternPath = path.joinpath("Patterns/")
                     patternPath.mkdir(parents=True, exist_ok=True)
                     if filename.endswith('.c'):
                         # For pattern settings files, get the name from the original pattern.
@@ -1499,10 +1621,10 @@ class PBB:
                 else:
                     path.joinpath(filename[1:]).write_bytes(self.getFile(filename))
 
-    def toIpAddress(self, ipAddress, verbose=False):
+    def toIpAddress(self, ipAddress, proxyUrl=None, verbose=False):
         """Uploads the contents of this PixelBlazeBackup to the destination Pixelblaze."""
         # Make a connection to the Pixelblaze.
-        with Pixelblaze(ipAddress) as pb:
+        with Pixelblaze(ipAddress, proxyUrl) as pb:
             self.toPixelblaze(pb, verbose)
 
     def toPixelblaze(self, pb, verbose=False):
@@ -1555,10 +1677,10 @@ class PBP:
             return PBP.fromBytes(pathlib.Path(path).stem, file.read())
 
     @staticmethod
-    def fromIpAddress(ipAddress, patternId):
+    def fromIpAddress(ipAddress, patternId, proxyUrl=None):
         """Creates and returns a new pattern Pixelblaze Binary Pattern (PBP) whose contents are downloaded from a URL."""
         # Make a connection to the Pixelblaze.
-        with Pixelblaze(ipAddress) as pb:
+        with Pixelblaze(ipAddress, proxyUrl=proxyUrl) as pb:
             return PBP.fromPixelblaze(pb, patternId)
 
     @staticmethod
@@ -1608,10 +1730,10 @@ class PBP:
         with open(path, "wb") as file:
             file.write(self.__binaryData)
 
-    def toIpAddress(self, ipAddress):
+    def toIpAddress(self, ipAddress, proxyUrl=None):
         """Uploads this Pixelblaze Binary Pattern (PBP) to a Pixelblaze."""
         # Make a connection to the Pixelblaze.
-        with Pixelblaze(ipAddress) as pb:
+        with Pixelblaze(ipAddress, proxyUrl) as pb:
             self.toPixelblaze(pb)
 
     def toPixelblaze(self, pb):
@@ -1787,7 +1909,6 @@ class LZstring:
         elif next == 2:
             return ""
 
-        #print(bits)
         dictionary[3] = c
         w = c
         result.append(c)
