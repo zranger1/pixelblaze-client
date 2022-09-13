@@ -52,7 +52,7 @@ import math
 import pathlib
 from re import T
 from urllib.parse import urlparse, urljoin
-from enum import Enum, Flag, IntEnum
+from enum import Enum, Flag, IntEnum, IntFlag
 
 __version__ = "1.9.7"
 
@@ -411,7 +411,17 @@ class Pixelblaze:
     def getUrl(self, endpoint=None):
         return urljoin(f"http://{self.ipAddress}", endpoint)
 
-    def getFileList(self):
+    class fileTypes(Flag):
+        """A Pixelblaze contains Patterns, PatternSettings, Configs, Playlists, System and Other types of files."""
+        fileConfig = 1
+        filePattern = 2
+        filePatternSetting = 4
+        filePlaylist = 8
+        fileSystem = 16
+        fileOther = 32
+        fileAll = fileConfig | filePattern | filePatternSetting | filePlaylist | fileSystem | fileOther
+
+    def getFileList(self, fileTypes=fileTypes.fileAll):
         """Returns a list of all the files contained on this Pixelblaze; for Pixelblazes running firmware 
         versions lower than 2.29/3.24, the list includes the names of optional configuration files that may 
         or may not exist on this particular Pixelblaze, depending on its setup."""
@@ -422,15 +432,47 @@ class Pixelblaze:
             elif rList.status_code == 404:
                 # If the Pixelblaze doesn't support the "/list" endpoint, get the patternList using WebSocket calls.
                 fileList = []
-                for filename in self.getPatternList():
-                    fileList.append(f"/p/{filename}\t0")    # the pattern blob
-                    fileList.append(f"/p/{filename}.c\t0")  # the current value of any (optional) UI controls
+                for fileName in self.getPatternList():
+                    fileList.append(f"/p/{fileName}\t0")    # the pattern blob
+                    fileList.append(f"/p/{fileName}.c\t0")  # the current value of any (optional) UI controls
                 # Append the names of all the other files a Pixelblaze might contain, some of which may not exist on any particular device.
-                for filename in ["apple-touch-icon.png", "favicon.ico", "config.json", "obconf.dat", "pixelmap.txt", "pixelmap.dat", "l/_defaultplaylist_"]:
-                    fileList.append(f"/{filename}\t0")
+                for fileName in ["apple-touch-icon.png", "favicon.ico", "config.json", "obconf.dat", "pixelmap.txt", "pixelmap.dat", "l/_defaultplaylist_"]:
+                    fileList.append(f"/{fileName}\t0")
             else: 
                 rList.raise_for_status()
 
+        # Filter the list depending on the fileTypes requested.
+        for file in list(fileList):
+            fileName = file.split('\t')[0]
+            # fileConfigs:
+            if fileName[1:] in ["config.json", "config2.json", "obconf.dat", "pixelmap.txt", "pixelmap.dat"]:
+                if (fileTypes.value & self.fileTypes.fileConfig.value) == 0:
+                    fileList.remove(file)
+            # filePatterns and filePatternSettings:
+            elif fileName.startswith("/p/"):
+                if fileName.endswith(".c"):
+                    # filePatternSettings:
+                    if (fileTypes.value & self.fileTypes.filePatternSetting.value) == 0:
+                        fileList.remove(file)
+                else:
+                    # filePattern:
+                    if (fileTypes.value & self.fileTypes.filePattern.value) == 0:
+                        fileList.remove(file)
+            # filePlaylists:
+            elif fileName.startswith("/l/"):
+                if (fileTypes.value & self.fileTypes.filePlaylist.value) == 0:
+                    fileList.remove(file)
+            # fileSystem:
+            elif fileName.endswith(".gz"):
+                if (fileTypes.value & self.fileTypes.fileSystem.value) == 0:
+                    fileList.remove(file)
+            # fileOthers:
+            else:
+                # Ignore the blank line returned by the '/list' endpoint.
+                if (len(file) == 0) or (fileTypes.value & self.fileTypes.fileOther.value) == 0:
+                    fileList.remove(file)
+
+        # Return the filtered list.
         fileList.sort()
         return fileList
 
@@ -860,7 +902,7 @@ class Pixelblaze:
         if sources is not None: return LZstring.decompress(sources)
         return None
 
-    def savePattern(self, previewImage, sourceCode, byteCode):
+    def saveComponentsAsPattern(self, previewImage, sourceCode, byteCode):
         """Saves the components of a pattern to the Pixelblaze filesystem. 
         Mimics the effects of the 'Save' button."""
         self.wsSendBinary(self.messageTypes.previewImage, previewImage, expectedResponse='{"ack":')
@@ -876,8 +918,8 @@ class Pixelblaze:
         # TBD:  This saves the mapFunction text into the file backing the map editor, which is unrelated
         #       to the actual mapData which is saved separately (see setMapData function below); in future,
         #       could we also execute the mapFunction and generate the binary mapData? We'd need to use an 
-        #       intepreter like pyv8 (https://code.google.com/archive/p/pyv8/), pyMiniRacer 
-        #       (https://github.com/sqreen/PyMiniRacer), quickjs (https://github.com/PetterS/quickjs),  
+        #       intepreter like dukpy (https://github.com/amol-/dukpy), pyv8 (https://code.google.com/archive/p/pyv8/), 
+        #       pyMiniRacer (https://github.com/sqreen/PyMiniRacer), quickjs (https://github.com/PetterS/quickjs),  
         #       js2py (https://github.com/PiotrDabkowski/Js2Py), or pyexecjs (https://github.com/doloopwhile/PyExecJS) 
         #       -- maybe wrapped in jsengine (https://pypi.org/project/jsengine/)?
         #
@@ -1557,12 +1599,54 @@ class PBB:
         """Returns the name of the device from which this PixelBlazeBackup was made."""
         return self.__fromDevice
 
+    class fileTypes(Flag):
+        """A Pixelblaze contains Patterns, PatternSettings, Configs, Playlists, System and Other types of files."""
+        fileConfig = 1
+        filePattern = 2
+        filePatternSetting = 4
+        filePlaylist = 8
+        fileSystem = 16
+        fileOther = 32
+        fileAll = fileConfig | filePattern | filePatternSetting | filePlaylist | fileSystem | fileOther
+
     @property
-    def contents(self):
+    def contents(self, fileTypes=fileTypes.fileAll):
         """Returns a sorted list of the filenames contained in this PixelBlazeBackup."""
         fileList = []
-        for key in json.loads(self.__textData.encode().decode('utf-8-sig'))['files']:
-            fileList.append(key)
+        for fileName in json.loads(self.__textData.encode().decode('utf-8-sig'))['files']:
+        # Filter the list depending on the fileTypes requested.
+            # fileConfigs:
+            if fileName[1:] in ["config.json", "config2.json", "obconf.dat", "pixelmap.txt", "pixelmap.dat"]:
+                if (fileTypes.value & self.fileTypes.fileConfig.value) == 0:
+                    continue
+            # filePatterns and filePatternSettings:
+            elif fileName.startswith("/p/"):
+                if fileName.endswith(".c"):
+                    # filePatternSettings:
+                    if (fileTypes.value & self.fileTypes.filePatternSetting.value) == 0:
+                        continue
+                else:
+                    # filePattern:
+                    if (fileTypes.value & self.fileTypes.filePattern.value) == 0:
+                        continue
+            # filePlaylists:
+            elif fileName.startswith("/l/"):
+                if (fileTypes.value & self.fileTypes.filePlaylist.value) == 0:
+                    continue
+            # fileSystem:
+            elif fileName.endswith(".gz"):
+                if (fileTypes.value & self.fileTypes.fileSystem.value) == 0:
+                    continue
+            # fileOthers:
+            else:
+                # Ignore the blank line returned by the '/list' endpoint.
+                if (fileTypes.value & self.fileTypes.fileOther.value) == 0:
+                    continue
+            
+            # This file must have passed safely through all the filters.
+            fileList.append(fileName)
+
+        # Return the filtered list.
         fileList.sort()
         return fileList
 
@@ -1570,9 +1654,11 @@ class PBB:
         """Returns the contents of a particular file contained in this PixelBlazeBackup."""
         return base64.b64decode(json.loads(self.__textData.encode().decode('utf-8-sig'))['files'][key])
 
-    #def putFile(self, key, contents):
+    def putFile(self, key, contents):
         """Replaces or inserts the contents of a particular file into this PixelBlazeBackup."""
-        # TBD
+        jsonContents = json.loads(self.__textData.encode().decode('utf-8-sig'))
+        jsonContents.get('files', {})[key] = base64.b64encode(contents).decode('UTF-8')
+        self.__textData = json.dumps(jsonContents)
 
     # Class methods:
     def toFile(self, filename=None, explode=False):
@@ -1614,8 +1700,8 @@ class PBB:
                         patternPath.joinpath(safeFilename(pbp.name)).with_suffix('.json').write_bytes(self.getFile(filename))
                     else:
                         pbp = PBP.fromBytes(pathlib.Path(filename[3:]).stem, self.getFile(filename))
-                        pbpPath = patternPath.joinpath(safeFilename(pbp.name))
-                        pbp.toFile(pbpPath.with_suffix('.pbp'))
+                        pbpPath = patternPath.joinpath(safeFilename(pbp.name)).with_suffix('.pbp')
+                        pbp.toFile(pbpPath)
                         pbp.explode(pbpPath)
                 # And everything else (should just be the Icons) goes in the root directory...
                 else:
@@ -1726,7 +1812,7 @@ class PBP:
     def toFile(self, path=None):
         """Saves this Pixelblaze Binary Pattern (PBP) to a file on disk."""
         if path is None: path = pathlib.Path.cwd().joinpath(self.id).with_suffix(".pbp")
-        else: path = pathlib.Path(path).joinpath(self.id).with_suffix(".pbp")
+        else: path = pathlib.Path(path).with_suffix(".pbp")
         with open(path, "wb") as file:
             file.write(self.__binaryData)
 
@@ -1832,7 +1918,21 @@ class EPE:
 
     def explode(self, path):
         """Explodes the components of this portable pattern EPE into separate files"""
-        print("TBD")
+        # Get a Path to help with creating filenames.
+        if path is None: path = pathlib.Path.cwd().joinpath(self.id)
+        patternPath = pathlib.Path(path)
+
+        # ...the human-readable name.
+        with open(patternPath.with_suffix('.metadata'), 'w') as outfile:
+            outfile.write(self.name)
+
+        # ...the preview image.
+        with open(patternPath.with_suffix('.jpg'), 'wb') as outfile:
+            outfile.write(self.preview)
+
+        # ...the human-readable source code.
+        with open(patternPath.with_suffix('.js'), 'w') as outfile:
+            outfile.write(self.sources)
 
 # ------------------------------------------------
 
@@ -2347,3 +2447,5 @@ class PixelblazeEnumerator:
         for record in self.devices.values():
             dev.append(record["address"][0])  # just the ip
         return dev
+
+
