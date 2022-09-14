@@ -8,18 +8,35 @@ from pixelblaze import *
 # Callable function for use with zipfile packaging.
 def pbbTool():
 
-    def backupPBB(ipAddress, fileName):
+    def backupToPBB(ipAddress, fileName):
         print(f"Backing up {ipAddress} to {fileName}")
-        PBB.fromIpAddress(ipAddress, verbose=args.verbose).toFile(fileName, args.explode)
+        # Read a Pixelblaze Binary Backup (PBB) from the Pixelblaze at {ipAddress} and write it to {fileName}.
+        PBB.fromIpAddress(ipAddress, proxyUrl=args.proxyUrl, verbose=args.verbose).toFile(fileName, args.explode)
 
-    def restorePBB(ipAddress, fileName):
+    def restoreFromPBB(ipAddress, fileName):
         print(f"Restoring {ipAddress} from {fileName}")
-        PBB.fromFile(fileName).toIpAddress(ipAddress, verbose=args.verbose)
+        # Read a Pixelblaze Binary Backup (PBB) from {fileName} and write it to the Pixelblaze at {ipAddress}.
+        PBB.fromFile(fileName).toIpAddress(ipAddress, proxyUrl=args.proxyUrl, verbose=args.verbose)
+
+    def cloneFromPBB(ipAddress, fileName):
+        print(f"Cloning {ipAddress} from {fileName}")
+        # Read a Pixelblaze Binary Backup (PBB) from {fileName} and write only the patterns to the Pixelblaze at {ipAddress}.
+        pbb = PBB.fromFile(fileName)
+        pb = Pixelblaze(ipAddress, proxyUrl=args.proxyUrl)
+        # Delete all the patterns that are currently loaded on the Pixelblaze.
+        for filename in pb.getFileList(PBB.fileTypes.filePattern | PBB.fileTypes.filePatternSetting):
+            if args.verbose: print(f"  Deleting {filename}")
+            pb.deleteFile(filename)
+        # Upload all the pattern in this PixelBlazeBackup to the Pixelblaze.
+        for filename in pbb.getFileList(PBB.fileTypes.filePattern | PBB.fileTypes.filePatternSetting):
+            if args.verbose: print(f"  Uploading {filename}")
+            pb.putFile(filename, pbb.getFile(filename))
 
     def listPBB(pbb):
         if args.verbose:
+            # List all the files on the filesystem by internal name.
             print(f"The backup of '{pbb.deviceName}' contains the following files:")
-            for fileName in pbb.contents:
+            for fileName in pbb.getFileList():
                 realName = ""
                 if fileName.startswith('/p/'):
                     if fileName.endswith('.c'):
@@ -28,13 +45,15 @@ def pbbTool():
                         realName = f"  ({PBP.fromBytes(pathlib.Path(fileName[3:]).stem, pbb.getFile(fileName)).name})"
                 print(f'  {fileName} {realName}')
         else:
+            # List the user-friendly Pattern names.
             print(f"The backup of '{pbb.deviceName}' contains the following patterns:")
             patterns = []
-            for fileName in pbb.contents:
-                if fileName.startswith('/p/'):
-                    if not fileName.endswith('.c'):
-                        pbp = PBP.fromBytes(pathlib.Path(fileName).stem, pbb.getFile(fileName))
-                        patterns.append((fileName, pbp.name))
+            # Only list the friendly names of the pattern files.
+            for fileName in pbb.getFileList(PBB.fileTypes.filePattern):
+                pbp = PBP.fromBytes(pathlib.Path(fileName).stem, pbb.getFile(fileName))
+                patterns.append((fileName, pbp.name))
+
+            # Sort the pattern list by name because the it was originally sorted by ID.
             patterns.sort(key=lambda tup: str.lower(tup[1]))
             for patternName in patterns:
                 print(f'  {patternName[1]}')
@@ -47,17 +66,23 @@ def pbbTool():
     subparsers = parser.add_subparsers(required=True, dest='command')
     # Create the subparser for the "backup" command.
     parserBackup = subparsers.add_parser('backup', help='backup --ipAddress=* --pbbFile=*')
-    parserBackup.add_argument("--ipAddress", default='*', help="The (wildcard-enabled) IP address of the Pixelblaze to backup; defaults to '*'")
-    parserBackup.add_argument("--pbbFile", default='*', help="The (wildcard-enabled) filename of the PixelBlazeBackup (PBB) file; defaults to './*'")
+    parserBackup.add_argument("--ipAddress", default='*', help="The (wildcard-enabled) IP address of the Pixelblaze to backup FROM; defaults to '*'")
+    parserBackup.add_argument("--pbbFile", default='*', help="The (wildcard-enabled) filename of the PixelBlazeBackup (PBB) file to backup TO; defaults to './*'")
     parserBackup.add_argument("--explode", action='store_true', help="Explode the backup file into its components")
     parserBackup.add_argument("--verbose", action='store_true', help="Display debugging output")
-    parserBackup.set_defaults(func=backupPBB)
+    parserBackup.set_defaults(func=backupToPBB)
     # Create the subparser for the "restore" command.
     parserRestore = subparsers.add_parser('restore', help='restore --ipAddress={ipAddress} --pbbFile={pbbFile.pbb}')
-    parserRestore.add_argument("--pbbFile", required=True, help="The filename of the PixelBlazeBackup (PBB) file")
-    parserRestore.add_argument("--ipAddress", required=True, help="The IP address of the Pixelblaze to to restore")
+    parserRestore.add_argument("--pbbFile", required=True, help="The filename of the PixelBlazeBackup (PBB) file to restore FROM")
+    parserRestore.add_argument("--ipAddress", required=True, help="The IP address of the Pixelblaze to restore TO")
     parserRestore.add_argument("--verbose", action='store_true', help="Display debugging output")
-    parserRestore.set_defaults(func=restorePBB)
+    parserRestore.set_defaults(func=restoreFromPBB)
+    # Create the subparser for the "clone" command.
+    parserClone = subparsers.add_parser('clone', help='clone --fromAddress={ipAddress} --toAddress={ipAddress}')
+    parserClone.add_argument("--pbbFile", required=True, help="The filename of the PixelBlazeBackup (PBB) file to clone FROM")
+    parserClone.add_argument("--ipAddress", required=True, help="The IP address of the Pixelblaze to clone TO")
+    parserClone.add_argument("--verbose", action='store_true', help="Display debugging output")
+    parserClone.set_defaults(func=cloneFromPBB)
     # Create the subparser for the "list" command.
     parserList = subparsers.add_parser('list', help='list --ipAddress=* OR --pbbFile=*')
     listGroup = parserList.add_mutually_exclusive_group(required=True)
@@ -66,23 +91,24 @@ def pbbTool():
     parserList.add_argument("--verbose", action='store_true', help="Display debugging output")
     parserList.set_defaults(func=listPBB)
     # Add common arguments.
+    parser.add_argument("--proxyUrl", default=None, help="Redirect Pixelblaze traffic through a proxy at 'protocol://address:port'")
+
     # Parse the command line.
     args = parser.parse_args()
-
 
     if args.command in ['backup']:
         # Enumerate the available Pixelblazes on the network and see which ones match.
         for ipAddress in Pixelblaze.EnumerateAddresses(timeout=1500):
             if (fnmatch.fnmatch(ipAddress, args.ipAddress)):
-                with Pixelblaze(ipAddress) as pixelblaze:
+                with Pixelblaze(ipAddress, proxyUrl=args.proxyUrl) as pixelblaze:
                     # Substitute in the correct device name for any wildcards in the filename.
                     fileName = pathlib.Path(args.pbbFile.replace('*', pixelblaze.getDeviceName())).with_suffix('.pbb')
                     # Call the appropriate routine to backup.
                     args.func(pixelblaze.ipAddress, fileName)
 
-    elif args.command in ['restore']:
+    elif args.command in ['restore', 'clone']:
         # No wildcarding here; because of the potential data loss everything must be specified explicitly.
-        # Call the appropriate routine to restore.
+        # Call the appropriate routine to restore or clone from backup.
         args.func(args.ipAddress, args.pbbFile)
 
     elif args.command in ['list']:

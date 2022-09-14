@@ -231,6 +231,12 @@ class Pixelblaze:
                         raise
             self.ws.settimeout(self.default_recv_timeout)
             self.connected = True
+            # Reset our caches so we'll get them afresh.
+            self.latestStats = None
+            self.latestUpdateCheck = None
+            self.latestVersion = None
+            self.latestSequencer = None
+            self.latestExpander = None
 
     def close(self):
         """Close websocket connection"""
@@ -411,7 +417,7 @@ class Pixelblaze:
     def getUrl(self, endpoint=None):
         return urljoin(f"http://{self.ipAddress}", endpoint)
 
-    class fileTypes(Flag):
+    class fileTypes(IntFlag):
         """A Pixelblaze contains Patterns, PatternSettings, Configs, Playlists, System and Other types of files."""
         fileConfig = 1
         filePattern = 2
@@ -428,49 +434,50 @@ class Pixelblaze:
         fileList = []
         with requests.get(self.getUrl("list"), proxies=self.proxyDict) as rList:
             if rList.status_code == 200:
-                fileList = rList.text.split('\n') # returns a number of lines, each containing [filename][tab][size][newline]
+                for line in rList.text.split('\n'): 
+                    fileName = line.split('\t')[0] # '/list' returns a number of lines, each containing [filename][tab][size][newline]
+                    if len(fileName) > 0: fileList.append(fileName) # '/list' returns a blank line at the end.
             elif rList.status_code == 404:
                 # If the Pixelblaze doesn't support the "/list" endpoint, get the patternList using WebSocket calls.
                 fileList = []
                 for fileName in self.getPatternList():
-                    fileList.append(f"/p/{fileName}\t0")    # the pattern blob
-                    fileList.append(f"/p/{fileName}.c\t0")  # the current value of any (optional) UI controls
+                    fileList.append(f"/p/{fileName}")    # the pattern blob
+                    fileList.append(f"/p/{fileName}.c")  # the current value of any (optional) UI controls
                 # Append the names of all the other files a Pixelblaze might contain, some of which may not exist on any particular device.
                 for fileName in ["apple-touch-icon.png", "favicon.ico", "config.json", "obconf.dat", "pixelmap.txt", "pixelmap.dat", "l/_defaultplaylist_"]:
-                    fileList.append(f"/{fileName}\t0")
+                    fileList.append(f"/{fileName}")
             else: 
                 rList.raise_for_status()
 
         # Filter the list depending on the fileTypes requested.
-        for file in list(fileList):
-            fileName = file.split('\t')[0]
+        for fileName in list(fileList):
             # fileConfigs:
             if fileName[1:] in ["config.json", "config2.json", "obconf.dat", "pixelmap.txt", "pixelmap.dat"]:
-                if (fileTypes.value & self.fileTypes.fileConfig.value) == 0:
-                    fileList.remove(file)
+                if not bool(fileTypes & self.fileTypes.fileConfig):
+                    fileList.remove(fileName)
             # filePatterns and filePatternSettings:
             elif fileName.startswith("/p/"):
                 if fileName.endswith(".c"):
                     # filePatternSettings:
-                    if (fileTypes.value & self.fileTypes.filePatternSetting.value) == 0:
-                        fileList.remove(file)
+                    if not bool(fileTypes & self.fileTypes.filePatternSetting):
+                        fileList.remove(fileName)
                 else:
                     # filePattern:
-                    if (fileTypes.value & self.fileTypes.filePattern.value) == 0:
-                        fileList.remove(file)
+                    if not bool(fileTypes & self.fileTypes.filePattern):
+                        fileList.remove(fileName)
             # filePlaylists:
             elif fileName.startswith("/l/"):
-                if (fileTypes.value & self.fileTypes.filePlaylist.value) == 0:
-                    fileList.remove(file)
+                if not bool(fileTypes & self.fileTypes.filePlaylist):
+                    fileList.remove(fileName)
             # fileSystem:
             elif fileName.endswith(".gz"):
-                if (fileTypes.value & self.fileTypes.fileSystem.value) == 0:
-                    fileList.remove(file)
+                if not bool(fileTypes & self.fileTypes.fileSystem):
+                    fileList.remove(fileName)
             # fileOthers:
             else:
                 # Ignore the blank line returned by the '/list' endpoint.
-                if (len(file) == 0) or (fileTypes.value & self.fileTypes.fileOther.value) == 0:
-                    fileList.remove(file)
+                if not bool(fileTypes & self.fileTypes.fileOther):
+                    fileList.remove(fileName)
 
         # Return the filtered list.
         fileList.sort()
@@ -739,14 +746,16 @@ class Pixelblaze:
         Reads a dictionary containing the unique ID and the text name of all
         saved patterns on the Pixelblaze into the pattern cache.
         """
-        self.patternCache = dict()
+        newPatternCache = dict()
         oldTimeout = self.ws.gettimeout()
         self.ws.settimeout(3 * self.default_recv_timeout)
         response = self.wsSendJson({"listPrograms": True}, expectedResponse=self.messageTypes.getProgramList)
         self.ws.settimeout(oldTimeout)
-        for pattern in [m.split("\t") for m in response.decode("utf-8").split("\n")]:
-            if len(pattern) == 2: 
-                self.patternCache[pattern[0]] = pattern[1]
+        if response is not None: 
+            for pattern in [m.split("\t") for m in response.decode("utf-8").split("\n")]:
+                if len(pattern) == 2: 
+                    newPatternCache[pattern[0]] = pattern[1]
+            self.patternCache = newPatternCache
 
     def setVariable(self, var_name, value):
         """
@@ -947,11 +956,11 @@ class Pixelblaze:
         # The second and third packets can come out of order so we'll have to be flexible.
         self.latestSequencer = None  # clear cache to force refresh
         self.latestExpander = None  # clear cache to force refresh
-        self.wsSendJson({"getConfig": True}, expectedResponse=None)
 
         # First the config packet.
         settings = {}
         while True:
+            self.wsSendJson({"getConfig": True}, expectedResponse=None)
             response = self.wsReceive(binaryMessageType=None)
             if not response is None:
                 settings = json.loads(response)
@@ -968,9 +977,11 @@ class Pixelblaze:
 
     def getConfigSequencer(self):
         """Retrieve the most recent Sequencer state."""
+        self.latestSequencer = None
         while True:
-            if not self.latestSequencer is None: return json.loads(self.latestSequencer)
-            ignored = self.getConfigSettings()
+            if self.latestSequencer is None: ignored = self.getConfigSettings()
+            return json.loads(self.latestSequencer)
+            
 
     def getConfigExpander(self):
         """Retrieve any Expander configuration block that came along with the Settings."""
@@ -979,7 +990,7 @@ class Pixelblaze:
             ignored = self.getConfigSettings()
 
     def __decodeExpanderData(self, data):
-        # We can't store bytes into JSON so we'll have to encode it...
+        # We can't store bytes into JSON so we could encode it...
         # return base64.b64encode(data).decode('utf-8')
         # ...but it might be more user-friendly to convert it into something readable.
 
@@ -1124,14 +1135,15 @@ class Pixelblaze:
 
     def setLedType(self, ledType, dataSpeed=None, save=False):
         """Defines the type of LEDs connected to the Pixelblaze."""
+        assert type(ledType) is self.ledTypes
         # If no dataSpeed was specified, default to what the v3 UI sends.
         if dataSpeed is None:
-            if ledType.value == 0: dataSpeed = None
-            if ledType.value == 1: dataSpeed = 2000000
-            if ledType.value == 2: dataSpeed = 2250000 #3500000
-            if ledType.value == 3: dataSpeed = 2000000
-            if ledType.value == 4: dataSpeed = 3500000
-            if ledType.value == 5: dataSpeed = 2000000
+            if ledType == self.ledTypes.noLeds: dataSpeed = None
+            if ledType == self.ledTypes.APA102: dataSpeed = 2000000
+            if ledType == self.ledTypes.WS2812: dataSpeed = 2250000 #3500000 for v2
+            if ledType == self.ledTypes.WS2801: dataSpeed = 2000000
+            if ledType == self.ledTypes.bufferedWS2812: dataSpeed = 3500000
+            if ledType == self.ledTypes.OutputExpander: dataSpeed = 2000000
 
         self.wsSendJson({"ledType": ledType, "dataSpeed": dataSpeed, "save": save}, expectedResponse=None)
 
@@ -1188,7 +1200,7 @@ class Pixelblaze:
     def getLedType(self, configSettings=None):
         """Returns the type of LEDs connected to the Pixelblaze."""
         if configSettings is None: configSettings = self.getConfigSettings()
-        return configSettings.get('colorOrder', None)
+        return self.ledTypes(configSettings.get('ledType'))
 
     def getPixelCount(self, configSettings=None):
         """Returns the number of LEDs connected to the Pixelblaze."""
@@ -1580,17 +1592,14 @@ class PBB:
     @staticmethod
     def fromPixelblaze(pb, verbose=False):
         newOne = object.__new__(PBB)
-        fromDevice = pb.ipAddress
-        archive = {"files": {}}
+        newOne.__init__(pb.ipAddress, json.dumps({"files": {}}, indent=2))
         #   Get the file list.
-        for line in pb.getFileList():
+        for line in pb.getFileList(PBB.fileTypes.fileAll ^ PBB.fileTypes.fileSystem):
             filename = line.split('\t')[0]
-            if len(filename) > 0 and not filename in ['/index.html.gz', '/recovery.html.gz']: 
-                if verbose: print(f"  Downloading {filename}")
-                contents = pb.getFile(filename)
-                if not contents is None:
-                    archive['files'][filename] = base64.b64encode(contents).decode('UTF-8')
-        newOne.__init__(fromDevice, json.dumps(archive, indent=2))
+            if verbose: print(f"  Downloading {filename}")
+            contents = pb.getFile(filename)
+            if not contents is None:
+                newOne.putFile(filename, contents)
         return newOne
 
     # Class properties:
@@ -1599,7 +1608,7 @@ class PBB:
         """Returns the name of the device from which this PixelBlazeBackup was made."""
         return self.__fromDevice
 
-    class fileTypes(Flag):
+    class fileTypes(IntFlag):
         """A Pixelblaze contains Patterns, PatternSettings, Configs, Playlists, System and Other types of files."""
         fileConfig = 1
         filePattern = 2
@@ -1609,38 +1618,37 @@ class PBB:
         fileOther = 32
         fileAll = fileConfig | filePattern | filePatternSetting | filePlaylist | fileSystem | fileOther
 
-    @property
-    def contents(self, fileTypes=fileTypes.fileAll):
+    def getFileList(self, fileTypes=fileTypes.fileAll):
         """Returns a sorted list of the filenames contained in this PixelBlazeBackup."""
         fileList = []
         for fileName in json.loads(self.__textData.encode().decode('utf-8-sig'))['files']:
         # Filter the list depending on the fileTypes requested.
             # fileConfigs:
             if fileName[1:] in ["config.json", "config2.json", "obconf.dat", "pixelmap.txt", "pixelmap.dat"]:
-                if (fileTypes.value & self.fileTypes.fileConfig.value) == 0:
+                if not bool(fileTypes & self.fileTypes.fileConfig):
                     continue
             # filePatterns and filePatternSettings:
             elif fileName.startswith("/p/"):
                 if fileName.endswith(".c"):
                     # filePatternSettings:
-                    if (fileTypes.value & self.fileTypes.filePatternSetting.value) == 0:
+                    if not bool(fileTypes & self.fileTypes.filePatternSetting):
                         continue
                 else:
                     # filePattern:
-                    if (fileTypes.value & self.fileTypes.filePattern.value) == 0:
+                    if not bool(fileTypes & self.fileTypes.filePattern):
                         continue
             # filePlaylists:
             elif fileName.startswith("/l/"):
-                if (fileTypes.value & self.fileTypes.filePlaylist.value) == 0:
+                if not bool(fileTypes & self.fileTypes.filePlaylist):
                     continue
             # fileSystem:
             elif fileName.endswith(".gz"):
-                if (fileTypes.value & self.fileTypes.fileSystem.value) == 0:
+                if not bool(fileTypes & self.fileTypes.fileSystem):
                     continue
             # fileOthers:
             else:
                 # Ignore the blank line returned by the '/list' endpoint.
-                if (fileTypes.value & self.fileTypes.fileOther.value) == 0:
+                if not bool(fileTypes & self.fileTypes.fileOther):
                     continue
             
             # This file must have passed safely through all the filters.
@@ -1658,7 +1666,14 @@ class PBB:
         """Replaces or inserts the contents of a particular file into this PixelBlazeBackup."""
         jsonContents = json.loads(self.__textData.encode().decode('utf-8-sig'))
         jsonContents.get('files', {})[key] = base64.b64encode(contents).decode('UTF-8')
-        self.__textData = json.dumps(jsonContents)
+        self.__textData = json.dumps(jsonContents, indent=2)
+
+    def deleteFile(self, key):
+        """Removes a particular file form this PixelBlazeBackup."""
+        jsonContents = json.loads(self.__textData.encode().decode('utf-8-sig'))
+        if jsonContents.get(key, None): 
+            del jsonContents[key]
+            self.__textData = json.dumps(jsonContents, indent=2)
 
     # Class methods:
     def toFile(self, filename=None, explode=False):
@@ -1679,33 +1694,32 @@ class PBB:
             path = pathlib.Path(path).with_suffix('')
             path.mkdir(parents=True, exist_ok=True)
             # Loop through the backup contents and save them appropriately.
-            for filename in self.contents:
+            for filename in self.getFileList(PBB.fileTypes.fileConfig):
                 # Config files go in the "Configuration" subdirectory...
-                if filename[1:] in ["config.json", "config2.json", "obconf.dat", "pixelmap.txt", "pixelmap.dat"]:
-                    configPath = path.joinpath("Configuration/")
-                    configPath.mkdir(parents=True, exist_ok=True)
-                    configPath.joinpath(filename[1:]).write_bytes(self.getFile(filename))
+                configPath = path.joinpath("Configuration/")
+                configPath.mkdir(parents=True, exist_ok=True)
+                configPath.joinpath(filename[1:]).write_bytes(self.getFile(filename))
+            for filename in self.getFileList(PBB.fileTypes.filePlaylist):
                 # Playlists go in the "Playlists" subdirectory...
-                elif filename in ["/l/_defaultplaylist_"]:
-                    playlistPath = path.joinpath("Playlists/")
-                    playlistPath.mkdir(parents=True, exist_ok=True)
-                    playlistPath.joinpath("defaultPlaylist.json").write_bytes(self.getFile(filename))
+                playlistPath = path.joinpath("Playlists/")
+                playlistPath.mkdir(parents=True, exist_ok=True)
+                playlistPath.joinpath("defaultPlaylist.json").write_bytes(self.getFile(filename))
+            for filename in self.getFileList(PBB.fileTypes.filePattern | PBB.fileTypes.filePatternSetting):
                 # Patterns go in the "Patterns" subdirectory...
-                elif filename.startswith('/p/'):
-                    patternPath = path.joinpath("Patterns/")
-                    patternPath.mkdir(parents=True, exist_ok=True)
-                    if filename.endswith('.c'):
-                        # For pattern settings files, get the name from the original pattern.
-                        pbp = PBP.fromBytes(pathlib.Path(filename[3:]).stem, self.getFile(filename[:-2]))
-                        patternPath.joinpath(safeFilename(pbp.name)).with_suffix('.json').write_bytes(self.getFile(filename))
-                    else:
-                        pbp = PBP.fromBytes(pathlib.Path(filename[3:]).stem, self.getFile(filename))
-                        pbpPath = patternPath.joinpath(safeFilename(pbp.name)).with_suffix('.pbp')
-                        pbp.toFile(pbpPath)
-                        pbp.explode(pbpPath)
-                # And everything else (should just be the Icons) goes in the root directory...
+                patternPath = path.joinpath("Patterns/")
+                patternPath.mkdir(parents=True, exist_ok=True)
+                if filename.endswith('.c'):
+                    # For pattern settings files, get the name from the original pattern.
+                    pbp = PBP.fromBytes(pathlib.Path(filename[3:]).stem, self.getFile(filename[:-2]))
+                    patternPath.joinpath(safeFilename(pbp.name)).with_suffix('.json').write_bytes(self.getFile(filename))
                 else:
-                    path.joinpath(filename[1:]).write_bytes(self.getFile(filename))
+                    pbp = PBP.fromBytes(pathlib.Path(filename[3:]).stem, self.getFile(filename))
+                    pbpPath = patternPath.joinpath(safeFilename(pbp.name)).with_suffix('.pbp')
+                    pbp.toFile(pbpPath)
+                    pbp.explode(pbpPath)
+            for filename in self.getFileList(PBB.fileTypes.fileOther):
+                # And everything else (should just be the Icons) goes in the root directory...
+                path.joinpath(filename[1:]).write_bytes(self.getFile(filename))
 
     def toIpAddress(self, ipAddress, proxyUrl=None, verbose=False):
         """Uploads the contents of this PixelBlazeBackup to the destination Pixelblaze."""
@@ -1716,13 +1730,11 @@ class PBB:
     def toPixelblaze(self, pb, verbose=False):
         """Uploads the contents of this PixelBlazeBackup to the destination Pixelblaze."""
         # Delete all the files that are currently loaded on the Pixelblaze (excepting the WebApp itself).
-        for line in pb.getFileList():
-            filename = line.split('\t')[0]
-            if len(filename) > 0 and not filename in ['/index.html.gz', '/recovery.html.gz']:
-                if verbose: print(f"  Deleting {filename}")
-                pb.deleteFile(filename)
+        for filename in pb.getFileList(PBB.fileTypes.fileAll ^ PBB.fileTypes.fileSystem):
+            if verbose: print(f"  Deleting {filename}")
+            pb.deleteFile(filename)
         # Upload everything that's in this PixelBlazeBackup to the Pixelblaze.
-        for filename in self.contents:
+        for filename in self.getFileList():
             if verbose: print(f"  Uploading {filename}")
             pb.putFile(filename, self.getFile(filename))
         # Send a reboot command so the Pixelblaze will recognize the new configuration.
