@@ -40,21 +40,15 @@ if __name__ == "__main__":
 
     # Loop until the heat death of the universe, or until the user hits Ctrl-C.
     try:
-<<<<<<< HEAD
         # Tell the Pixelblaze to send pattern previews.
         pb.setSendPreviewFrames(True)
-=======
->>>>>>> 13b86e61fc8deef29d4564f9eeee414a2a5d57de
         while True:
 
             # Fetch and total a row of pixels.
             totalR = totalG = totalB = 0
             line = pb.getPreviewFrame()
             if line is None:
-<<<<<<< HEAD
                 # If there's a timeout, re-enable pattern previews.
-=======
->>>>>>> 13b86e61fc8deef29d4564f9eeee414a2a5d57de
                 pb.setSendPreviewFrames(True)
             else:
                 for index in range(0, len(line), 3):
@@ -64,10 +58,6 @@ if __name__ == "__main__":
 
                 # Print the totals.
                 print(f"Instantaneous current draw: {cpu + totalR + totalG + totalB:.3f}A (PB={cpu:.3f}, R={totalR:.3f}, G={totalG:.3f}, B={totalB:.3f})\r", end='')
-    
+
     except KeyboardInterrupt:
-<<<<<<< HEAD
         print()
-=======
-        print()
->>>>>>> 13b86e61fc8deef29d4564f9eeee414a2a5d57de
