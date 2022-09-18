@@ -3,7 +3,7 @@
 
 # Disclaimer
 
-This document was produced for informational purposes only; it is neither sanctioned nor recommended by @wizard.  Used incorrectly, some of these commands could cause data loss, brick/shorten the lifespan of a Pixelblaze, or cause excessive power consumption which in extreme cases may damage any connected LEDs or create a fire hazard. 
+This document was produced for informational purposes only; it is neither sanctioned nor recommended by @wizard.  Used incorrectly, some of these commands could cause data loss, brick/shorten the lifespan of a Pixelblaze, or cause excessive power consumption which may damage any connected LEDs or in extreme cases create a fire hazard. 
 
 *However*...the insights described below were gained from observation of the conversation  taking place between a correctly-configured Pixelblaze and its user interface webpage, and within that context the risk of repeating commands already known to be valid is minimal.
 
