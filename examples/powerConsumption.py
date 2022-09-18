@@ -12,11 +12,10 @@ if __name__ == "__main__":
     # Create the top-level parser.
     parser = argparse.ArgumentParser(prog='powerConsumption')
     parser.add_argument("--ipAddress", required=True, help="The IP address of the Pixelblaze to monitor")
-    parser.add_argument("--proxyUrl", default=None, help="Redirect Pixelblaze traffic through a proxy at 'protocol://address:port'")
     args = parser.parse_args()
 
     # Connect to the Pixelblaze.
-    pb = Pixelblaze(args.ipAddress, proxyUrl=args.proxyUrl)
+    pb = Pixelblaze(args.ipAddress)
 
     # Make some assumptions based the configuration...Or don't; this is only an example.
     config = pb.getConfigSettings()
