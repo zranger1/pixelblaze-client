@@ -58,6 +58,19 @@ def pbbTool():
             for patternName in patterns:
                 print(f'  {patternName[1]}')
 
+    def extractFromPBB(pbbFile, patternName):
+        print(f"Extracting patterns matching '{patternName} from '{pbbFile}':")
+        # Read a Pixelblaze Binary Backup (PBB) from {fileName} and write only the patterns to the Pixelblaze at {ipAddress}.
+        pbb = PBB.fromFile(pbbFile)
+        # Go through the list of patterns stored in the Pixelblaze Binary Backup...
+        for fileName in pbb.getFileList(PBB.fileTypes.filePattern):
+            # ...convert them into Pixeblaze Binary Pattern objects...
+            pbp = PBP.fromBytes(pathlib.Path(fileName).stem, pbb.getFile(fileName))
+            if fnmatch.fnmatch(pbp.name, patternName):
+                # ...and export any with matching patternNames as files.
+                print(f'  {pbp.name}')
+                pbp.toEPE().toFile(pathlib.Path(pbbFile).with_name(pbp.name).with_suffix('.epe'))
+
 # ------------------------------------------------
 
     # Create the top-level parser.
@@ -90,6 +103,12 @@ def pbbTool():
     listGroup.add_argument("--ipAddress", default='*', help="The (wildcard-enabled) IP address of the Pixelblaze to list")
     parserList.add_argument("--verbose", action='store_true', help="Display debugging output")
     parserList.set_defaults(func=listPBB)
+    # Create the subparser for the "extract" command.
+    parserExtract = subparsers.add_parser('extract', help='extract --pbbFile={pbbFile.pbb} --patternName=*')
+    parserExtract.add_argument("--pbbFile", required=True, help="The filename of the PixelBlazeBackup (PBB) file to extract")
+    parserExtract.add_argument("--patternName", required=True, default='*', help="The (wildcard-enabled) name of the pattern(s) to extract")
+    parserExtract.add_argument("--verbose", action='store_true', help="Display debugging output")
+    parserExtract.set_defaults(func=extractFromPBB)
     # Add common arguments.
     parser.add_argument("--proxyUrl", default=None, help="Redirect Pixelblaze traffic through a proxy at 'protocol://address:port'")
 
@@ -110,6 +129,10 @@ def pbbTool():
         # No wildcarding here; because of the potential data loss everything must be specified explicitly.
         # Call the appropriate routine to restore or clone from backup.
         args.func(args.ipAddress, args.pbbFile)
+
+    elif args.command in ['extract']:
+        # Call the appropriate routine to export a pattern from the backup.
+        args.func(args.pbbFile, args.patternName)
 
     elif args.command in ['list']:
         if args.pbbFile is not None:

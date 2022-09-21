@@ -2,43 +2,54 @@
 # -*- coding: utf-8 -*-
 
 """
- pixelblaze.py
+A library that provides a simple, synchronous interface for communicating with and
+controlling Pixelblaze LED controllers.  
 
- A library that presents a simple, synchronous interface for communicating with and
- controlling Pixelblaze LED controllers.  Requires Python 3 and the websocket-client
- module.
+This modules contains the following classes:
 
- Copyright 2020-2022 JEM (ZRanger1)
+- `Pixelblaze`: an object for controlling Pixelblazes.
 
- Permission is hereby granted, free of charge, to any person obtaining a copy of this
- software and associated documentation files (the "Software"), to deal in the Software
- without restriction, including without limitation the rights to use, copy, modify, merge,
- publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons
- to whom the Software is furnished to do so, subject to the following conditions:
+- `PBB`: an object for creating and manipulating Pixelblaze Binary Backups.
 
- The above copyright notice and this permission notice shall be included in all copies or
- substantial portions of the Software.
+- `PBP`: an object for creating and manipulating Pixelblaze Binary Patterns.
 
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
- BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
- AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
- CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
- ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- THE SOFTWARE.
+- `EPE`: an object for creating and manipulating Electromage Pattern Exports.
 
- Version  Date         Author Comment
- v0.0.1   11/20/2020   JEM(ZRanger1)  Created
- v0.0.2   12/1/2020    "              Name change + color control methods
- v0.9.0   12/6/2020    "              Added PixelblazeEnumerator class
- v0.9.1   12/16/2020   "              Support for pypi upload
- v0.9.2   01/16/2021   "              Updated Pixelblaze sequencer support
- v0.9.3   04/13/2021   "              waitForEmptyQueue() return now agrees w/docs
- v0.9.4   02/04/2022   "              Added setPixelcount(),pause(), unpause(), pattern cache
- v0.9.5   07/16/2022   @pixie         Update ws_recv to receive long preview packets
- v0.9.6   07/17/2022   @pixie         Tweak getPatternList() to handle slower Pixelblazes
- v1.9.7   01/09/2022   @pixie         large-scale refactoring to add new features; minor loss of compatibility
+Requires Python 3 and the websocket-client module.
 """
 
+# Copyright 2020-2022 JEM (ZRanger1)
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this
+# software and associated documentation files (the "Software"), to deal in the Software
+# without restriction, including without limitation the rights to use, copy, modify, merge,
+# publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons
+# to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or
+# substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+# BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+# AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
+#| Version | Date       | Author        | Comment                                 |
+#|---------|------------|---------------|-----------------------------------------|
+#|  v0.0.1 | 11/20/2020 | JEM(ZRanger1) |  Created |
+#|  v0.0.2 | 12/01/2020 | "             | Name change + color control methods |
+#|  v0.9.0 | 12/06/2020 | "             | Added PixelblazeEnumerator class |
+#|  v0.9.1 | 12/16/2020 | "             | Support for pypi upload |
+#|  v0.9.2 | 01/16/2021 | "             | Updated Pixelblaze sequencer support |
+#|  v0.9.3 | 04/13/2021 | "             | waitForEmptyQueue() return now agrees w/docs |
+#|  v0.9.4 | 02/04/2022 | "             | Added setPixelcount(),pause(), unpause(), pattern cache |
+#|  v0.9.5 | 07/16/2022 | @pixie        | Update ws_recv to receive long preview packets |
+#|  v0.9.6 | 07/17/2022 | @pixie        | Tweak getPatternList() to handle slower Pixelblazes |
+#|  v1.9.7 | 01/09/2022 | @pixie        | large-scale refactoring to add new features; minor loss of compatibility |
+
+from typing import Union
 import websocket
 import socket
 import json
@@ -58,8 +69,9 @@ __version__ = "1.9.7"
 
 class Pixelblaze:
     """
-    Presents a synchronous interface to a Pixelblaze's websocket API. The constructor takes
-    the Pixelblaze's IPv4 address in the usual 12 digit numeric form (192.168.1.xxx)
+    Presents a synchronous interface to a Pixelblaze's websocket API. 
+    
+    The constructor takes the Pixelblaze's IPv4 address in the usual 12 digit numeric form (for example, "192.168.4.1")
     and if successful, returns a connected Pixelblaze object.
 
     To control multiple Pixelblazes, create multiple objects.
@@ -87,67 +99,64 @@ class Pixelblaze:
 
     # --- OBJECT LIFETIME MANAGEMENT (CREATION/DELETION)
 
-    def __init__(self, addr, proxyUrl=None):
-        """
-        Create and open Pixelblaze object. Takes the Pixelblaze's IPv4 address in the
-        usual 12 digit numeric form (for example, 192.168.1.xxx)
+    def __init__(self, ipAddress:str, proxyUrl:str=None):
+        """Initializes an object for communicating with and controlling a Pixelblaze.
+
+        Args:
+            ipAddress (str): The Pixelblaze's IPv4 address in the usual dotted-quads numeric format (for example, "192.168.4.1").
+            proxyUrl (str, optional): The url of a proxy, if required, in the format "protocol://ipAddress:port" (for example, "http://192.168.0.1:8888"). Defaults to None.
         """
         self.proxyUrl = proxyUrl
         if not proxyUrl is None:
             self.proxyDict = { "http": proxyUrl, "https": proxyUrl }
-        self.ipAddress = addr
-        self.open()
+        self.ipAddress = ipAddress
+        self._open()
         self.setCacheRefreshTime(600)  # seconds used in public api
 
     def __enter__(self):
-        # nothing needed, really.
+        """Internal class method for resource management.
+
+        Returns:
+            Pixelblaze: This object.
+        """
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        """Internal class method for resource management.
+
+        Args:
+            exc_type (_type_): As per Python standard.
+            exc_value (_type_): As per Python standard.
+            traceback (_type_): As per Python standard.
+        """
         # Make sure we clean up after ourselves.
-        if not self is None: self.close()
+        if not self is None: self._close()
 
-    # --- STATiC METHODS
+    # --- STATIC METHODS
     
-    # Static methods:
-    @staticmethod
-    def EnumerateAddresses(hostIP="0.0.0.0", timeout=5000, proxyUrl=None):
-        """Returns an enumerator that will iterate through all the Pixelblazes on 
-        the network, until {timeout} seconds have passed with no new devices appearing."""
-        newOne = object.__new__(Pixelblaze.LightweightEnumerator)
-        newOne.__init__(Pixelblaze.LightweightEnumerator.EnumeratorTypes.ipAddress, hostIP, timeout, proxyUrl)
-        return newOne
-
-    @staticmethod
-    def EnumerateDevices(hostIP="0.0.0.0", timeout=5000, proxyUrl=None):
-        """Returns an enumerator that will iterate through all the Pixelblazes on 
-        the network, until {timeout} seconds have passed with no new devices appearing."""
-        newOne = object.__new__(Pixelblaze.LightweightEnumerator)
-        newOne.__init__(Pixelblaze.LightweightEnumerator.EnumeratorTypes.pixelblazeObject, hostIP, timeout, proxyUrl)
-        return newOne
-
-    # The different types of iterators:
     class LightweightEnumerator:
-        """This enumerator returns each Pixelblaze found on the network."""
-        # Members:
-        listenSocket = None
-        timeout = 0
-        timeStop = 0
-        seenPixelblazes = []
-        enumeratorType = 0 # can't assign self.LightweightEnumerator.EnumeratorTypes.noType
-        proxyUrl = None
+        """Internal implementation class for the `EnumerateAddresses` and `EnumerateDevices` methods."""
 
+        # Enumerated type for the type of the Enumerator.
         class EnumeratorTypes(IntEnum):
             noType = 0
             ipAddress = 1
             pixelblazeObject = 2
 
+        # Members:
+        listenSocket = None
+        timeout = 0
+        timeStop = 0
+        seenPixelblazes = []
+        enumeratorType = EnumeratorTypes.noType
+        proxyUrl = None
+
         # private constructor:
-        def __init__(self, enumeratorType, hostIP="0.0.0.0", timeout=5000, proxyUrl=None):
+        def __init__(self, enumeratorType:EnumeratorTypes, hostIP:str="0.0.0.0", timeout:int=1500, proxyUrl:str=None):
             """    
             Create an interable object that listens for Pixelblaze beacon packets, returning
             a Pixelblaze object for each unique beacon seen during the timeout period.
-            Listens on all available interfaces if addr is not specified.
+            Listens on all available interfaces if hostIP is not specified.
             """
             try:
                 self.enumeratorType = enumeratorType
@@ -156,10 +165,8 @@ class Pixelblaze:
                 self.listenSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 self.listenSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 self.listenSocket.bind((hostIP, 1889))
-                return True
             except socket.error as e:
                 print(e)
-                return False
 
         def __del__(self):
             """
@@ -179,18 +186,18 @@ class Pixelblaze:
             # If we receive a beacon packet from a new Pixelblaze, return an object for it.
             self.timeStop = self._time_in_millis() + self.timeout
             while self._time_in_millis() <= self.timeStop:
-                data, addr = self.listenSocket.recvfrom(1024)
+                data, ipAddress = self.listenSocket.recvfrom(1024)
                 pkt = struct.unpack("<LLL", data)
                 if pkt[0] == 42: # beacon packet
-                    if addr not in self.seenPixelblazes:
+                    if ipAddress not in self.seenPixelblazes:
                         # Add this address to our list so we don't repeat it.
-                        self.seenPixelblazes.append(addr)
+                        self.seenPixelblazes.append(ipAddress)
                         # Return an enumerator of the appropriate type.
                         if self.enumeratorType == Pixelblaze.LightweightEnumerator.EnumeratorTypes.ipAddress:
-                            return addr[0]
+                            return ipAddress[0]
                         elif self.enumeratorType == Pixelblaze.LightweightEnumerator.EnumeratorTypes.pixelblazeObject:
                             newOne = object.__new__(Pixelblaze)
-                            newOne.__init__(addr[0], proxyUrl=self.proxyUrl)
+                            newOne.__init__(ipAddress[0], proxyUrl=self.proxyUrl)
                             return newOne
                         else: 
                             # No such type...How did that happen?
@@ -199,20 +206,49 @@ class Pixelblaze:
             # Exit because the timeout has expired.
             raise StopIteration
 
-        def _time_in_millis(self):
+        def _time_in_millis(self) -> int:
             """
             Utility Method: Returns last 32 bits of the current time in milliseconds
             """
             return int(round(time.time() * 1000)) % 0xFFFFFFFF
 
+    # Static methods:
+    @staticmethod
+    def EnumerateAddresses(hostIP:str="0.0.0.0", timeout:int=1500, proxyUrl:str=None) -> LightweightEnumerator:
+        """Returns an enumerator that will iterate through all the Pixelblazes on the local network, until {timeout} milliseconds have passed with no new devices appearing.
+
+        Args:
+            hostIP (str, optional): The network interface on which to listen for Pixelblazes. Defaults to "0.0.0.0" meaning all available interfaces.
+            timeout (int, optional): The amount of time in milliseconds to listen for a new Pixelblaze to announce itself (They announce themselves once per second). Defaults to 1500.
+            proxyUrl (str, optional): The url of a proxy, if required, in the format "protocol://ipAddress:port" (for example, "http://192.168.0.1:8888"). Defaults to None.
+
+        Returns:
+            LightweightEnumerator: A subclassed Python enumerator object that returns (as a string) the IPv4 address of a Pixelblaze, in the usual dotted-quads numeric format.
+        """
+        return Pixelblaze.LightweightEnumerator(Pixelblaze.LightweightEnumerator.EnumeratorTypes.ipAddress, hostIP, timeout, proxyUrl)
+
+    @staticmethod
+    def EnumerateDevices(hostIP:str="0.0.0.0", timeout:int=1500, proxyUrl:str=None) -> LightweightEnumerator:
+        """Returns an enumerator that will iterate through all the Pixelblazes on the local network, until {timeout} milliseconds have passed with no new devices appearing.
+
+        Args:
+            hostIP (str, optional): The network interface on which to listen for Pixelblazes. Defaults to "0.0.0.0" meaning all available interfaces.
+            timeout (int, optional): The amount of time in milliseconds to listen for a new Pixelblaze to announce itself (They announce themselves once per second). Defaults to 1500.
+            proxyUrl (str, optional): The url of a proxy, if required, in the format "protocol://ipAddress:port" (for example, "http://192.168.0.1:8888"). Defaults to None.
+
+        Returns:
+            LightweightEnumerator: A subclassed Python enumerator object that returns a Pixelblaze object for controlling a discovered Pixelblaze.
+        """
+        return Pixelblaze.LightweightEnumerator(Pixelblaze.LightweightEnumerator.EnumeratorTypes.pixelblazeObject, hostIP, timeout, proxyUrl)
+
     # --- CONNECTION MANAGEMENT
 
-    def open(self):
+    def _open(self):
         """
-        Open websocket connection to given ip address.  Called automatically
-        when a Pixelblaze object is created - it is not necessary to
-        explicitly call open to connect unless the websocket has been closed by the
-        user or by the Pixelblaze.
+        Opens a websocket connection to the Pixelblaze.  
+        
+        This is called automatically when a Pixelblaze object is created; it is not necessary to explicitly 
+        call open to connect unless the websocket has been explicitly closed by the user previously.
         """
         if self.connected is False:
             uri = "ws://" + self.ipAddress + ":81"
@@ -238,8 +274,8 @@ class Pixelblaze:
             self.latestSequencer = None
             self.latestExpander = None
 
-    def close(self):
-        """Close websocket connection"""
+    def _close(self):
+        """Close websocket connection."""
         if self.connected is True:
             self.ws.close()
             self.connected = False
@@ -264,10 +300,14 @@ class Pixelblaze:
         frameMiddle = 2
         frameLast = 4
 
-    def wsReceive(self, binaryMessageType=None):
-        """
-        Utility method: Blocking websocket receive that waits for a packet of a given type
-        and gracefully handles errors and stray extra packets.
+    def wsReceive(self, binaryMessageType:messageTypes=None) -> Union[str, bytes, None]:
+        """Wait for a message of a particular type from the Pixelblaze.
+
+        Args:
+            binaryMessageType (messageTypes, optional): The type of binary message to wait for (if None, waits for a text message). Defaults to None.
+
+        Returns:
+            Union[str, bytes, None]: The message received from the Pixelblaze (of type bytes for binaryMessageTypes, otherwise of type str), or None if a timeout occurred.
         """
         message = None
         startTime = self._time_in_millis()
@@ -318,20 +358,34 @@ class Pixelblaze:
 
             except websocket._exceptions.WebSocketConnectionClosedException: # try reopening
                 #print("wsReceive reconnection")
-                self.close()
-                self.open()
+                self._close()
+                self._open()
 
             except Exception as e:
                 print(f"wsReceive: unknown exception: {e}")
                 raise
 
-    def sendPing(self):
-        return self.wsSendJson({"ping": True}, expectedResponse='{"ack":')
+    def sendPing(self) -> Union[str, None]:
+        """Send a Ping message to the Pixelblaze and wait for the Acknowledgement response.
 
-    def wsSendJson(self, command, expectedResponse=None):
+        Returns:
+            Union[str, None]: The acknowledgement message received from the Pixelblaze, or None if a timeout occurred.
+        """
+        return self.wsSendJson({"ping": True}, expectedResponse="ack")
+
+    def wsSendJson(self, command:dict, expectedResponse=None) -> Union[str, bytes, None]:
+        """Send a JSON-formatted command to the Pixelblaze, and optionally wait for a suitable response.
+
+        Args:
+            command (dict): A Python dictionary which will be sent to the Pixelblaze as a JSON command.
+            expectedResponse (str, optional): If present, the initial key of the expected JSON response to the command. Defaults to None.
+
+        Returns:
+            Union[str, bytes, None]: The message received from the Pixelblaze (of type bytes for binaryMessageTypes, otherwise of type str), or None if a timeout occurred.
+        """
         while True:
             try:
-                self.open() # make sure it's open, even if it closed while we were doing other things.
+                self._open() # make sure it's open, even if it closed while we were doing other things.
                 self.ws.send(json.dumps(command, indent=None, separators=(',', ':')).encode("utf-8"))
                 if expectedResponse is None: 
                     return None
@@ -342,7 +396,7 @@ class Pixelblaze:
                     if type(expectedResponse) is str:
                         response = self.wsReceive(binaryMessageType=None)
                         if response is None: break
-                        if response.startswith(expectedResponse): break
+                        if response.startswith(f'{{"{expectedResponse}":'): break
                     # Or the right binary response.
                     elif type(expectedResponse) is self.messageTypes:
                         response = self.wsReceive(binaryMessageType=expectedResponse)
@@ -351,16 +405,25 @@ class Pixelblaze:
                 return response
 
             except websocket._exceptions.WebSocketConnectionClosedException:
-                self.close()
-                self.open()   # try reopening
+                self._close()
+                self._open()   # try reopening
 
             except:
-                self.close()
-                self.open()   # try reopening
+                self._close()
+                self._open()   # try reopening
                 #raise
 
-    def wsSendBinary(self, binaryMessageType, blob, expectedResponse=None):
-        """Send a binary packet to the Pixelblaze."""
+    def wsSendBinary(self, binaryMessageType:messageTypes, blob:bytes, expectedResponse:str=None):
+        """Send a binary command to the Pixelblaze, and optionally wait for a suitable response.
+
+        Args:
+            binaryMessageType (messageTypes, optional): The type of binary message to send.
+            blob (bytes): The message body to be sent.
+            expectedResponse (str, optional): If present, the initial key of the expected JSON response to the command. Defaults to None.
+
+        Returns:
+            response: The message received from the Pixelblaze (of type bytes for binaryMessageTypes, otherwise of type str), or None if a timeout occurred.
+        """
         while True:
             try:
                 # Break the frame into manageable chunks.
@@ -397,24 +460,37 @@ class Pixelblaze:
 
             except websocket._exceptions.WebSocketConnectionClosedException:
                 print("wsSendBinary reconnection")
-                self.close()
-                self.open()   # try reopening
+                # try reopening
+                self._close()
+                self._open()   
 
             except:
                 print("wsSendBinary received unexpected exception")
-                self.close()
-                self.open()
+                # try reopening
+                self._close()
+                self._open()
                 #raise
 
     def getPeers(self):
-        """A new command, added to the API but not yet implemented as of v2.29/v3.24, 
-        that will return a list of all the Pixelblazes visible on the local network segment."""
+        """A new command, added to the API but not yet implemented as of v2.29/v3.24, that will return a list of all the Pixelblazes visible on the local network segment.
+
+        Returns:
+            TBD: To be defined once @wizard implements the function.
+        """
         self.wsSendJson({"getPeers": True})
         return self.wsReceive(binaryMessageType=None)
 
     # --- PIXELBLAZE FILESYSTEM FUNCTIONS:
 
-    def getUrl(self, endpoint=None):
+    def getUrl(self, endpoint:str=None) -> str:
+        """Build the URL to communicate with the Pixelblaze using an HTTP endpoint.
+
+        Args:
+            endpoint (str, optional): The HTTP endpoint. Defaults to None, which returns the URL of the Pixelblaze webUI.
+
+        Returns:
+            str: The URL of the HTTP endpoint on the Pixelblaze.
+        """
         return urljoin(f"http://{self.ipAddress}", endpoint)
 
     class fileTypes(IntFlag):
@@ -427,10 +503,19 @@ class Pixelblaze:
         fileOther = 32
         fileAll = fileConfig | filePattern | filePatternSetting | filePlaylist | fileSystem | fileOther
 
-    def getFileList(self, fileTypes=fileTypes.fileAll):
-        """Returns a list of all the files contained on this Pixelblaze; for Pixelblazes running firmware 
-        versions lower than 2.29/3.24, the list includes the names of optional configuration files that may 
-        or may not exist on this particular Pixelblaze, depending on its setup."""
+    def getFileList(self, fileTypes:fileTypes=fileTypes.fileAll) -> list[str]:
+        """Returns a list of all the files of a particular type stored on the Pixelblaze's filesystem.
+        
+        For Pixelblazes running firmware versions lower than 2.29/3.24 (the point at which 
+        the necessary API was introduced), the list includes the names of optional configuration 
+        files that may or may not exist on a particular Pixelblaze, depending on its setup.
+
+        Args:
+            fileTypes (fileTypes, optional): A bitmasked enumeration of the fileTypes to be listed. Defaults to fileTypes.fileAll.
+
+        Returns:
+            list[str]: A list of filenames of the requested fileType.
+        """
         fileList = []
         with requests.get(self.getUrl("list"), proxies=self.proxyDict) as rList:
             if rList.status_code == 200:
@@ -483,17 +568,31 @@ class Pixelblaze:
         fileList.sort()
         return fileList
 
-    def getFile(self, fileName):
-        """Downloads a file from this Pixelblaze using the HTTP API."""
-        # Strip any leading slash from the filename.
+    def getFile(self, fileName:str) -> bytes:
+        """Downloads a file from the Pixelblaze using the HTTP API.
+
+        Args:
+            fileName (str): The pathname (as returned from `getFileList`) of the file to be downloaded.
+
+        Returns:
+            bytes: The contents of the file.
+        """
         with requests.get(self.getUrl(fileName), proxies=self.proxyDict) as rGet:
             if rGet.status_code not in [200, 404]:
                 rGet.raise_for_status()
                 return None
             return rGet.content
 
-    def putFile(self, fileName, fileContents):
-        """Uploads a file to this Pixelblaze using the HTTP API."""
+    def putFile(self, fileName:str, fileContents:bytes) -> bool:
+        """Uploads a file to the Pixelblaze using the HTTP API.
+
+        Args:
+            fileName (str): The pathname at which to store the file.
+            fileContents (bytes): The data to store in the file.
+
+        Returns:
+            bool: True if the file was successfully stored; False otherwise.
+        """
         fileData = {'data': (fileName, fileContents)}
         with requests.post(self.getUrl("edit"), files=fileData, proxies=self.proxyDict) as rPost:
             if rPost.status_code != 200:
@@ -501,8 +600,15 @@ class Pixelblaze:
                 return False
         return True
 
-    def deleteFile(self, fileName):
-        """Deletes a file from this Pixelblaze using the HTTP API."""
+    def deleteFile(self, fileName:str) -> bool:
+        """Deletes a file from this Pixelblaze using the HTTP API.
+
+        Args:
+            fileName (str): The pathname (as returned from `getFileList`) of the file to be deleted.
+
+        Returns:
+            bool: True if the file was successfully stored; False otherwise.
+        """
         with requests.get(self.getUrl(f"delete?path={fileName}"), proxies=self.proxyDict) as rFile:
             if rFile.status_code not in [200, 404]:
                 rFile.raise_for_status()
@@ -511,21 +617,34 @@ class Pixelblaze:
 
     # --- GLOBAL functions: RENDERER STATISTICS:
 
-    def getStatistics(self):
-        """Grab one of the statistical packets that Pixelblaze sends every second."""
-        #self.setSendPreviewFrames(True)
+    def getStatistics(self) -> dict:
+        """Grab one of the statistical packets that Pixelblaze sends every second.
+
+        Returns:
+            dict: the JSON message received from the Pixelblaze.
+        """
+        self.setSendPreviewFrames(True) # Make sure the Pixelblaze will send something.
         while True:
             if not self.latestStats is None: return json.loads(self.latestStats)
             ignored = self.wsReceive(binaryMessageType=None)
 
-    def setSendPreviewFrames(self, doUpdates):
+    def setSendPreviewFrames(self, doUpdates:bool):
+        """Set whether or not the Pixelblaze sends pattern preview frames.
+
+        Args:
+            doUpdates (bool): True sends preview frames, False stops.
+        """
         assert type(doUpdates) is bool
         if doUpdates is True: response = self.messageTypes.previewFrame
         else: response = None
         self.wsSendJson({"sendUpdates": doUpdates}, expectedResponse=response)
 
-    def getPreviewFrame(self):
-        """Grab one of the preview frames that Pixelblaze sends after every render cycle."""
+    def getPreviewFrame(self) -> bytes:
+        """Grab one of the preview frames that Pixelblaze sends after every render cycle.
+
+        Returns:
+            bytes: a collection of bytes representing `pixelCount` tuples containing the (R, G, B) values for each pixel in the pattern preview.
+        """
         oldTimeout = self.ws.gettimeout()
         self.ws.settimeout(2 * self.default_recv_timeout)
         response = self.wsReceive(binaryMessageType=self.messageTypes.previewFrame)
@@ -538,27 +657,62 @@ class Pixelblaze:
     on a particular UI page. These functions will extract the property value from a 
     previously-fetched dictionary, if provided; otherwise they will fetch the settings anew."""
 
-    def getFPS(self, savedStatistics=None):
+    def getFPS(self, savedStatistics:dict=None) -> float:
+        """Return the speed (in Frames per Second) of the pattern rendering.
+
+        Args:
+            savedStatistics (dict, optional): If provided, extracts the value from the results of a previous call to 'getStatistics`; otherwise, fetches the statistics from the Pixelblaze anew.  Defaults to None.
+
+        Returns:
+            int: The pattern speed in FPS, as reported in a Pixelblaze statistics message.
+        """
         if savedStatistics is None: savedStatistics = self.getStatistics()
         return savedStatistics.get('fps')
 
-    def getUptime(self, savedStatistics=None):
+    def getUptime(self, savedStatistics:dict=None) -> int:
+        """Return the uptime (in seconds) of the Pixelblaze.
+
+        Args:
+            savedStatistics (dict, optional): If provided, extracts the value from the results of a previous call to 'getStatistics`; otherwise, fetches the statistics from the Pixelblaze anew.  Defaults to None.
+
+        Returns:
+            int: The uptime in seconds, as reported in a Pixelblaze statistics message.
+        """
         if savedStatistics is None: savedStatistics = self.getStatistics()
         return savedStatistics.get('uptime')
 
-    def getStorageUsed(self, savedStatistics=None):
+    def getStorageUsed(self, savedStatistics:dict=None) -> int:
+        """Return the amount of Flash storage used on the Pixelblaze.
+
+        Args:
+            savedStatistics (dict, optional): If provided, extracts the value from the results of a previous call to 'getStatistics`; otherwise, fetches the statistics from the Pixelblaze anew.  Defaults to None.
+
+        Returns:
+            int: The used storage in bytes, as reported in a Pixelblaze statistics message.
+        """
         if savedStatistics is None: savedStatistics = self.getStatistics()
         return savedStatistics.get('storageUsed')
 
-    def getStorageSize(self, savedStatistics=None):
+    def getStorageSize(self, savedStatistics:dict=None) -> int:
+        """Return the available Flash storage on the Pixelblaze.
+
+        Args:
+            savedStatistics (dict, optional): If provided, extracts the value from the results of a previous call to 'getStatistics`; otherwise, fetches the statistics from the Pixelblaze anew.  Defaults to None.
+
+        Returns:
+            int: The available storage in bytes, as reported in a Pixelblaze statistics message.
+        """
         if savedStatistics is None: savedStatistics = self.getStatistics()
         return savedStatistics.get('storageSize')
 
     # --- GLOBAL functions: CONTROLS (available on all tabs):
 
-    def setBrightnessSlider(self, brightness, save=False):
-        """
-        Set the value of the UI brightness slider.
+    def setBrightnessSlider(self, brightness:float, save:bool=False):
+        """Set the value of the UI brightness slider.
+
+        Args:
+            brightness (float): A floating-point value between 0.0 and 1.0.
+            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         self.wsSendJson({"brightness": self._clamp(brightness, 0, 1), "save": save}, expectedResponse=None)
 
@@ -566,9 +720,17 @@ class Pixelblaze:
     """The Pixelblaze API has functions to 'set' individual property values, 
     but can only 'get' property values as part of a JSON dictionary containing all the settings
     on a particular UI page. These functions will extract the property value from a 
-    previously-fetched dictionary, if provided; otherwise they will fetch the settings anew."""
+    previously-fetched dictionary, if provided; otherwise they will fetch the settings from the Pixelblaze anew."""
 
-    def getBrightnessSlider(self, configSettings=None):
+    def getBrightnessSlider(self, configSettings:dict=None) -> float:
+        """Get the value of the UI brightness slider.
+
+        Args:
+            configSettings (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSettings`; otherwise, fetches the configSettings from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            float: A floating-point value between 0.0 and 1.0.
+        """
         if configSettings is None: configSettings = self.getConfigSettings()
         return configSettings.get('brightness')
 
@@ -579,9 +741,23 @@ class Pixelblaze:
         ShuffleAll = 1
         Playlist = 2
 
-    def setSequencerMode(self, sequencerMode, save=False):
-        """Sets the sequencer mode to Off, ShuffleAll, or Playlist."""
+    def setSequencerMode(self, sequencerMode:sequencerModes, save:bool=False):
+        """Sets the sequencer mode to one of the available sequencerModes (Off, ShuffleAll, or Playlist).
+
+        Args:
+            sequencerMode (enum): The desired sequencer mode.
+            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+        """
         self.wsSendJson({"sequencerMode": sequencerMode, "save": save}, expectedResponse=None)
+
+    def setSequencerState(self, sequencerState:bool, save:bool=False):
+        """Set the run state of the sequencer.
+
+        Args:
+            sequencerState (bool): A boolean value determining whether or not the sequencer should run.
+            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+        """
+        self.wsSendJson({"runSequencer": sequencerState}, expectedResponse=None)
 
     # --- PATTERNS tab: SEQUENCER section: helper functions:
     """The Pixelblaze API has functions to 'set' individual property values, 
@@ -589,30 +765,67 @@ class Pixelblaze:
     on a particular UI page. These functions will extract the property value from a 
     previously-fetched dictionary, if provided; otherwise they will fetch the settings anew."""
 
-    def getSequencerMode(self, configSequencer=None):
+    def getSequencerMode(self, configSequencer:dict=None) -> sequencerModes:
+        """Gets the current sequencer mode.
+
+        Args:
+            configSequencer (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSequencer`; otherwise, fetches the configSequencer from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            sequencerModes: The sequencerMode.
+        """
         if configSequencer is None: configSequencer = self.getConfigSequencer()
         return configSequencer.get('sequencerMode')
 
+    def getSequencerState(self, configSequencer:dict=None) -> bool:
+        """Gets the current sequencer run state.
+
+        Args:
+            configSequencer (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSequencer`; otherwise, fetches the configSequencer from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            bool: True if the sequencer is running; False otherwise.
+        """
+        if configSequencer is None: configSequencer = self.getConfigSequencer()
+        return configSequencer.get('runSequencer')
+
     # --- PATTERNS tab: SEQUENCER section: SHUFFLE ALL mode
 
-    def playSequencer(self):
-        """Mimics the 'Play' button."""
-        self.wsSendJson({"runSequencer": True}, expectedResponse=None)
+    def playSequencer(self, save:bool=False):
+        """Mimics the 'Play' button in the UI. Starts the pattern sequencer,
+        the consequences of which will vary depending upon the sequencerMode.
 
-    def pauseSequencer(self):
-        """Mimics the 'Pause' button."""
-        self.wsSendJson({"runSequencer": False}, expectedResponse=None)
-
-    def nextSequencer(self):
-        """Mimics the 'Next' button."""
-        self.wsSendJson({"nextProgram": True}, expectedResponse=None)
-
-    def setSequencerShuffleTime(self, nMillis):
+        Args:
+            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
-        Sets number of milliseconds the Pixelblaze's sequencer will run each pattern
-        before switching to the next.
+        self.setSequencerState(True, save)
+
+    def pauseSequencer(self, save:bool=False):
+        """Mimics the 'Pause' button in the UI.  Pauses the pattern sequencer, 
+        without changing the current position in the shuffle or playlist. 
+        Has no effect if the sequencer is not currently running.
+
+        Args:
+            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
-        self.wsSendJson({"sequenceTimer": nMillis}, expectedResponse=None)
+        self.setSequencerState(False, save)
+
+    def nextSequencer(self, save:bool=False):
+        """Mimics the 'Next' button in the UI.  If the sequencerMode is ShuffleAll or Playlist, advances the pattern sequencer to the next pattern.
+
+        Args:
+            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+        """
+        self.wsSendJson({"nextProgram": True, "save": save}, expectedResponse=None)
+
+    def setSequencerShuffleTime(self, nMillis:int, save:bool=False):
+        """Sets the time the Pixelblaze's sequencer will run each pattern before switching to the next.
+
+        Args:
+            nMillis (int): The number of milliseconds to play each pattern.
+            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+        """
+        self.wsSendJson({"sequenceTimer": nMillis, "save": save}, expectedResponse=None)
 
     # --- PATTERNS tab: SEQUENCER section: helper functions:
     """The Pixelblaze API has functions to 'set' individual property values, 
@@ -620,88 +833,105 @@ class Pixelblaze:
     on a particular UI page. These functions will extract the property value from a 
     previously-fetched dictionary, if provided; otherwise they will fetch the settings anew."""
 
-    def getSequencerShuffleTime(self, configSequencer=None):
+    def getSequencerShuffleTime(self, configSequencer:dict=None) -> int:
+        """Gets the time the Pixelblaze's sequencer will run each pattern before switching to the next.
+
+        Args:
+            configSequencer (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSequencer`; otherwise, fetches the configSequencer from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            int: The number of milliseconds to play each pattern.
+        """
         if configSequencer is None: configSequencer = self.getConfigSequencer()
         return configSequencer.get("ms")
 
     # --- PATTERNS tab: SEQUENCER section: PLAYLIST mode
 
-    def getSequencerPlaylist(self, playlistId="_defaultplaylist_"):
-        """This function fetches the named playlist."""
-        return json.loads(self.wsSendJson({"getPlaylist": playlistId}, expectedResponse='{"playlist":'))
+    def getSequencerPlaylist(self, playlistId:str="_defaultplaylist_"):
+        """Fetches the specified playlist.  At the moment, only the default playlist is supported by the Pixelblaze.
 
-    def setSequencerPlaylist(self, playlistContents, playlistId="_defaultplaylist_"):
-        """This function replaces the entire contents of the named playlist."""
+        Args:
+            playlistId (str, optional): The name of the playlist (for future enhancement; currently only '_defaultplaylist_' is supported). Defaults to "_defaultplaylist_".
+
+        Returns:
+            dict: The contents of the playlist.
+        """
+        return json.loads(self.wsSendJson({"getPlaylist": playlistId}, expectedResponse="playlist"))
+
+    def setSequencerPlaylist(self, playlistContents:dict, playlistId:str="_defaultplaylist_"):
+        """Replaces the entire contents of the specified playlist.  At the moment, only the default playlist is supported by the Pixelblaze.
+
+        Args:
+            playlistContents (dict): The new playlist contents.
+            playlistId (str, optional): The name of the playlist (for future enhancement; currently only '_defaultplaylist_' is supported). Defaults to "_defaultplaylist_".
+        """
         self.latestSequencer = None # clear cache to force refresh
         ignored = self.wsSendJson(playlistContents, expectedResponse=None)
 
-    def addToSequencerPlaylist(self, patternId, duration, playlistContents=None, playlistId="_defaultplaylist_"):
-        """This function fetches the named playlist and appends a new item to it."""
-        if playlistContents is None: playlistContents = self.getSequencerPlaylist(playlistId)
+    def addToSequencerPlaylist(self, patternId:str, duration:int, playlistContents:dict) -> dict:
+        """Appends a new entry to the specified playlist.
+
+        Args:
+            patternId (str): The patternId of the pattern to be played.
+            duration (int): The number of milliseconds to play the pattern.
+            playlistContents (dict): The results of a previous call to `getSequencerPlaylist`.
+
+        Returns:
+            dict: The updated playlist, which can then be sent back to the Pixelblaze with `setSequencerPlaylist`.
+        """
         playlistContents.get('playlist').get('items').append({'id': patternId, 'ms': duration})
-        return self.setSequencerPlaylist(playlistContents, playlistId)
-
-    # --- PATTERNS tab: SEQUENCER section: convenience functions
-
-    def startSequencer(self, mode=sequencerModes.ShuffleAll):
-        """
-        Enable and start the Pixelblaze's internal sequencer. The mode parameters
-        can be 1 - shuffle all patterns, or 2 - playlist mode.  The playlist
-        must be configured through the Pixelblaze's web UI.
-        """
-        self.wsSendJson({"sequencerMode": mode, "runSequencer": True}, expectedResponse=None)
-
-    def stopSequencer(self):
-        """Stop and disable the Pixelblaze's internal sequencer"""
-        self.setSequencerMode(self.sequencerModes.Off) 
-        self.wsSendJson({"runSequencer": False}, expectedResponse=None)
-
-    def pauseSequencer(self):
-        """
-        Temporarily pause the Pixelblaze's internal sequencer, without
-        losing your place in the shuffle or playlist. Call "playSequencer"
-        to restart.  Has no effect if the sequencer is not currently running.
-        """
-        self.wsSendJson({"runSequencer": False}, expectedResponse=None)
-
-    def playSequencer(self):
-        """
-        Start the Pixelblaze's internal sequencer in the current mode,
-        at the current place in the shuffle or playlist.  Compliment to
-        "pauseSequencer".  Will not start the sequencer if it has not
-        been enabled via "startSequencer" or the Web UI.
-        """
-        self.wsSendJson({"runSequencer": True}, expectedResponse=None)
+        return playlistContents
 
     # --- PATTERNS tab: SAVED PATTERNS section
 
-    def getPatternList(self, forceRefresh=False):
-        """
-        Returns a dictionary containing the unique ID and the text name of all
-        saved patterns on the Pixelblaze. Normally reads from the cached pattern
-        list, which is refreshed every 10 minutes by default.
+    def getPatternList(self, forceRefresh:bool=False) -> dict:
+        """Returns a list of all the patterns saved on the Pixelblaze.
 
-        To force a cache refresh, set the optional "refresh" parameter to True.
+        Normally reads from the cached pattern list, which is refreshed every 10 minutes by default. To change the cache refresh interval, call setCacheRefreshTime(seconds).
 
-        To change the cache refresh interval, call setCacheRefreshTime(seconds).
+        Args:
+            forceRefresh (bool, optional): Forces a refresh of the cached patternList. Defaults to False.
+
+        Returns:
+            dict: A dictionary of the patterns stored on the Pixelblaze, where the patternId is the key and the patternName is the value.
         """
         if forceRefresh is True or ((self._time_in_millis() - self.cacheRefreshTime) > self.cacheRefreshInterval):
-            self._refreshPatternCache()
+            # Update the patternList cache.
+            newPatternCache = dict()
+            oldTimeout = self.ws.gettimeout()
+            self.ws.settimeout(3 * self.default_recv_timeout)
+            response = self.wsSendJson({"listPrograms": True}, expectedResponse=self.messageTypes.getProgramList)
+            self.ws.settimeout(oldTimeout)
+            if response is not None: 
+                for pattern in [m.split("\t") for m in response.decode("utf-8").split("\n")]:
+                    if len(pattern) == 2: 
+                        newPatternCache[pattern[0]] = pattern[1]
+                self.patternCache = newPatternCache        
             self.cacheRefreshTime = self._time_in_millis()
+
+        # Return the cached list.
         return self.patternCache
 
-    def setActivePattern(self, patternId, save=False):
+    def setActivePattern(self, patternId:str, save:bool=False):
+        """Sets the active pattern.
+
+        Args:
+            patternId (str): The patternId of the desired pattern.
+            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+        """
         """Functionality changed."""
         self.__printDeprecationMessage(self.deprecationReasons.functionalityChanged, "setActivePattern(name_or_id)", "setActivePattern(id)")
-        """
-        Sets the active pattern by pattern ID.  
-        It does not validate the input id, or determine if the pattern is available on the Pixelblaze.
-        """
-        self.wsSendJson({"activeProgramId": patternId, "save": save}, expectedResponse='{"activeProgram":')
+        self.wsSendJson({"activeProgramId": patternId, "save": save}, expectedResponse="activeProgram")
 
-    def getPatternAsEpe(self, patternId):
-        """Convert a stored pattern into an exportable, portable JSON format 
-        (which then needs to be saved by the caller)."""
+    def getPatternAsEpe(self, patternId:str) -> str:
+        """Convert a stored pattern into an exportable, portable JSON format (which then needs to be saved by the caller).
+
+        Args:
+            patternId (str): The patternId of the desired pattern.
+
+        Returns:
+            str: The exported pattern as a JSON dictionary.
+        """
         # Request the pattern elements from the Pixelblaze and combine them into an EPE.
         epe = {
             'name': self.getPatternList(refresh=True).get(patternId, "Unknown Pattern"),
@@ -711,151 +941,197 @@ class Pixelblaze:
         }
         return json.dumps(epe, indent=2)
 
-    def deletePattern(self, patternId):
-        """Delete a pattern saved on the Pixelblaze."""
+    def deletePattern(self, patternId:str):
+        """Delete a pattern saved on the Pixelblaze.
+
+        Args:
+            patternId (str): The patternId of the desired pattern.
+        """
         self.wsSendJson({"deleteProgram": patternId}, expectedResponse=None)
 
-    def getPreviewImage(self, patternId):
+    def getPreviewImage(self, patternId:str) -> bytes:
+        """Gets the preview image (a JPEG with 150 iterations of the pattern) saved within a pattern.
+
+        Args:
+            patternId (str): The patternId of the desired pattern.
+
+        Returns:
+            bytes: A JPEG image in which each column represents a particular LED and each row represents an iteration of the pattern.
         """
-        Returns the preview image (a JPEG with 150 iterations of the pattern) saved within the pattern."""
         return self.wsSendJson({"getPreviewImg": patternId}, expectedResponse=self.messageTypes.previewImage)
 
-    def getActiveVariables(self):
-        """
-        Returns JSON object containing all vars exported from the active pattern.
-        """
-        return json.loads(self.wsSendJson({"getVars": True}, expectedResponse='{"vars":'))
+    def getActiveVariables(self) -> dict:
+        """Gets the names and values of all variables exported by the current pattern.
 
-    def setActiveVariables(self, jsonVariables):
+        Returns:
+            dict: A dictionary containing all the variables exported by the active pattern, with variableName as the key and variableValue as the value.
         """
-        Sets pattern variables contained in the json_vars (JSON object) argument.
-        Does not check to see if the variables are exported by the current active pattern.
+        return json.loads(self.wsSendJson({"getVars": True}, expectedResponse="vars"))
+
+    def setActiveVariables(self, dictVariables:dict):
+        """Sets the values of one or more variables exported by the current pattern.
+
+        Variables not present in the current pattern are ignored.
+
+        Args:
+            dict: A dictionary containing the variables to be set, with variableName as the key and variableValue as the value.
         """
-        self.wsSendJson({"setVars": jsonVariables})
+        self.wsSendJson({"setVars": dictVariables}, expectedResponse=None)
+
+    def setActiveControls(self, dictControls:dict, save:bool=False):
+        """Sets the value of one or more UI controls exported from the active pattern.
+
+        Args:
+            dictControls (dict): A dictionary containing the values to be set, with controlName as the key and controlValue as the value.
+            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+        """
+        self.wsSendJson({"setControls": json.dumps(dictControls), "save": save}, expectedResponse="ack")
 
     # --- PATTERNS tab: SAVED PATTERNS section: convenience functions
+    """The Pixelblaze API has functions to 'set' individual property values, 
+    but can only 'get' property values as part of a JSON dictionary containing all the settings
+    on a particular UI page. These functions will extract the property value from a 
+    previously-fetched dictionary, if provided; otherwise they will fetch the settings anew."""
 
-    def setCacheRefreshTime(self,seconds):
-        """
-        Set the interval, in seconds, at which the pattern cache is cleared and
-        a new pattern list is loaded from the Pixelblaze.  Default is 600 (10 minutes)
-        """
-        # a million seconds is about 277 hours or about 11.5 days.  Probably long enough.
-        self.cacheRefreshInterval = 1000 * self._clamp(seconds, 0, 1000000)
+    def getActivePattern(self, configSequencer:dict=None) -> str:
+        """Returns the ID of the pattern currently running on the Pixelblaze.
 
-    def _refreshPatternCache(self):
-        """
-        Reads a dictionary containing the unique ID and the text name of all
-        saved patterns on the Pixelblaze into the pattern cache.
-        """
-        newPatternCache = dict()
-        oldTimeout = self.ws.gettimeout()
-        self.ws.settimeout(3 * self.default_recv_timeout)
-        response = self.wsSendJson({"listPrograms": True}, expectedResponse=self.messageTypes.getProgramList)
-        self.ws.settimeout(oldTimeout)
-        if response is not None: 
-            for pattern in [m.split("\t") for m in response.decode("utf-8").split("\n")]:
-                if len(pattern) == 2: 
-                    newPatternCache[pattern[0]] = pattern[1]
-            self.patternCache = newPatternCache
+        Args:
+            configSequencer (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSequencer`; otherwise, fetches the configSequencer from the Pixelblaze anew. Defaults to None.
 
-    def getActivePattern(self, configSequencer=None):
-        """
-        Returns the ID of the pattern currently running on the Pixelblaze (if available).  
-        Otherwise returns an empty dictionary object.
-        WHY AN EMPTY DICTIONARY OBJECT, when the activeID is a string?
+        Returns:
+            str: The patternId of the current pattern, if any; otherwise an empty string.
         """
         if configSequencer is None: configSequencer = self.getConfigSequencer()
-        return configSequencer.get('activeProgram', {}).get('activeProgramId', {})
+        return configSequencer.get('activeProgram').get('activeProgramId', '')
 
-    def getActiveControls(self, configSequencer=None):
-        """
-        Returns a JSON object containing the state of all the specified
-        pattern's UI controls. Returns empty object if the pattern has no 
-        UI controls, None if the pattern id is not valid or is not available.
-        (Note that getActivePattern() can return None on a freshly started
-        Pixelblaze until the pattern has been explicitly set.)
+    def getActiveControls(self, configSequencer:dict=None) -> dict:
+        """Returns the collection of controls for the pattern currently running on the Pixelblaze.
+
+        If there are no controls or no pattern has been set, returns an empty dictionary.
+
+        Args:
+            configSequencer (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSequencer`; otherwise, fetches the configSequencer from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            dict: A dictionary containing the control names and values, with controlName as the key and controlValue as the value.
         """
         if configSequencer is None: configSequencer = self.getConfigSequencer()
         return configSequencer.get('activeProgram', {}).get('controls', {})
 
-    def setActiveControls(self, jsonControls, save=False):
-        """
-        Sets UI controls in the active pattern to values contained in
-        the JSON object in argument json_ctl. To reduce wear on
-        Pixelblaze's flash memory, the values are not saved by default.
-        """
-        self.wsSendJson({"setControls": json.dumps(jsonControls), "save": save}, expectedResponse='{"ack":')
-
     # --- EDIT tab:
 
-    def getPatternControls(self, patternId):
+    def getPatternControls(self, patternId: str) -> dict:
+        """Returns the name and value of any UI controls exported by the specified pattern.
+
+        Args:
+            patternId (str): The patternId of the pattern.
+
+        Returns:
+            dict: A dictionary containing the control names and values, with controlName as the key and controlValue as the value.
         """
-        Returns a JSON object containing the state of all the specified
-        pattern's UI controls. Returns empty object if the pattern has no 
-        UI controls, None if the pattern id is not valid or is not available.
-        (Note that getActivePattern() can return None on a freshly started
-        Pixelblaze until the pattern has been explicitly set.)
-        """
-        response = self.wsSendJson({"getControls": patternId}, expectedResponse='{"controls":')
+        response = self.wsSendJson({"getControls": patternId}, expectedResponse="controls")
         if not response is None: return json.loads(response)
         return None
 
-    def getPatternSourceCode(self, patternId):
-        """Gets the sourceCode of a saved pattern from the Pixelblaze.  Can be used 
-        to mimic the effects of the webUI's "Export" function. """
+    def getPatternSourceCode(self, patternId:str) -> str:
+        """Gets the sourceCode of a saved pattern from the Pixelblaze.
+
+        Args:
+            patternId (str): The patternId of the desired pattern.
+
+        Returns:
+            str: A string representation of a JSON dictionary containing the pattern source code.
+        """
         sources = self.wsSendJson({"getSources":patternId}, expectedResponse=self.messageTypes.getSourceCode)
         if sources is not None: return LZstring.decompress(sources)
         return None
 
-    def sendPatternToRenderer(self, bytecode, controls={}):
-        """Sends a blob of bytecode and a JSON dictionary of UI controls to the Renderer.
-        Mimics the actions of the webUI code editor.  Can also be used to change the displayed
-        pattern (including to a pattern not saved on the Pixelblaze's filesystem!) without 
-        actually calling setActivePattern. """
-        self.wsSendJson({"pause":True,"setCode":{ "size": len(bytecode)}}, expectedResponse='{"ack":')
-        self.wsSendBinary(self.messageTypes.putByteCode, bytecode, expectedResponse='{"ack":')
-        self.wsSendJson({"setControls": controls}, expectedResponse='{"ack":')
-        self.wsSendJson({"pause":False}, expectedResponse='{"ack":')
+    def sendPatternToRenderer(self, bytecode:bytes, controls:dict={}):
+        """Sends a blob of bytecode and a JSON dictionary of UI controls to the Renderer. Mimics the actions of the webUI code editor.
 
-    def savePattern(self, previewImage, sourceCode, byteCode):
-        """Saves the components of a pattern to the Pixelblaze filesystem. 
-        Mimics the effects of the 'Save' button.  If you don't know how to
-        generate the previewImage and byteCode, you probably don't want to do this."""
-        self.wsSendBinary(self.messageTypes.previewImage, previewImage, expectedResponse='{"ack":')
-        self.wsSendBinary(self.messageTypes.putSourceCode, LZstring.compress(sourceCode), expectedResponse='{"ack":')
-        self.wsSendBinary(self.messageTypes.putByteCode, byteCode, expectedResponse='{"ack":')
+        Args:
+            bytecode (bytes): A valid blob of bytecode as generated by the Editor tab in the Pixelblaze webUI.
+            controls (dict, optional): a dictionary of UI controls exported by the pattern, with controlName as the key and controlValue as the value. Defaults to {}.
+        """
+        
+        self.wsSendJson({"pause":True,"setCode":{ "size": len(bytecode)}}, expectedResponse="ack")
+        self.wsSendBinary(self.messageTypes.putByteCode, bytecode, expectedResponse="ack")
+        self.wsSendJson({"setControls": controls}, expectedResponse="ack")
+        self.wsSendJson({"pause":False}, expectedResponse="ack")
+
+    def savePattern(self, previewImage:bytes, sourceCode:str, byteCode:bytes):
+        """Saves a new pattern to the Pixelblaze filesystem.  Mimics the effects of the 'Save' button.  
+        
+        If you don't know how to generate the previewImage and byteCode components, you don't want to do this.
+
+        Args:
+            previewImage (bytes): A JPEG image in which each column represents a particular LED and each row represents an iteration of the pattern.
+            sourceCode (str): A string representation of a JSON dictionary containing the pattern source code.
+            byteCode (bytes): A valid blob of bytecode as generated by the Editor tab in the Pixelblaze webUI.
+        """
+        self.wsSendBinary(self.messageTypes.previewImage, previewImage, expectedResponse="ack")
+        self.wsSendBinary(self.messageTypes.putSourceCode, LZstring.compress(sourceCode), expectedResponse="ack")
+        self.wsSendBinary(self.messageTypes.putByteCode, byteCode, expectedResponse="ack")
 
     # --- MAPPER tab: Pixelmap settings
 
-    def getMapFunction(self):
+    def getMapFunction(self) -> str:
+        """Returns the mapFunction text used to populate the Mapper tab in the Pixelblaze UI.
+
+        Returns:
+            str: The text of the mapFunction.
+        """
         return self.getFile("/pixelmap.txt")
 
-    def setMapFunction(self, mapFunction):
-        # TBD:  This saves the mapFunction text into the file backing the map editor, which is unrelated
-        # to the actual mapData which is saved separately (see setMapData function below).  Using an 
-        # embeddable Javscript intepreter like dukpy (https://github.com/amol-/dukpy), it would
-        # be possible to execute the mapFunction and generate the binary mapData which is what the
-        # Pixelblaze editor does whenever the map function is changed.
+    def setMapFunction(self, mapFunction:str) -> bool:
+        """Sets the mapFunction text used to populate the Mapper tab in the Pixelblaze UI.
+        
+        Note that this is does not change the mapData used by the Pixelblaze; the Mapper tab in the Pixelblaze UI compiles this text to produce binary mapData which is saved separately (see the `setMapData` function).
+
+        Args:
+            mapFunction (str): The text of the mapFunction.
+
+        Returns:
+            bool: True if the function text was successfully saved; otherwise False.
+        """
+        # TBD:  Using an embeddable Javscript intepreter like dukpy (https://github.com/amol-/dukpy) it would 
+        # be possible to execute the mapFunction text and generate the binary mapData, which is what the Pixelblaze 
+        # map editor does whenever the map function is changed.
         return self.putFile('/pixelmap.txt', mapFunction)
 
-    def getMapData(self):
-        """Gets the binary representation of the pixelMap entered on the 'Mapper' tab."""
+    def getMapData(self) -> bytes:
+        """Gets the binary representation of the pixelMap entered on the 'Mapper' tab.
+
+        Returns:
+            bytes: The binary mapData as generated by the Mapper tab of the Pixelblaze webUI.
+        """
         return self.getFile('/pixelmap.dat')
 
-    def setMapData(self, mapData, save=True):
+    def setMapData(self, mapData:bytes, save:bool=True):
+        """Sets the binary mapData used by the Pixelblaze.
+
+        Args:
+            mapData (bytes): a blob of binary mapData as generated by the Mapper tab of the Pixelblaze webUI.
+            save (bool, optional): A boolean indicating whether the mapData should be saved to Flash. Defaults to True.
+        """
         # Send the mapData...
-        self.wsSendBinary(self.messageTypes.putPixelMap, mapData, expectedResponse='{"ack":')
+        self.wsSendBinary(self.messageTypes.putPixelMap, mapData, expectedResponse="ack")
         # ...and make it permanent (same as pressing "Save" in the map editor).
         if save: self.wsSendJson({"savePixelMap":True}, expectedResponse=None)
 
     # --- SETTINGS menu
 
-    def getConfigSettings(self):
-        """Returns a JSON dictionary containing the configuration of the Pixelblaze 
-        settings, render engine, and the outputExpander (if it exists)."""
-        # The configuration comes in the form of three packets; two text and one binary.
-        # The second and third packets can come out of order so we'll have to be flexible.
+    def getConfigSettings(self) -> dict:
+        """Returns the configuration as defined on the Settings tab of the Pixelblaze.
+
+        Returns:
+            dict: A dictionary containing the configuration settings, with settingName as the key and settingValue as the value.
+        """
+        # In response to this command, the Pixelblaze actually returns three separate messages representing the 
+        # configuration of the Settings page, the configuration of the Sequencer and and the configuration of the outputExpander (if it exists).
+        # The Settings configuration is a JSON message and always comes first; the Sequencer configuration (a JSON message)
+        # and the OutputExpander configuration (a binary message) can come in either order so we have to be flexible in what we accept.
         self.latestSequencer = None  # clear cache to force refresh
         self.latestExpander = None  # clear cache to force refresh
 
@@ -877,32 +1153,43 @@ class Pixelblaze:
         # Now that we've got them all, return the settings.
         return settings
 
-    def getConfigSequencer(self):
-        """Retrieve the most recent Sequencer state."""
+    def getConfigSequencer(self) -> dict:
+        """Retrieves the Sequencer state.
+
+        Returns:
+            dict: The sequencer configuration as a dictionary, with settingName as the key and settingValue as the value.
+        """
         self.latestSequencer = None
         while True:
             if self.latestSequencer is None: ignored = self.getConfigSettings()
             return json.loads(self.latestSequencer)
             
 
-    def getConfigExpander(self):
-        """Retrieve any Expander configuration block that came along with the Settings."""
+    def getConfigExpander(self) -> dict:
+        """Retrieves the OutputExpander configuration.
+
+        Returns:
+            dict: The OutputExpander configuration as a dictionary, with settingName as the key and settingValue as the value.
+        """
         while True:
             if not self.latestExpander is None: return self.latestExpander
             ignored = self.getConfigSettings()
 
-    def __decodeExpanderData(self, data):
-        # We can't store bytes into JSON so we could encode it...
-        # return base64.b64encode(data).decode('utf-8')
-        # ...but it might be more user-friendly to convert it into something readable.
+    def __decodeExpanderData(self, data:bytes) -> dict:
+        """An internal function to convert the OutputExpander from its native binary format into a human-readable JSON representation.
 
-        # Check the magic number.
+        Args:
+            data (bytes): The binary OutputExpander blob received from the Pixelblaze.
+
+        Returns:
+            dict: A human-readable dictionary of the configuration items.
+        """
+        # Check that we support the version number.
         versionNumber = data[0]
-        #versionNumber = struct.unpack('<B', binaryData)[0]
         if versionNumber != 5:
             return {'expanders': [], 'error': f"expander data has incorrect magic number (expected 5, received {versionNumber})"}
         
-        # Parse the rest of the file.
+        # Parse the rest of the data.
         binaryData = data[1:]
         binarySize = len(binaryData)
         if binarySize % 96 != 0:
@@ -933,19 +1220,29 @@ class Pixelblaze:
             boards['expanders'][board]['rows'][rowNumber] = [ ]
             if ledType == 1 or ledType == 3:
                 boards['expanders'][board]['rows'][rowNumber].append( { 'channel': channel, 'type': ledType, 'startIndex': startIndex, 'count': pixelCount, 'options': colorOrders[colorOrder], 'dataSpeed': dataSpeed } )
-                #boards['boards'][board]['rows'][rowNumber].append( { 'channel': channel, 'type': ledTypes[ledType], 'startIndex': startIndex, 'count': pixelCount, 'options': colorOrders[colorOrder], 'dataSpeed': dataSpeed } )
             else:
                 boards['expanders'][board]['rows'][rowNumber].append( { 'channel': channel, 'type': ledType } )
-                #boards['boards'][board]['rows'][rowNumber].append( { 'channel': channel, 'type': ledTypes[ledType] } )
 
-        return boards #json.dumps(boards, indent=2)
+        # Return the finished configuration.
+        return boards
 
     # --- SETTINGS menu: CONTROLLER section: NAME settings
 
-    def setDeviceName(self, name):
+    def setDeviceName(self, name:str):
+        """Sets the device name of the Pixelblaze.
+
+        Args:
+            name (str): The human-readable name of the Pixelblaze.
+        """
         self.wsSendJson({"name":name}, expectedResponse=None)
 
-    def setDiscovery(self, enableDiscovery, timezoneName=None):
+    def setDiscovery(self, enableDiscovery:bool, timezoneName:str=None):
+        """Sets whether this Pixelblaze announces its presence to (and gets a clocktime reference from) the Electromage Discovery Service.
+
+        Args:
+            enableDiscovery (bool): A boolean controlling whether or not this Pixelblaze announces itself to the Electromage Discovery Service.
+            timezoneName (str, optional): If present, a Unix tzstring specifying how to adjust the clocktime reference received from the Electromage Discovery Service. Defaults to None.
+        """
         if timezoneName is not None: 
             # Validate the timezone name.
             if not timezoneName in pytz.all_timezones: 
@@ -953,25 +1250,46 @@ class Pixelblaze:
                 return
         self.wsSendJson({"discoveryEnable": enableDiscovery, "timezone": timezoneName}, expectedResponse=None)
 
-    def setTimezone(self, timezoneName):
-        if timezoneName is not None: 
+    def setTimezone(self, timezoneName:str):
+        """Sets the Pixelblaze's timezone, which specifies how to adjust the clocktime reference provided by the Electromage Discovery Service.
+
+        To clear the timezone, pass an empty string.
+
+        Args:
+            timezoneName (str): A Unix tzstring specifying how to adjust the clocktime reference provided by the Electromage Discovery Service.
+        """
+        if len(timezoneName) > 0:
             # Validate the timezone name.
-            if not timezoneName in pytz.all_timezones: 
-                print(f"setDiscovery: unrecognized timezone {timezoneName}")
-                return
+            if not timezoneName in pytz.all_timezones: raise ValueError(f"setDiscovery: unrecognized timezone {timezoneName}")
         self.wsSendJson({"timezone": timezoneName}, expectedResponse=None)
 
-    def setAutoOffEnable(self, boolValue, save=False):
+    def setAutoOffEnable(self, boolValue:bool, save:bool=False):
+        """Enables or disables the Pixelblaze's auto-Off scheduler.
+
+        Args:
+            boolValue (bool): A boolean indicating whether the auto-Off scheduler should be used.
+            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+        """
         self.wsSendJson({"autoOffEnable": boolValue, "save": save}, expectedResponse=None)
 
-    def setAutoOffStart(self, timeValue, save=False):
-        if type(timeValue) is time:
-            timeValue = timeValue.strftime('%H:%M')
+    def setAutoOffStart(self, timeValue:str, save=False):
+        """Sets the time at which the Pixelblaze will turn off the pattern.
+
+        Args:
+            timeValue (str): A Unix time string in "HH:MM" format.
+            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+        """
+        #if type(timeValue) is time: timeValue = timeValue.strftime('%H:%M')
         self.wsSendJson({"autoOffStart": timeValue, "save": save}, expectedResponse=None)
 
-    def setAutoOffEnd(self, timeValue, save=False):
-        if type(timeValue) is time:
-            timeValue = timeValue.strftime('%H:%M')
+    def setAutoOffEnd(self, timeValue:str, save=False):
+        """Sets the time at which the Pixelblaze will turn on the pattern.
+
+        Args:
+            timeValue (str): A Unix time string in "HH:MM" format.
+            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+        """
+        #if type(timeValue) is time: timeValue = timeValue.strftime('%H:%M')
         self.wsSendJson({"autoOffEnd": timeValue, "save": save}, expectedResponse=None)
 
     # --- SETTINGS menu: CONTROLLER section: NAME settings: helper functions:
@@ -980,63 +1298,115 @@ class Pixelblaze:
     on a particular UI page. These functions will extract the property value from a 
     previously-fetched dictionary, if provided; otherwise they will fetch the settings anew."""
 
-    def getDeviceName(self, configSettings=None):
+    def getDeviceName(self, configSettings:dict=None) -> str:
+        """Returns the user-friendly name of the Pixelblaze.
+
+        Args:
+            configSettings (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSettings`; otherwise, fetches the configSettings from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            str: The user-friendly name of the Pixelblaze.
+        """
         if configSettings is None: configSettings = self.getConfigSettings()
         return configSettings.get('name')
 
-    def getDiscovery(self, configSettings=None):
+    def getDiscovery(self, configSettings:dict=None) -> bool:
+        """
+        Returns a boolean signifying whether the Pixelblaze announces itself to the Electromage Discovery Service.
+
+        Args:
+            configSettings (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSettings`; otherwise, fetches the configSettings from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            bool: A boolean signifying whether the Pixelblaze announces itself to the Electromage Discovery Service.
+        """
         if configSettings is None: configSettings = self.getConfigSettings()
         return configSettings.get('discoveryEnable')
 
-    def getTimezone(self, configSettings=None):
+    def getTimezone(self, configSettings:dict=None) -> str:
+        """Returns the timezone, if any, for the Pixelblaze.
+
+        Args:
+            configSettings (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSettings`; otherwise, fetches the configSettings from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            str: A standard Unix tzstring.
+        """
         if configSettings is None: configSettings = self.getConfigSettings()
         return configSettings.get('timezone')
 
-    def getAutoOffEnable(self, configSettings=None):
+    def getAutoOffEnable(self, configSettings:dict=None) -> bool:
+        """Returns whether the auto-Off timer is enabled.
+
+        Args:
+            configSettings (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSettings`; otherwise, fetches the configSettings from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            bool: A boolean indicating whether the auto-Off timer is enabled.
+        """
         if configSettings is None: configSettings = self.getConfigSettings()
         return configSettings.get('autoOffEnable')
 
-    def getAutoOffStart(self, configSettings=None):
+    def getAutoOffStart(self, configSettings:dict=None) -> str:
+        """Returns the time, if any, at which the Pixelblaze will turn off the pattern when the auto-Off timer is enabled.
+
+        Args:
+            configSettings (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSettings`; otherwise, fetches the configSettings from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            str: A Unix time string in "HH:MM" format.
+        """
         if configSettings is None: configSettings = self.getConfigSettings()
         return configSettings.get('autoOffStart')
 
-    def getAutoOffEnd(self, configSettings=None):
+    def getAutoOffEnd(self, configSettings:dict=None) -> str:
+        """Returns the time, if any, at which the Pixelblaze will turn on the pattern when the auto-Off timer is enabled.
+
+        Args:
+            configSettings (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSettings`; otherwise, fetches the configSettings from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            str: A Unix time string in "HH:MM" format.
+        """
         if configSettings is None: configSettings = self.getConfigSettings()
         return configSettings.get('autoOffEnd')
 
     # --- SETTINGS menu: CONTROLLER section: LED settings
 
-    def setBrightnessLimit(self, maxBrightness, save=False):
-        """
-        Set the Pixelblaze's global brightness.  Valid range is 0-100 
-        (yes, it's inconsistent with the 'brightness' settings).
+    def setBrightnessLimit(self, maxBrightness:int, save:bool=False):
+        """Sets the Pixelblaze's global brightness limit.
 
-        The optional save parameter controls whether or not the
-        new brightness value is saved. By default, save is False
-        to reduce wear on the Pixelblaze's flash memory, so values 
-        set with this method will not persist through reboots.
+        Args:
+            maxBrightness (int): The maximum brightness, expressed as a percent value between 0 and 100 (yes, it's inconsistent with the 'brightness' settings).
+            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         self.wsSendJson({"maxBrightness": self._clamp(maxBrightness, 0, 100), "save": save}, expectedResponse=None)
 
     class ledTypes(IntEnum):
         noLeds = 0
         APA102 = 1
-        SK9822 = 1                  #synonym
-        DotStar = 1                 #synonym
-        unbufferedWS2812 = 2        #v2
-        unbufferedSK6822 = 2        #v2 synonym
-        unbufferedNeoPixel = 2      #v2 synonym
-        WS2812 = 2                  #v3
-        SK6822 = 2                  #v3 synonym
-        NeoPixel = 2                #v3 synonym
+        SK9822 = 1                  #synonym for APA102
+        DotStar = 1                 #synonym for APA102
+        unbufferedWS2812 = 2        #v2 type
+        unbufferedSK6822 = 2        #v2 synonym for unbufferedWS2812
+        unbufferedNeoPixel = 2      #v2 synonym for unbufferedWS2812
+        WS2812 = 2                  #v3 type
+        SK6822 = 2                  #v3 synonym for WS2812
+        NeoPixel = 2                #v3 synonym for WS2812
         WS2801 = 3
         bufferedWS2812 = 4          #v2 only
-        bufferedSK6822 = 4          #v2 synonym
-        bufferedNeoPixel = 4        #v2 synonym
+        bufferedSK6822 = 4          #v2 synonym for bufferedWS2812
+        bufferedNeoPixel = 4        #v2 synonym for bufferedWS2812
         OutputExpander = 5
 
-    def setLedType(self, ledType, dataSpeed=None, save=False):
-        """Defines the type of LEDs connected to the Pixelblaze."""
+    def setLedType(self, ledType:ledTypes, dataSpeed:int=None, save:bool=False):
+        """Defines the type of LEDs connected to the Pixelblaze.
+
+        Args:
+            ledType (ledTypes): The type of LEDs connected to the Pixelblaze.
+            dataSpeed (int, optional): If provided, sets a custom data speed for communication with the LEDs; otherwise the defaults from the webUI are used. Defaults to None.
+            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+        """
         assert type(ledType) is self.ledTypes
         # If no dataSpeed was specified, default to what the v3 UI sends.
         if dataSpeed is None:
@@ -1049,26 +1419,27 @@ class Pixelblaze:
 
         self.wsSendJson({"ledType": ledType, "dataSpeed": dataSpeed, "save": save}, expectedResponse=None)
 
-    def setPixelCount(self, nPixels, save=False):
+    def setPixelCount(self, nPixels:int, save:bool=False):
+        """Sets the number of LEDs attached to the Pixelblaze. 
+        
+        Note that changing the number of pixels does not recalculate the pixelMap.
+
+        Args:
+            nPixels (int): The number of pixels.
+            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
-        Sets the number of LEDs attached to the Pixelblaze. Does
-        not change the current pixel map. 
-        CAUTION: Recommended for advanced users only.
-        """
+        # TBD: The Pixelblaze UI also re-evaluates the map function and resends the map data...Should we do the same?
         self.wsSendJson({"pixelCount": nPixels, "save": save}, expectedResponse=None)
-        # The Pixelblaze UI also re-evaluates the map function and resends the map data...How can we do the same?
 
-    def setDataSpeed(self, speed, save=False):
-        """
-        Sets custom bit timing for WS2812-type LEDs.
-        CAUTION: For advanced users only.  If you don't know
-        exactly why you want to do this, DON'T DO IT.
+    def setDataSpeed(self, speed:int, save:bool=False):
+        """Sets custom data rate for communicating with the LEDs.
 
-        See discussion in this thread on the Pixelblaze forum:
-        https://forum.electromage.com/t/timing-of-a-cheap-strand/739
+        CAUTION: For advanced users only.  If you don't know exactly why you want to do this, DON'T DO IT.
+        See discussion in this thread on the Pixelblaze forum: https://forum.electromage.com/t/timing-of-a-cheap-strand/739
 
-        Note that you must call _enable_flash_save() in order to use
-        the save parameter to make your new timing (semi) permanent.
+        Args:
+            speed (int): The data rate for communicating with the LEDs.
+            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         self.wsSendJson({"dataSpeed": speed, "save": save}, expectedResponse=None)
 
@@ -1084,7 +1455,13 @@ class Pixelblaze:
         RGB_W = 'RGB-W'
         GRB_W = 'GRB-W'
 
-    def setColorOrder(self, colorOrder, save=False):
+    def setColorOrder(self, colorOrder:colorOrders, save:bool=False):
+        """Sets the color order for the LEDs connected to the Pixelblaze.
+
+        Args:
+            colorOrder (colorOrders): The ordering for the color data sent to the LEDs.
+            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+        """
         assert type(colorOrder) is self.colorOrders
         self.wsSendJson({"colorOrder": colorOrder.value, "save": save}, expectedResponse=None)
 
@@ -1094,28 +1471,56 @@ class Pixelblaze:
     on a particular UI page. These functions will extract the property value from a 
     previously-fetched dictionary, if provided; otherwise they will fetch the settings anew."""
 
-    def getBrightnessLimit(self, configSettings=None):
-        """Returns the maximum brightness for the Pixelblaze."""
+    def getBrightnessLimit(self, configSettings:dict=None) -> int:
+        """Returns the maximum brightness for the Pixelblaze.
+
+        Args:
+            configSettings (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSettings`; otherwise, fetches the configSettings from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            int: The maximum brightness, expressed as a percent value between 0 and 100 (yes, it's inconsistent with the 'brightness' settings).
+        """
         if configSettings is None: configSettings = self.getConfigSettings()
         return configSettings.get('maxBrightness', None)
 
-    def getLedType(self, configSettings=None):
+    def getLedType(self, configSettings:dict=None) -> ledTypes:
         """Returns the type of LEDs connected to the Pixelblaze."""
         if configSettings is None: configSettings = self.getConfigSettings()
         return self.ledTypes(configSettings.get('ledType'))
 
-    def getPixelCount(self, configSettings=None):
-        """Returns the number of LEDs connected to the Pixelblaze."""
+    def getPixelCount(self, configSettings:dict=None) -> int:
+        """Returns the number of LEDs connected to the Pixelblaze.
+
+        Args:
+            configSettings (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSettings`; otherwise, fetches the configSettings from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            int: The number of LEDs connected to the Pixelblaze.
+        """
         if configSettings is None: configSettings = self.getConfigSettings()
         return configSettings.get('pixelCount', None)
 
-    def getDataSpeed(self, configSettings=None):
-        """Returns the data speed of the LEDs connected to the Pixelblaze."""
+    def getDataSpeed(self, configSettings:dict=None) -> int:
+        """Returns the data speed of the LEDs connected to the Pixelblaze.
+
+        Args:
+            configSettings (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSettings`; otherwise, fetches the configSettings from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            int: The data speed for communicating with the LEDs.
+        """
         if configSettings is None: configSettings = self.getConfigSettings()
         return configSettings.get('dataSpeed', None)
 
-    def getColorOrder(self, configSettings=None):
-        """Returns the color order of the LEDs connected to the Pixelblaze."""
+    def getColorOrder(self, configSettings:dict=None) -> colorOrders:
+        """Returns the color order of the LEDs connected to the Pixelblaze.
+
+        Args:
+            configSettings (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSettings`; otherwise, fetches the configSettings from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            colorOrders: The ordering for the color data sent to the LEDs.
+        """
         if configSettings is None: configSettings = self.getConfigSettings()
         return configSettings.get('colorOrder', None)
 
@@ -1126,18 +1531,26 @@ class Pixelblaze:
         medium = "160"
         high = "240"
 
-    def setCpuSpeed(self, cpuSpeed):
+    def setCpuSpeed(self, cpuSpeed:cpuSpeeds):
+        """Sets the CPU speed of the Pixelblaze.
+
+        Note that this setting will not take effect until the Pixelblaze is rebooted (which can be done with the `reboot` function).
+
+        Args:
+            cpuSpeed (cpuSpeeds): The desired CPU speed.
+        """
         assert type(cpuSpeed) is self.cpuSpeeds
         # The "cpuSpeed" setting doesn't exist on v2, so ignore it if not v3.
         if (self.getConfigSettings().get('ver', '0').startswith('3')):
             self.wsSendJson({"cpuSpeed": cpuSpeed.value}, expectedResponse=None)
 
-    def setNetworkPowerSave(self, disableWifi):
-        """
-        Pixelblaze can be used without Wifi, which significantly reduces power requirements 
-        for battery powered installations.
-        
-        The "network power saving" setting only takes effect after a reboot.
+    def setNetworkPowerSave(self, disableWifi:bool):
+        """Enables or disables the WiFi connection on the Pixelblaze, which can significantly reduce power requirements for battery-powered installations.
+
+        Note that this setting will not take effect until the Pixelblaze is rebooted (which can be done with the `reboot` function).
+
+        Args:
+            disableWifi (bool): A boolean indicating whether to disable Wifi.
         """
         self.wsSendJson({"networkPowerSave": disableWifi}, expectedResponse=None)
 
@@ -1147,12 +1560,28 @@ class Pixelblaze:
     on a particular UI page. These functions will extract the property value from a 
     previously-fetched dictionary, if provided; otherwise they will fetch the settings anew."""
 
-    def getCpuSpeed(self, configSettings=None):
+    def getCpuSpeed(self, configSettings:dict=None) -> cpuSpeeds:
+        """Returns the CPU speed of the Pixelblaze.
+
+        Args:
+            configSettings (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSettings`; otherwise, fetches the configSettings from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            cpuSpeeds: An enumeration representing the CPU speed.
+        """
         # The "cpuSpeed" setting doesn't exist on v2, so return the default.
         if configSettings is None: configSettings = self.getConfigSettings()
-        return configSettings.get('cpuSpeed', 240)
+        return self.cpuSpeeds(configSettings.get('cpuSpeed', 240))
 
-    def getNetworkPowerSave(self, configSettings=None):
+    def getNetworkPowerSave(self, configSettings:dict=None) -> bool:
+        """Returns whether the "Network Power Saving" mode is enabled (and WiFi is disabled).
+
+        Args:
+            configSettings (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSettings`; otherwise, fetches the configSettings from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            bool: Whether the "Network Power Saving" mode is enabled.
+        """
         # The "networkPowerSave" setting doesn't exist on v2, so return the default.
         if configSettings is None: configSettings = self.getConfigSettings()
         return configSettings.get('networkPowerSave', False)
@@ -1168,7 +1597,12 @@ class Pixelblaze:
         updateAvailable = 5
         updateComplete = 6
 
-    def getUpdateState(self):
+    def getUpdateState(self) -> updateStates:
+        """Returns the updateState of the Pixelblaze.
+
+        Returns:
+            updateStates: An enumeration describing the updateState of the Pixelblaze.
+        """
         # We don't want to query the server every time, because changes don't happen very often.
         checkFrequency = 15 * 60 * 60 * 1000 # 15 minutes
         if self.latestUpdateCheck is None: self.latestUpdateCheck = self._time_in_millis() - (checkFrequency + 1)
@@ -1176,14 +1610,19 @@ class Pixelblaze:
             self.wsSendJson({"upgradeVersion": "check"}, expectedResponse=None)
 
         # Get the state. If it's indeterminate, wait until it resolves.
-        state = self.wsSendJson({"getUpgradeState": True}, expectedResponse='{"upgradeState":')
+        state = self.wsSendJson({"getUpgradeState": True}, expectedResponse="upgradeState")
         while True:
             if state is None: return self.updateStates.unknown
             state = json.loads(state).get("upgradeState").get("code", 0)
             if state != self.updateStates.checking: return state
-            state = self.wsSendJson({"getUpgradeState": True}, expectedResponse='{"upgradeState":')
+            state = self.wsSendJson({"getUpgradeState": True}, expectedResponse="upgradeState")
 
-    def installUpdate(self):
+    def installUpdate(self) -> updateStates:
+        """Installs new Pixelblaze firmware, if the current updateState indicates that an update is available.
+
+        Returns:
+            updateStates: An enumeration describing the new updateState of the Pixelblaze.
+        """
         # We can't do the update if there isn't one available.
         if self.getUpdateState() != self.updateStates.updateAvailable: return self.updateStates.unknown
         # But if there is one available, we'll give it a try.
@@ -1199,48 +1638,84 @@ class Pixelblaze:
 
     # --- SETTINGS menu: UPDATES section: convenience functions
 
-    def getVersion(self):
+    def getVersion(self) -> float:
+        """Returns the firmware version of the Pixelblaze.
+
+        Returns:
+            float: The firmware version, in major.minor format.
+        """
         if self.latestVersion is None: 
             self.latestVersion = self.getConfigSettings().get('ver', None)
         return self.latestVersion
 
-    def getVersionMajor(self):
-        """Returns the major version number as a positive integer (eg. for v3.24, returns 3)."""
+    def getVersionMajor(self) -> int:
+        """Returns the major version number. 
+
+        Returns:
+            int: A positive integer representing the integer portion of the version number (eg. for v3.24, returns 3).
+        """
         return math.trunc(float(self.getVersion()))
     
-    def getVersionMinor(self):
-        """Returns the minor version number as a positive integer (eg. for v3.24, returns 24)."""
-        version = float(self.getVersion())
-        return math.trunc(100 * (version - math.trunc(version)))
+    def getVersionMinor(self) -> int:
+        """Returns the minor version number. 
+
+        Returns:
+            int: A positive integer representing the fractional portion of the version number (eg. for v3.24, returns 24).
+        """
+        version = self.getVersion().split('.')[1]
+        return int(version)
 
     # --- SETTINGS menu: BACKUPS section
 
-    def saveBackup(self, fileName):
-        """Save the contents of this Pixelblaze into a Pixelblaze Binary Backup file."""
+    def saveBackup(self, fileName:str):
+        """Saves the contents of this Pixelblaze into a Pixelblaze Binary Backup file.
+
+        Args:
+            fileName (str): The desired filename for the Pixelblaze Binary Backup.
+        """
         PBB.fromPixelblaze(self).toFile(fileName)
 
-    def restoreFromBackup(self, fileName):
-        """Restore the contents of this Pixelblaze from a Pixelblaze Binary Backup file."""
-        PBB.toPixelblaze(self)
+    def restoreFromBackup(self, fileName:str):
+        """Restores the contents of this Pixelblaze from a Pixelblaze Binary Backup file.
+
+        Args:
+            fileName (str): The desired filename for the Pixelblaze Binary Backup.
+        """
+        PBB.fromFile(fileName).toPixelblaze(self)
 
     def reboot(self):
-        """Restart the Pixelblaze (necessary for the Pixelblaze to recognize changes to configuration files)."""
+        """Reboots the Pixelblaze.
+        
+        This is occasionally necessary, eg. to force the Pixelblaze to recognize changes to configuration files.
+        """
         with requests.post(self.getUrl("reboot"), proxies=self.proxyDict) as rReboot:
             if rReboot.status_code not in [200, 404]:
                 rReboot.raise_for_status()
 
     # --- ADVANCED menu: 
 
-    def setBrandName(self, brandName):
-        """"""
+    def setBrandName(self, brandName:str):
+        """Sets the brand name of the Pixelblaze (used by VARs to change the brand name that appears on the webUI).
+
+        Args:
+            brandName (str): The new name.
+        """
         self.wsSendJson({"brandName": brandName}, expectedResponse=None)
 
-    def setSimpleUiMode(self, doSimpleMode):
-        """"""
+    def setSimpleUiMode(self, doSimpleMode:bool):
+        """Enables or disables "Simple UI Mode" which makes the UI more suitable for non-technical audiences.
+
+        Args:
+            doSimpleMode (bool): Whether to enable "Simple UI Mode".
+        """
         self.wsSendJson({"simpleUiMode": doSimpleMode}, expectedResponse=None)
 
-    def setLearningUiMode(self, doLearningMode):
-        """"""
+    def setLearningUiMode(self, doLearningMode:bool):
+        """Enables or disables "Learning UI Mode" which has additional UI help for new users.
+
+        Args:
+            doSimpleMode (bool): Whether to enable "Learning UI Mode".
+        """
         self.wsSendJson({"learningUiMode": doLearningMode}, expectedResponse=None)
 
     # --- ADVANCED menu: convenience functions
@@ -1249,18 +1724,39 @@ class Pixelblaze:
     on a particular UI page. These functions will extract the property value from a 
     previously-fetched dictionary, if provided; otherwise they will fetch the settings anew."""
 
-    def getBrandName(self, configSettings=None):
-        """Returns the brand name, if any, of this Pixelblaze (blank unless rebadged by a reseller)."""
+    def getBrandName(self, configSettings:dict=None) -> str:
+        """Returns the brand name, if any, of this Pixelblaze (blank unless rebadged by a reseller).
+
+        Args:
+            configSettings (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSettings`; otherwise, fetches the configSettings from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            str: The brand name.
+        """
         if configSettings is None: configSettings = self.getConfigSettings()
         return configSettings.get('brandName', None)
 
-    def getSimpleUiMode(self, configSettings=None):
-        """Returns whether Simple UI mode is enabled."""
+    def getSimpleUiMode(self, configSettings:dict=None) -> bool:
+        """Returns whether "Simple UI Mode" is enabled.
+
+        Args:
+            configSettings (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSettings`; otherwise, fetches the configSettings from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            bool: A boolean indicating whether "Simple UI Mode" is enabled.
+        """
         if configSettings is None: configSettings = self.getConfigSettings()
         return configSettings.get('simpleUiMode', None)
     
-    def getLearningUiMode(self, configSettings=None):
-        """Returns whether Learning UI mode is enabled."""
+    def getLearningUiMode(self, configSettings:dict=None) -> bool:
+        """Returns whether "Learning UI Mode" is enabled.
+
+        Args:
+            configSettings (dict, optional): If provided, extracts the value from the results of a previous call to `getConfigSettings`; otherwise, fetches the configSettings from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            bool: A boolean indicating whether "Learning UI Mode" is enabled.
+        """
         if configSettings is None: configSettings = self.getConfigSettings()
         return configSettings.get('learningUiMode', None)
     
@@ -1272,7 +1768,14 @@ class Pixelblaze:
         notRequired = 3
 
     warningsGiven = []
-    def __printDeprecationMessage(self, deprecationReason, oldFunction, newFunction):
+    def __printDeprecationMessage(self, deprecationReason:deprecationReasons, oldFunction:str, newFunction:str):
+        """For functions that have been deprecated, print an explanatory warning message the first time they are called.
+
+        Args:
+            deprecationReason (deprecationReasons): An enumerated value indicating which message to display.
+            oldFunction (str): The old name of the function.
+            newFunction (str): The new name of the function, where appropriate.
+        """
         if not oldFunction in self.warningsGiven:
             self.warningsGiven.append(oldFunction)
             if deprecationReason == self.deprecationReasons.renamed:
@@ -1288,7 +1791,7 @@ class Pixelblaze:
         """
         return max(smallest, min(n, largest))
 
-    def _time_in_millis(self):
+    def _time_in_millis(self) -> int:
         """
         Utility Method: Returns current time in milliseconds
         """
@@ -1298,13 +1801,12 @@ class Pixelblaze:
 
     def pauseRenderer(self, doPause):
         """
-        Pause rendering. Lasts until unpause() is called or
-        the Pixelblaze is reset.
+        Pause rendering. Lasts until unpause() is called or the Pixelblaze is reset.
         CAUTION: For advanced users only.  If you don't know
         exactly why you want to do this, DON'T DO IT.
         """
         assert type(doPause) is bool
-        self.wsSendJson({"pause": doPause}, expectedResponse='{"ack":')
+        self.wsSendJson({"pause": doPause}, expectedResponse="ack")
 
     def _id_from_name(self, patterns, name):
         """Utility Method: Given the list of patterns and text name of a pattern, returns that pattern's ID"""
@@ -1368,6 +1870,14 @@ class Pixelblaze:
         else:
             return result[0]
 
+    def setCacheRefreshTime(self, seconds):
+        """
+        Set the interval, in seconds, at which the pattern cache is cleared and
+        a new pattern list is loaded from the Pixelblaze.  Default is 600 (10 minutes)
+        """
+        # a million seconds is about 277 hours or about 11.5 days.  Probably long enough.
+        self.cacheRefreshInterval = 1000 * self._clamp(seconds, 0, 1000000)
+
     # --- PUBLIC FUNCTIONS TO BE DEPRECATED
 
     @property
@@ -1402,8 +1912,8 @@ class Pixelblaze:
             return None  # timeout -- we can just ignore this
 
         except websocket._exceptions.WebSocketConnectionClosedException:
-            self.close()
-            self.open()   # try reopening
+            self._close()
+            self._open()   # try reopening
         except Exception as e:
             print(f"ws_recv unknown exception: {e}")
 
@@ -1456,7 +1966,7 @@ class Pixelblaze:
         self.ws_flush()
         self.ws.settimeout(timeout_ms / 1000)
         try:
-            result = self.wsSendJson({"ping": True}, expectedResponse='{"ack":')
+            result = self.wsSendJson({"ping": True}, expectedResponse="ack")
             self.ws.settimeout(self.default_recv_timeout)
             #return True if ((result is not None) and (result.startswith('{"ack"'))) else False
             # was failing with "startswith needs string, not int"
@@ -1576,6 +2086,22 @@ class Pixelblaze:
         val = {ctl_name: color}
         self.setActiveControls(val, save)
 
+    def startSequencer(self, mode=sequencerModes.ShuffleAll):
+        """Deprecated."""
+        self.__printDeprecationMessage(self.deprecationReasons.functionalityChanged, "startSequencer", "setSequencerMode")
+        """
+        Enable and start the Pixelblaze's internal sequencer.
+        """
+        self.setSequencerMode(mode)
+        self.playSequencer()
+
+    def stopSequencer(self):
+        """Deprecated."""
+        self.__printDeprecationMessage(self.deprecationReasons.functionalityChanged, "stopSequencer", "setSequencerMode")
+        """Stop and disable the Pixelblaze's internal sequencer"""
+        self.setSequencerMode(self.sequencerModes.Off) 
+        self.pauseSequencer()
+
 
 # ------------------------------------------------
 
@@ -1586,29 +2112,51 @@ class PBB:
     __fromDevice = None
 
     # private constructor
-    def __init__(self, name, bytes):
+    def __init__(self, name:str, blob:bytes):
         self.__fromDevice = name
-        self.__textData = bytes
+        self.__textData = blob
 
     # Static methods:
     @staticmethod
-    def fromFile(path):
-        """Creates and returns a new PixelBlazeBackup whose contents are loaded from a file on disk."""
-        newOne = object.__new__(PBB)
-        with open(path, "r") as file:
-            newOne.__init__(pathlib.Path(path).stem, file.read())
-        return newOne
+    def fromFile(fileName:str) -> 'PBB': # 'Quoted' to defer resolution of forward reference; or could use 'from __future__ import annotations'
+        """Creates and returns a new Pixelblaze Binary Backup whose contents are loaded from a file on disk.
+
+        Args:
+            fileName (str): The filename of the Pixelblaze Binary Backup.
+
+        Returns:
+            PBB: A new Pixelblaze Binary Backup object.
+        """
+        return PBB(pathlib.Path(fileName).stem, pathlib.Path(fileName).read_text())
 
     @staticmethod
-    def fromIpAddress(ipAddress, proxyUrl=None, verbose=False):
+    def fromIpAddress(ipAddress:str, proxyUrl:str=None, verbose:bool=False) -> 'PBB': # 'Quoted' to defer resolution of forward reference; or could use 'from __future__ import annotations'
+        """Creates and returns a new Pixelblaze Binary Backup whose contents are loaded from a Pixelblaze specified by IP address.
+
+        Args:
+            ipAddress (str): The Pixelblaze's IPv4 address in the usual dotted-quads numeric format (for example, "192.168.4.1").
+            proxyUrl (str, optional): The url of a proxy, if required, in the format "protocol://ipAddress:port" (for example, "http://192.168.0.1:8888"). Defaults to None.
+            verbose (bool, optional): A boolean specifying whether to print detailed progress statements. Defaults to False.
+
+        Returns:
+            PBB: A new Pixelblaze Binary Backup object.
+        """
         # Make a connection to the Pixelblaze.
         with Pixelblaze(ipAddress, proxyUrl=proxyUrl) as pb:
             return PBB.fromPixelblaze(pb, verbose)
 
     @staticmethod
-    def fromPixelblaze(pb, verbose=False):
-        newOne = object.__new__(PBB)
-        newOne.__init__(pb.ipAddress, json.dumps({"files": {}}, indent=2))
+    def fromPixelblaze(pb:Pixelblaze, verbose:bool=False) -> 'PBB': # 'Quoted' to defer resolution of forward reference; or could use 'from __future__ import annotations'
+        """Creates and returns a new Pixelblaze Binary Backup whose contents are loaded from an existing Pixelblaze object.
+
+        Args:
+            pb (Pixelblaze): A Pixelblaze object.
+            verbose (bool, optional): A boolean specifying whether to print detailed progress statements. Defaults to False.
+
+        Returns:
+            PBB: A new Pixelblaze Binary Backup object.
+        """
+        newOne = PBB(pb.ipAddress, json.dumps({"files": {}}, indent=2))
         #   Get the file list.
         for line in pb.getFileList(PBB.fileTypes.fileAll ^ PBB.fileTypes.fileSystem):
             filename = line.split('\t')[0]
@@ -1620,10 +2168,15 @@ class PBB:
 
     # Class properties:
     @property
-    def deviceName(self):
-        """Returns the name of the device from which this PixelBlazeBackup was made."""
+    def deviceName(self) -> str:
+        """Gets the user-friendly name of the device from which this PixelBlazeBackup was made.
+
+        Returns:
+            str: The user-friendly name of the device from which this PixelBlazeBackup was made.
+        """
         return self.__fromDevice
 
+    # Class methods:
     class fileTypes(IntFlag):
         """A Pixelblaze contains Patterns, PatternSettings, Configs, Playlists, System and Other types of files."""
         fileConfig = 1
@@ -1634,8 +2187,15 @@ class PBB:
         fileOther = 32
         fileAll = fileConfig | filePattern | filePatternSetting | filePlaylist | fileSystem | fileOther
 
-    def getFileList(self, fileTypes=fileTypes.fileAll):
-        """Returns a sorted list of the filenames contained in this PixelBlazeBackup."""
+    def getFileList(self, fileTypes:fileTypes=fileTypes.fileAll) -> list[str]:
+        """Returns a sorted list of the files contained in this PixelBlazeBackup.
+
+        Args:
+            fileTypes (fileTypes, optional): An bitwise enumeration indicating the types of files to list. Defaults to fileTypes.fileAll.
+
+        Returns:
+            list[str]: A list of filenames.
+        """
         fileList = []
         for fileName in json.loads(self.__textData.encode().decode('utf-8-sig'))['files']:
         # Filter the list depending on the fileTypes requested.
@@ -1674,34 +2234,54 @@ class PBB:
         fileList.sort()
         return fileList
 
-    def getFile(self, key):
-        """Returns the contents of a particular file contained in this PixelBlazeBackup."""
-        return base64.b64decode(json.loads(self.__textData.encode().decode('utf-8-sig'))['files'][key])
+    def getFile(self, fileName:str) -> bytes:
+        """Returns the contents of a particular file contained in this PixelBlazeBackup.
 
-    def putFile(self, key, contents):
-        """Replaces or inserts the contents of a particular file into this PixelBlazeBackup."""
+        Args:
+            fileName (str): The name of the file to be returned.
+
+        Returns:
+            bytes: The contents of the requested file.
+        """
+        return base64.b64decode(json.loads(self.__textData.encode().decode('utf-8-sig'))['files'][fileName])
+
+    def putFile(self, fileName:str, fileContents:bytes):
+        """Inserts or replaces the contents of a particular file into this PixelBlazeBackup.
+
+        Args:
+            fileName (str): The name of the file to be stored.
+            fileContents (bytes): The contents of the file to be stored.
+        """
         jsonContents = json.loads(self.__textData.encode().decode('utf-8-sig'))
-        jsonContents.get('files', {})[key] = base64.b64encode(contents).decode('UTF-8')
+        jsonContents.get('files', {})[fileName] = base64.b64encode(fileContents).decode('UTF-8')
         self.__textData = json.dumps(jsonContents, indent=2)
 
-    def deleteFile(self, key):
-        """Removes a particular file form this PixelBlazeBackup."""
+    def deleteFile(self, fileName:str):
+        """Removes a particular file from this PixelBlazeBackup.
+
+        Args:
+            fileName (str): The name of the file to be deleted.
+        """
         jsonContents = json.loads(self.__textData.encode().decode('utf-8-sig'))
-        if jsonContents.get(key, None): 
-            del jsonContents[key]
+        if jsonContents.get(fileName, None): 
+            del jsonContents[fileName]
             self.__textData = json.dumps(jsonContents, indent=2)
 
-    # Class methods:
-    def toFile(self, filename=None, explode=False):
-        """Writes this Pixelblaze Binary Backup (PBB) to a file on disk."""
+    def toFile(self, fileName:str=None, explode:bool=False):
+        """Writes this Pixelblaze Binary Backup to a file on disk.
+
+        Args:
+            fileName (str, optional): If specified, the filename of the Pixelblaze Binary Backup to be created; otherwise the originating Pixelblaze name is used. Defaults to None.
+            explode (bool, optional): If specified, also exports the files within the Pixelblaze Binary Backup to a subdirectory. Defaults to False.
+        """
         def safeFilename(unsafeName):
             # Sanitize filenames: Only '/' (U+002F SOLIDUS) is forbidden. 
             # Other suitable candidates: '⁄' (U+2044 FRACTION SLASH); '∕' (U+2215 DIVISION SLASH); '⧸' (U+29F8 BIG SOLIDUS); 
             #   '／' (U+FF0F FULLWIDTH SOLIDUS); and '╱' (U+2571 BOX DRAWINGS LIGHT DIAGONAL UPPER RIGHT TO LOWER LEFT).
             return unsafeName.replace("/", "∕")
 
-        if filename is None: path = pathlib.Path.cwd().joinpath(self.deviceName).with_suffix(".pbb")
-        else: path = pathlib.Path(filename).with_suffix(".pbb")
+        if fileName is None: path = pathlib.Path.cwd().joinpath(self.deviceName).with_suffix(".pbb")
+        else: path = pathlib.Path(fileName).with_suffix(".pbb")
         with open(path, "w") as file:
             file.write(self.__textData)
         # If 'explode' is requested, export the contents of this Pixelblaze Binary Backup (PBB) as individual files.
@@ -1710,41 +2290,52 @@ class PBB:
             path = pathlib.Path(path).with_suffix('')
             path.mkdir(parents=True, exist_ok=True)
             # Loop through the backup contents and save them appropriately.
-            for filename in self.getFileList(PBB.fileTypes.fileConfig):
+            for fileName in self.getFileList(PBB.fileTypes.fileConfig):
                 # Config files go in the "Configuration" subdirectory...
                 configPath = path.joinpath("Configuration/")
                 configPath.mkdir(parents=True, exist_ok=True)
-                configPath.joinpath(filename[1:]).write_bytes(self.getFile(filename))
-            for filename in self.getFileList(PBB.fileTypes.filePlaylist):
+                configPath.joinpath(fileName[1:]).write_bytes(self.getFile(fileName))
+            for fileName in self.getFileList(PBB.fileTypes.filePlaylist):
                 # Playlists go in the "Playlists" subdirectory...
                 playlistPath = path.joinpath("Playlists/")
                 playlistPath.mkdir(parents=True, exist_ok=True)
-                playlistPath.joinpath("defaultPlaylist.json").write_bytes(self.getFile(filename))
-            for filename in self.getFileList(PBB.fileTypes.filePattern | PBB.fileTypes.filePatternSetting):
+                playlistPath.joinpath("defaultPlaylist.json").write_bytes(self.getFile(fileName))
+            for fileName in self.getFileList(PBB.fileTypes.filePattern | PBB.fileTypes.filePatternSetting):
                 # Patterns go in the "Patterns" subdirectory...
                 patternPath = path.joinpath("Patterns/")
                 patternPath.mkdir(parents=True, exist_ok=True)
-                if filename.endswith('.c'):
+                if fileName.endswith('.c'):
                     # For pattern settings files, get the name from the original pattern.
-                    pbp = PBP.fromBytes(pathlib.Path(filename[3:]).stem, self.getFile(filename[:-2]))
-                    patternPath.joinpath(safeFilename(pbp.name)).with_suffix('.json').write_bytes(self.getFile(filename))
+                    pbp = PBP.fromBytes(pathlib.Path(fileName[3:]).stem, self.getFile(fileName[:-2]))
+                    patternPath.joinpath(safeFilename(pbp.name)).with_suffix('.json').write_bytes(self.getFile(fileName))
                 else:
-                    pbp = PBP.fromBytes(pathlib.Path(filename[3:]).stem, self.getFile(filename))
+                    pbp = PBP.fromBytes(pathlib.Path(fileName[3:]).stem, self.getFile(fileName))
                     pbpPath = patternPath.joinpath(safeFilename(pbp.name)).with_suffix('.pbp')
                     pbp.toFile(pbpPath)
                     pbp.explode(pbpPath)
-            for filename in self.getFileList(PBB.fileTypes.fileOther):
+            for fileName in self.getFileList(PBB.fileTypes.fileOther):
                 # And everything else (should just be the Icons) goes in the root directory...
-                path.joinpath(filename[1:]).write_bytes(self.getFile(filename))
+                path.joinpath(fileName[1:]).write_bytes(self.getFile(fileName))
 
-    def toIpAddress(self, ipAddress, proxyUrl=None, verbose=False):
-        """Uploads the contents of this PixelBlazeBackup to the destination Pixelblaze."""
+    def toIpAddress(self, ipAddress:str, proxyUrl:str=None, verbose:bool=False):
+        """Restores the contents of this PixelBlazeBackup to a Pixelblaze identified by IP Address.
+
+        Args:
+            ipAddress (str): The Pixelblaze's IPv4 address in the usual dotted-quads numeric format (for example, "192.168.4.1")..
+            proxyUrl (str, optional): The url of a proxy, if required, in the format "protocol://ipAddress:port" (for example, "http://192.168.0.1:8888"). Defaults to None.
+            verbose (bool, optional): A boolean specifying whether to print detailed progress statements. Defaults to False.
+        """
         # Make a connection to the Pixelblaze.
         with Pixelblaze(ipAddress, proxyUrl) as pb:
             self.toPixelblaze(pb, verbose)
 
-    def toPixelblaze(self, pb, verbose=False):
-        """Uploads the contents of this PixelBlazeBackup to the destination Pixelblaze."""
+    def toPixelblaze(self, pb:Pixelblaze, verbose:bool=False):
+        """Uploads the contents of this PixelBlazeBackup to the destination Pixelblaze.
+
+        Args:
+            pb (Pixelblaze): A Pixelblaze object.
+            verbose (bool, optional): A boolean specifying whether to print detailed progress statements. Defaults to False.
+        """
         # Delete all the files that are currently loaded on the Pixelblaze (excepting the WebApp itself).
         for filename in pb.getFileList(PBB.fileTypes.fileAll ^ PBB.fileTypes.fileSystem):
             if verbose: print(f"  Deleting {filename}")
@@ -1760,7 +2351,7 @@ class PBB:
 # ------------------------------------------------
 
 class PBP:
-    """This class represents a Pixelblaze Binary Pattern that is contained in a Pixelblaze Binary Backup."""
+    """This class represents a Pixelblaze Binary Pattern, as stored on the Pixelblaze filesystem or contained in a Pixelblaze Binary Backup."""
     # Members:
     __id = None
     __binaryData = None
@@ -1772,90 +2363,162 @@ class PBP:
         #   7=sourceOffset, 8=sourceLength
 
     # private constructor
-    def __init__(self, id, bytes):
+    def __init__(self, id:str, blob:bytes):
+        """Initializes a new Pixelblaze Binary Pattern object.
+
+        Args:
+            id (str): The patternId of the pattern.
+            blob (bytes): The binary contents of the pattern.
+        """
         self.__id = id
-        self.__binaryData = bytes
+        self.__binaryData = blob
 
     # Static methods:
     @staticmethod
-    def fromBytes(id, bytes):
-        """Creates and returns a new Pixelblaze Binary Pattern (PBP) whose contents are initialized from a bytes array."""
-        newOne = object.__new__(PBP)
-        newOne.__init__(id, bytes)
-        return newOne
+    def fromBytes(patternId:str, blob:bytes) -> 'PBP': # 'Quoted' to defer resolution of forward reference; or could use 'from __future__ import annotations'
+        """Creates and returns a new Pixelblaze Binary Pattern (PBP) whose contents are initialized from a bytes array.
+
+        Args:
+            patternId (str): A patternId for the Pixelblaze Binary Pattern to be created.
+            blob (bytes): The binary contents of the Pixelblaze Binary Pattern to be created.
+
+        Returns:
+            PBP: A new Pixelblaze Binary Pattern object.
+        """
+        return PBP(patternId, blob)
 
     @staticmethod
-    def fromFile(path):
-        """Creates and returns a new Pixelblaze Binary Pattern (PBP) whose contents are loaded from a file on disk."""
-        with open(path, "rb") as file:
-            return PBP.fromBytes(pathlib.Path(path).stem, file.read())
+    def fromFile(fileName:str) -> 'PBP': # 'Quoted' to defer resolution of forward reference; or could use 'from __future__ import annotations'
+        """Creates and returns a new Pixelblaze Binary Pattern (PBP) whose contents are loaded from a file on disk.
+
+        Args:
+            fileName (str): The name of the file to be loaded into a Pixelblaze Binary Pattern.
+
+        Returns:
+            PBP: A new Pixelblaze Binary Pattern object.
+        """
+        return PBP.fromBytes(pathlib.Path(fileName).stem, pathlib.Path(fileName).read_bytes())
 
     @staticmethod
-    def fromIpAddress(ipAddress, patternId, proxyUrl=None):
-        """Creates and returns a new pattern Pixelblaze Binary Pattern (PBP) whose contents are downloaded from a URL."""
+    def fromIpAddress(ipAddress:str, patternId:str, proxyUrl:str=None) -> 'PBP': # 'Quoted' to defer resolution of forward reference; or could use 'from __future__ import annotations'
+        """Creates and returns a new pattern Pixelblaze Binary Pattern (PBP) whose contents are downloaded from a URL.
+
+        Args:
+            ipAddress (str): The Pixelblaze's IPv4 address in the usual dotted-quads numeric format (for example, "192.168.4.1").
+            patternId (str): The patternId of the Pixelblaze Binary Pattern to be loaded from the Pixelblaze.
+            proxyUrl (str, optional): The url of a proxy, if required, in the format "protocol://ipAddress:port" (for example, "http://192.168.0.1:8888"). Defaults to None.
+
+        Returns:
+            PBP: A new Pixelblaze Binary Pattern object.
+        """
         # Make a connection to the Pixelblaze.
         with Pixelblaze(ipAddress, proxyUrl=proxyUrl) as pb:
             return PBP.fromPixelblaze(pb, patternId)
 
     @staticmethod
-    def fromPixelblaze(pb, patternId):
-        """Creates and returns a new pattern Pixelblaze Binary Pattern (PBP) whose contents are downloaded from a URL."""
+    def fromPixelblaze(pb:Pixelblaze, patternId:str) -> 'PBP': # 'Quoted' to defer resolution of forward reference; or could use 'from __future__ import annotations'
+        """Creates and returns a new pattern Pixelblaze Binary Pattern (PBP) whose contents are downloaded from an active Pixelblaze object.
+
+        Args:
+            pb (Pixelblaze): An active Pixelblaze object.
+            patternId (str): The patternId of the Pixelblaze Binary Pattern to be loaded from the Pixelblaze.
+
+        Returns:
+            PBP: A new Pixelblaze Binary Pattern object.
+        """
         return PBP.fromBytes(patternId, pb.getFile(f"/p/{patternId}"))
 
     # Class properties:
     @property
-    def id(self):
-        """Returns the (internal) ID of the pattern in this Pixelblaze Binary Pattern (PBP)."""
+    def id(self) -> str:
+        """Returns the patternId of the pattern contained in this Pixelblaze Binary Pattern (PBP).
+
+        Returns:
+            str: The patternId of the pattern contained in this Pixelblaze Binary Pattern (PBP).
+        """
         return self.__id
 
     @property
-    def name(self):
-        """Returns the (human-readable) name of the pattern in this Pixelblaze Binary Pattern (PBP)."""
+    def name(self) -> str:
+        """Returns the (human-readable) name of the pattern contained in this Pixelblaze Binary Pattern (PBP).
+
+        Returns:
+            str: The (human-readable) name of the pattern contained in this Pixelblaze Binary Pattern (PBP).
+        """
         # Calculate the offset for this component.
         offsets = struct.unpack('<9I', self.__binaryData[:36])
         return self.__binaryData[offsets[1]:offsets[1]+offsets[2]].decode('UTF-8')
 
     @property
-    def jpeg(self):
-        """Returns (as a collection of bytes) the preview JPEG of the pattern in this Pixelblaze Binary Pattern (PBP)."""
+    def jpeg(self) -> bytes:
+        """Returns (as a collection of bytes) the preview JPEG of the pattern contained in this Pixelblaze Binary Pattern (PBP).
+
+        Returns:
+            bytes: The preview JPEG of the pattern contained in this Pixelblaze Binary Pattern (PBP).
+        """
         # Calculate the offset for this component.
         offsets = struct.unpack('<9I', self.__binaryData[:36])
         return self.__binaryData[offsets[3]:offsets[3]+offsets[4]]
 
     @property
-    def byteCode(self):
-        """Returns (as a collection of bytes) the bytecode of the pattern in this Pixelblaze Binary Pattern (PBP)."""
+    def byteCode(self) -> bytes:
+        """Returns (as a collection of bytes) the bytecode of the pattern contained in this Pixelblaze Binary Pattern (PBP).
+
+        Returns:
+            bytes: The bytecode of the pattern contained in this Pixelblaze Binary Pattern (PBP).
+        """
         # Calculate the offset for this component.
         offsets = struct.unpack('<9I', self.__binaryData[:36])
         return self.__binaryData[offsets[5]:offsets[5]+offsets[6]]
 
     @property
-    def sourceCode(self):
-        """Returns the source code of the pattern in this Pixelblaze Binary Pattern (PBP)."""
+    def sourceCode(self) -> str:
+        """Returns the source code of the pattern in this Pixelblaze Binary Pattern (PBP).
+
+        Returns:
+            str: The source code of the pattern as a JSON-encoded string.
+        """
         # Calculate the offset for this component.
         offsets = struct.unpack('<9I', self.__binaryData[:36])
         return LZstring.decompress(self.__binaryData[offsets[7]:offsets[7]+offsets[8]])
 
     # Class methods:
-    def toFile(self, path=None):
-        """Saves this Pixelblaze Binary Pattern (PBP) to a file on disk."""
-        if path is None: path = pathlib.Path.cwd().joinpath(self.id).with_suffix(".pbp")
-        else: path = pathlib.Path(path).with_suffix(".pbp")
-        with open(path, "wb") as file:
+    def toFile(self, fileName:str=None):
+        """Saves this Pixelblaze Binary Pattern (PBP) to a file on disk.
+
+        Args:
+            fileName (str, optional): If provided, A name for the Pixelblaze Binary Pattern file to be created; otherwise, the name is derived from the patternId. Defaults to None.
+        """
+        if fileName is None: fileName = pathlib.Path.cwd().joinpath(self.id).with_suffix(".pbp")
+        else: fileName = pathlib.Path(fileName).with_suffix(".pbp")
+        with open(fileName, "wb") as file:
             file.write(self.__binaryData)
 
-    def toIpAddress(self, ipAddress, proxyUrl=None):
-        """Uploads this Pixelblaze Binary Pattern (PBP) to a Pixelblaze."""
+    def toIpAddress(self, ipAddress:str, proxyUrl:str=None):
+        """Uploads this Pixelblaze Binary Pattern (PBP) to a Pixelblaze identified by its IP address.
+
+        Args:
+            ipAddress (str): The Pixelblaze's IPv4 address in the usual dotted-quads numeric format (for example, "192.168.4.1").
+            proxyUrl (str, optional): The url of a proxy, if required, in the format "protocol://ipAddress:port" (for example, "http://192.168.0.1:8888"). Defaults to None.
+        """
         # Make a connection to the Pixelblaze.
         with Pixelblaze(ipAddress, proxyUrl) as pb:
             self.toPixelblaze(pb)
 
-    def toPixelblaze(self, pb):
-        """Uploads this Pixelblaze Binary Pattern (PBP) to a Pixelblaze."""
+    def toPixelblaze(self, pb:Pixelblaze):
+        """Uploads this Pixelblaze Binary Pattern (PBP) to an active Pixelblaze object.
+
+        Args:
+            pb (Pixelblaze): An active Pixelblaze object.
+        """
         pb.putFile(self.id, self.__binaryData)
 
-    def toEPE(self):
-        """Creates a new EPE and initializes it from the contents of this Pixelblaze Binary Pattern (PBP)."""
+    def toEPE(self) -> 'EPE': # 'Quoted' to defer resolution of forward reference; or could use 'from __future__ import annotations'
+        """Creates a new Electromage Pattern Export (EPE) and initializes it from the contents of this Pixelblaze Binary Pattern (PBP).
+
+        Returns:
+            EPE: A new Electromage Pattern Export object.
+        """
         epe = {
             'name': self.name,
             'id': self.id,
@@ -1864,8 +2527,12 @@ class PBP:
         }
         return EPE.fromBytes(json.dumps(epe, indent=2))
 
-    def explode(self, path=None):
-        """Exports (as individual files) all the components of the pattern in this Pixelblaze Binary Pattern (PBP)."""
+    def explode(self, path:str=None):
+        """Exports all the components of this Pixelblaze Binary Pattern (PBP) as separate files.
+
+        Args:
+            path (str, optional): If provided, a pathname for the folder in which to export the components; otherwise derived from the patternId. Defaults to None.
+        """
         # Get a Path to help with creating filenames.
         if path is None: path = pathlib.Path.cwd().joinpath(self.id)
         patternPath = pathlib.Path(path)
@@ -1892,75 +2559,116 @@ class PBP:
 # ------------------------------------------------
 
 class EPE:
-    """This class represents an Exported Pattern Envelope, as exported from the Patterns list on a Pixelblaze."""
+    """This class represents an Electromage Pattern Export (EPE), as exported from the Patterns list on a Pixelblaze."""
     # Members:
     __textData = None
 
     # private constructor
-    def __init__(self, bytes):
-        self.__textData = bytes
+    def __init__(self, blob:bytes):
+        """Creates and initializes a new Electromage Pattern Export (EPE).
+
+        Args:
+            blob (bytes): The contents of the Electromage Pattern Export (EPE).
+        """
+        self.__textData = blob
 
     # Static methods:
     @staticmethod
-    def fromBytes(bytes):
-        """Creates and returns a new portable pattern EPE whose contents are loaded from a bytes array."""
-        newOne = object.__new__(EPE)
-        newOne.__init__(bytes)
-        return newOne
+    def fromBytes(blob:bytes) -> 'EPE': # 'Quoted' to defer resolution of forward reference; or could use 'from __future__ import annotations'
+        """Creates and returns a new Electromage Pattern Export (EPE) whose contents are loaded from a bytes array.
+
+        Args:
+            blob (bytes): The data from which to create the Electromage Pattern Export (EPE).
+
+        Returns:
+            EPE: A new Electromage Pattern Export (EPE) object.
+        """
+        return EPE(blob)
 
     @staticmethod
-    def fromFile(path):
-        """Creates and returns a new portable pattern EPE whose contents are loaded from a file on disk."""
-        with open(path, "r") as file:
+    def fromFile(fileName:str) -> 'EPE': # 'Quoted' to defer resolution of forward reference; or could use 'from __future__ import annotations'
+        """Creates and returns a new portable pattern EPE whose contents are loaded from a file on disk.
+
+        Args:
+            fileName (str): The name of the file from which to create the Electromage Pattern Export (EPE).
+
+        Returns:
+            EPE: A new Electromage Pattern Export (EPE) object.
+        """
+        with open(fileName, "r") as file:
             return EPE.fromBytes(file.read())
 
     # Class properties:
     @property
-    def id(self):
-        """Returns the (internal) ID of the pattern in this EPE."""
+    def patternId(self) -> str:
+        """Returns the patternId of the pattern contained in this Electromage Pattern Export (EPE).
+
+        Returns:
+            str: The patternId of the pattern contained in this Electromage Pattern Export (EPE).
+        """
         return json.loads(self.__textData)['id']
 
     @property
-    def name(self):
-        """Returns the (human-readable) name of the pattern in this EPE."""
+    def patternName(self) -> str:
+        """Returns the human-readable name of the pattern in this Electromage Pattern Export (EPE).
+
+        Returns:
+            str: The human-readable name of the pattern contained in this Electromage Pattern Export (EPE).
+        """
         return json.loads(self.__textData)['name']
 
     @property
-    def sources(self):
-        """Returns the source code of the pattern in this EPE."""
+    def sourceCode(self) -> str:
+        """Returns the source code of the pattern contained in this Electromage Pattern Export (EPE).
+
+        Returns:
+            str: The sourceCode of the pattern contained in this Electromage Pattern Export (EPE).
+        """
         # if @wizard ever implements code sharing this may need to change (remove ['main']?).
         return json.loads(self.__textData)['sources']['main']
 
     @property
-    def preview(self):
-        """Returns (as bytes) the preview JPEG of the pattern in this EPE."""
+    def previewImage(self) -> bytes:
+        """Returns (as bytes) the preview JPEG of the pattern contained in this Electromage Pattern Export (EPE).
+
+        Returns:
+            bytes: The preview JPEG of the pattern contained in this Electromage Pattern Export (EPE).
+        """
         return json.loads(self.__textData)['preview']
 
     # Class methods:
-    def toFile(self, path=None):
-        """Saves this portable pattern EPE to a file on disk."""
-        if path is None:
-            path = pathlib.Path.cwd().joinpath(self.id).with_suffix(".epe")
-        with open(path, "w") as file:
+    def toFile(self, fileName:str=None):
+        """Saves this Electromage Pattern Export (EPE) to a file on disk.
+
+        Args:
+            fileName (str, optional): If provided, a name for the file to be created; otherwise derived from the patternId. Defaults to None.
+        """
+        if fileName is None:
+            fileName = pathlib.Path.cwd().joinpath(self.patternId).with_suffix(".epe")
+        with open(fileName, "w") as file:
             file.write(self.__textData)
 
-    def explode(self, path):
-        """Explodes the components of this portable pattern EPE into separate files"""
+    def explode(self, path:str):
+        """Exports the components of this Electromage Pattern Export (EPE) to separate files.
+
+        Args:
+            path (str): If provided, a pathname for the folder in which to export the components; otherwise derived from the patternId. Defaults to None.
+        """
         # Get a Path to help with creating filenames.
-        if path is None: path = pathlib.Path.cwd().joinpath(self.id)
+        if path is None: path = pathlib.Path.cwd().joinpath(self.patternId)
         patternPath = pathlib.Path(path)
 
         # ...the human-readable name.
         with open(patternPath.with_suffix('.metadata'), 'w') as outfile:
-            outfile.write(self.name)
+            outfile.write(self.patternName)
 
         # ...the preview image.
         with open(patternPath.with_suffix('.jpg'), 'wb') as outfile:
-            outfile.write(self.preview)
+            outfile.write(self.previewImage)
 
         # ...the human-readable source code.
         with open(patternPath.with_suffix('.js'), 'w') as outfile:
-            outfile.write(self.sources)
+            outfile.write(self.sourceCode)
 
 # ------------------------------------------------
 
@@ -2330,7 +3038,7 @@ class PixelblazeEnumerator:
         packets, maintains a list of Pixelblazes and supports synchronizing time
         on multiple Pixelblazes to allows them to run patterns simultaneously.
         Takes the IPv4 address of the interface to use for listening on the calling computer.
-        Listens on all available interfaces if addr is not specified.
+        Listens on all available interfaces if hostIP is not specified.
         """
         self.start(hostIP)
 

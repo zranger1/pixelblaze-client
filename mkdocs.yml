@@ -1,0 +1,7 @@
+site_name: Pixelblaze documentation
+
+theme:
+  name: "material"
+
+markdown_extensions:
+  - tables
