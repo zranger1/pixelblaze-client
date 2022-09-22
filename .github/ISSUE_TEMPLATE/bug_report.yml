@@ -1,0 +1,72 @@
+name: 🐞 Bug Report
+description: File a bug report.
+
+labels: ["bug"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Hi. Thanks for taking the time to fill out this bug report!
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: |
+        Describe your Environment.  To help us identify and isolate problems, we need to know the versions 
+        of your Operating System, Pixelblaze firmware, Python interpreter, and pixelblaze-client library.
+
+        The environment description might look like the following:
+          - **OS**: Windows 11
+          - **Python**: 3.8 (output of `python -V`)
+          - **Pixelblaze**: 3.24 (displayed on the webUI, or returned by the library function `getVersionNumber()`)
+          - **pixelblaze-client**: 1.0 (output of `npm -v`)
+      value: |
+        - OS:
+        - Python:
+        - Pixelblaze:
+        - pixelblaze-client:
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproducible example
+      description: Please describe how to reproduce the issue.  If possible, provide a small example program that triggers the problem.
+      placeholder: |
+        A description of how to reproduce the bug.
+        1. In this setup or under those conditions ...
+        2. Run ...
+        3. Encounter error ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: Please provide a concise description of what you expected to happen.
+      placeholder: A description of what you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      description: Please provide a concise description of what actually happened.
+      placeholder: A concise description of what actually happened.
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: |
+        Please provide any additional context that might be relevant for your bug report.
+
+        It might include screenshots, configuration (files) or log output.
+      placeholder: Any additional context that might be relevant for your bug report.
