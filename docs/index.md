@@ -17,7 +17,8 @@ which attempt to provide information on various aspects of the library to suit t
 ## Acknowledgements
 
 Thanks to: 
-* @wizard, for inventing the [Pixelblaze](https://electromage.com/) that makes it possible to do wondrous things with LEDs;
-* Eric Lawrence, for inventing the [Fiddler Web Debugger](https://www.telerik.com/fiddler/) that makes it possible to see the Pixelblaze wire protocols; and
-* Guido van Rossum, for inventing [a language](https://www.python.org/) that makes it possible to knock together a device driver in a matter of hours.
+
+* @wizard, for inventing the [Pixelblaze](https://electromage.com/) that makes it easy to do wondrous things with LEDs;
+* Eric Lawrence, for inventing the [Fiddler Web Debugger](https://www.telerik.com/fiddler/) that makes it easy to see the Pixelblaze wire protocols; and
+* Guido van Rossum, for inventing [a language](https://www.python.org/) that makes it easy to knock together in a matter of hours a device driver like this.
 

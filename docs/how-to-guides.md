@@ -51,7 +51,7 @@ The `EnumerateAddresses` iterator returns the IP address of each Pixelblaze it f
         print(f"  found a Pixelblaze at {ipAddress}")
 ```
 
-The `EnumerateDevices` iterator detects Pixelblazes and returns an initialized Pixelblaze object for controlling them:
+The `EnumerateDevices` iterator detects Pixelblazes and returns an initialized Pixelblaze object for each one:
 
 ```
     print("Finding Pixelblazes...")

@@ -6,9 +6,8 @@ theme:
 plugins:
   - search
   - mkapi
-      src_dirs: [
-        pixelblaze
-      ]
+      #src_dirs:
+        #pixelblaze
 
 markdown_extensions:
   - tables

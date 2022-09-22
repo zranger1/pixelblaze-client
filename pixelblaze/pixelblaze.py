@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-
 """
-A library that provides a simple, synchronous interface for communicating with and
-controlling Pixelblaze LED controllers.  
+A library that provides a simple, synchronous interface for communicating with and controlling Pixelblaze LED controllers.
 
-This modules contains the following classes:
+This module contains the following classes:
 
 - `Pixelblaze`: an object for controlling Pixelblazes.
 
@@ -14,8 +12,6 @@ This modules contains the following classes:
 - `PBP`: an object for creating and manipulating Pixelblaze Binary Patterns.
 
 - `EPE`: an object for creating and manipulating Electromage Pattern Exports.
-
-Requires Python 3 and the websocket-client module.
 """
 
 # Copyright 2020-2022 JEM (ZRanger1)
@@ -36,18 +32,21 @@ Requires Python 3 and the websocket-client module.
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
+
+__version__ = "1.0.0"
+
 #| Version | Date       | Author        | Comment                                 |
 #|---------|------------|---------------|-----------------------------------------|
-#|  v0.0.1 | 11/20/2020 | JEM(ZRanger1) |  Created |
-#|  v0.0.2 | 12/01/2020 | "             | Name change + color control methods |
-#|  v0.9.0 | 12/06/2020 | "             | Added PixelblazeEnumerator class |
-#|  v0.9.1 | 12/16/2020 | "             | Support for pypi upload |
-#|  v0.9.2 | 01/16/2021 | "             | Updated Pixelblaze sequencer support |
-#|  v0.9.3 | 04/13/2021 | "             | waitForEmptyQueue() return now agrees w/docs |
-#|  v0.9.4 | 02/04/2022 | "             | Added setPixelcount(),pause(), unpause(), pattern cache |
-#|  v0.9.5 | 07/16/2022 | @pixie        | Update ws_recv to receive long preview packets |
+#|  v1.0.0 | 01/10/2022 | @pixie        | large-scale refactoring to add new features; minor loss of compatibility |
 #|  v0.9.6 | 07/17/2022 | @pixie        | Tweak getPatternList() to handle slower Pixelblazes |
-#|  v1.9.7 | 01/09/2022 | @pixie        | large-scale refactoring to add new features; minor loss of compatibility |
+#|  v0.9.5 | 07/16/2022 | @pixie        | Update ws_recv to receive long preview packets |
+#|  v0.9.4 | 02/04/2022 | "             | Added setPixelcount(),pause(), unpause(), pattern cache |
+#|  v0.9.3 | 04/13/2021 | "             | waitForEmptyQueue() return now agrees w/docs |
+#|  v0.9.2 | 01/16/2021 | "             | Updated Pixelblaze sequencer support |
+#|  v0.9.1 | 12/16/2020 | "             | Support for pypi upload |
+#|  v0.9.0 | 12/06/2020 | "             | Added PixelblazeEnumerator class |
+#|  v0.0.2 | 12/01/2020 | "             | Name change + color control methods |
+#|  v0.0.1 | 11/20/2020 | JEM(ZRanger1) |  Created |
 
 from typing import Union
 import websocket
@@ -65,7 +64,6 @@ from re import T
 from urllib.parse import urlparse, urljoin
 from enum import Enum, Flag, IntEnum, IntFlag
 
-__version__ = "1.9.7"
 
 class Pixelblaze:
     """
@@ -2143,7 +2141,7 @@ class PBB:
         """
         # Make a connection to the Pixelblaze.
         with Pixelblaze(ipAddress, proxyUrl=proxyUrl) as pb:
-            return PBB.fromPixelblaze(pb, verbose)
+            return PBB.fromPixelblaze(pb, verbose=verbose)
 
     @staticmethod
     def fromPixelblaze(pb:Pixelblaze, verbose:bool=False) -> 'PBB': # 'Quoted' to defer resolution of forward reference; or could use 'from __future__ import annotations'
