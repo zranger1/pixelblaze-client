@@ -5,8 +5,7 @@ module.
 
 ## Requirements
 - Python 3.4-3.10
-
-* websocket-client (installable via pip, or from https://github.com/websocket-client/websocket-client
+- websocket-client (installable via pip, or from https://github.com/websocket-client/websocket-client)
 
 ## Installation
 Install with pip:
