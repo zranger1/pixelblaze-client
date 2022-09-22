@@ -142,7 +142,7 @@ def pbbTool():
             # Enumerate the available Pixelblazes on the network and see which ones match.
             for ipAddress in Pixelblaze.EnumerateAddresses(timeout=1500):
                 if (fnmatch.fnmatch(ipAddress, args.ipAddress)):
-                    args.func(PBB.fromIpAddress(ipAddress, args.verbose))
+                    args.func(PBB.fromIpAddress(ipAddress, proxyUrl=args.proxyUrl, verbose=args.verbose))
         else:
             parser.print_usage()
 
