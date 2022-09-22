@@ -9,15 +9,15 @@ and consists of four separate parts:
 
 1. [Tutorials](tutorials.md)
 2. [How-To Guides](how-to-guides.md)
-3. [Reference](pixelblaze.md)
-4. [Explanation](pixelblazeProtocol.md)
+3. [API Reference](pixelblaze.md)
+4. [The Pixelblaze Protocol](pixelblazeProtocol.md)
 
-which discuss different facets of the library and its applications to address a variety of use cases.
+which attempt to provide information on various aspects of the library to suit the needs of different users and use cases.
 
 ## Acknowledgements
 
 Thanks to: 
-* @wizard, for inventing the Pixelblaze that makes it possible to do wondrous things with LEDs;
+* @wizard, for inventing the [Pixelblaze](https://electromage.com/) that makes it possible to do wondrous things with LEDs;
 * Eric Lawrence, for inventing the [Fiddler Web Debugger](https://www.telerik.com/fiddler/) that makes it possible to see the Pixelblaze wire protocols; and
 * Guido van Rossum, for inventing [a language](https://www.python.org/) that makes it possible to knock together a device driver in a matter of hours.
 

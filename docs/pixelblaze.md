@@ -5,7 +5,7 @@
 # <kbd>module</kbd> `pixelblaze`
 A library that provides a simple, synchronous interface for communicating with and controlling Pixelblaze LED controllers.   
 
-This module contains the following classes: 
+This modules contains the following classes: 
 
 
 - `Pixelblaze`: an object for controlling Pixelblazes. 
