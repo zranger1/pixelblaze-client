@@ -59,6 +59,8 @@ The `EnumerateDevices` iterator detects Pixelblazes and returns an initialized P
             print(f"  at {pixelblaze.ipAddress} found '{pixelblaze.getDeviceName()}'")
 ```
 
+If you are looking for a specific Pixelblaze, use the `EnumerateAddresses` iterator; if you want to do something with *all* Pixelblazes, the `EnumerateDevices` iterator saves a few lines of code.
+
 ## How to connect to a Pixelblaze?
 
 The `Pixelblaze` class is used to communicate with and control a Pixelblaze.  To create a Pixelblaze object, create an instance of the class specifying its IP address as a string in the usual dotted-quad notation, i.e. "192.168.4.1".  
