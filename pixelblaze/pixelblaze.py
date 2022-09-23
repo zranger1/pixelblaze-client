@@ -5,13 +5,13 @@ A library that provides a simple, synchronous interface for communicating with a
 
 This module contains the following classes:
 
-- `Pixelblaze`: an object for controlling Pixelblazes.
+- [`Pixelblaze`](#class-pixelblaze): an object for controlling Pixelblazes.
 
-- `PBB`: an object for creating and manipulating Pixelblaze Binary Backups.
+- [`PBB`](#class-pbb): an object for creating and manipulating Pixelblaze Binary Backups.
 
-- `PBP`: an object for creating and manipulating Pixelblaze Binary Patterns.
+- [`PBP`](#class-pbp): an object for creating and manipulating Pixelblaze Binary Patterns.
 
-- `EPE`: an object for creating and manipulating Electromage Pattern Exports.
+- [`EPE`](#class-epe): an object for creating and manipulating Electromage Pattern Exports.
 """
 
 # Copyright 2020-2022 JEM (ZRanger1)
@@ -40,7 +40,7 @@ __version__ = "1.0.0"
 #|  v1.0.0 | 01/10/2022 | @pixie        | large-scale refactoring to add new features; minor loss of compatibility |
 #|  v0.9.6 | 07/17/2022 | @pixie        | Tweak getPatternList() to handle slower Pixelblazes |
 #|  v0.9.5 | 07/16/2022 | @pixie        | Update ws_recv to receive long preview packets |
-#|  v0.9.4 | 02/04/2022 | "             | Added setPixelcount(),pause(), unpause(), pattern cache |
+#|  v0.9.4 | 02/04/2022 | "             | Added setPixelcount(), pause(), unpause(), pattern cache |
 #|  v0.9.3 | 04/13/2021 | "             | waitForEmptyQueue() return now agrees w/docs |
 #|  v0.9.2 | 01/16/2021 | "             | Updated Pixelblaze sequencer support |
 #|  v0.9.1 | 12/16/2020 | "             | Support for pypi upload |
@@ -67,12 +67,112 @@ from enum import Enum, Flag, IntEnum, IntFlag
 
 class Pixelblaze:
     """
-    Presents a synchronous interface to a Pixelblaze's websocket API. 
+    The Pixelblaze class presents a simple synchronous interface to a single Pixelblaze's websocket API. 
     
-    The constructor takes the Pixelblaze's IPv4 address in the usual 12 digit numeric form (for example, "192.168.4.1")
-    and if successful, returns a connected Pixelblaze object.
+    The constructor takes the Pixelblaze's IPv4 address in the usual 12 digit numeric form (for example, "192.168.4.1"). To control multiple Pixelblazes, create multiple objects.
 
-    To control multiple Pixelblazes, create multiple objects.
+    The objective is to provide 99% coverage of the functionality of the Pixelblaze webUI, and so the supported methods are named and grouped according to the tabs of the webUI:
+
+    **OBJECT CREATION**
+
+    - [`__init__()`](#method-init)
+    - [`EnumerateAddresses()`](#method-enumerateaddresses)
+    - [`EnumerateDevices()`](#method-enumeratedevices)
+
+    **PATTERNS tab**
+    
+    *SEQUENCER section*
+    
+    - [`getSequencerMode`](#method-getSequencerMode)/[`setSequencerMode`](#method-setSequencerMode)
+    - [`getSequencerState`](#method-getSequencerState)/[`setSequencerState`](#method-setSequencerState)
+    - [`getSequencerShuffleTime`](#method-getSequencerShuffleTime)/[`setSequencerShuffleTime`](#method-setSequencerShuffleTime)
+    - [`getSequencerPlaylist`](#method-getSequencerPlaylist)/[`addToSequencerPlaylist`](#method-addToSequencerPlaylist)/[`setSequencerPlaylist`](#method-setSequencerPlaylist)
+
+    *SAVED PATTERNS section*
+
+    - [`getPatternList`](#method-getPatternList)
+    - [`getActivePattern`](#method-getActivePattern)/[`setActivePattern`](#method-setActivePattern)
+    - [`getActiveVariables`](#method-getActiveVariables)/[`setActiveVariables`](#method-setActiveVariables)
+    - [`getActiveControls`](#method-getActiveControls)/[`setActiveControls`](#method-setActiveControls)
+    - [`deletePattern`](#method-deletePattern)
+    - [`getPatternAsEpe`](#method-getPatternAsEpe)
+
+    **EDIT tab**
+
+    - [`getPatternControls`](#method-getPatternControls)
+    - [`getPatternSourceCode`](#method-getPatternSourceCode)
+    - [`sendPatternToRenderer`](#method-sendPatternToRenderer)
+    - [`savePattern`](#method-savePattern)
+
+    **MAPPER tab**
+
+    - [`getMapFunction`](#method-getMapFunction)/[`setMapFunction`](#method-setMapFunction)
+    - [`getMapData`](#method-getMapData)/[`setMapData`](#method-setMapData)
+
+    **SETTINGS tab**
+
+    - [`getConfigSettings`](#method-getConfigSettings)
+    - [`getConfigSequencer`](#method-getConfigSequencer)
+    - [`getConfigExpander`](#method-getConfigExpander)
+
+    ***NAME section***
+
+    - [`getDeviceName`](#method-getDeviceName)/[`setDeviceName`](#method-setDeviceName)
+    - [`getDiscovery`](#method-getDiscovery)/[`setDiscovery`](#method-setDiscovery)
+    - [`getTimezone`](#method-getTimezone)/[`setTimezone`](#method-setTimezone)
+    - [`getAutoOffEnable`](#method-getAutoOffEnable)/[`setAutoOffEnable`](#method-setAutoOffEnable)
+    - [`getAutoOffStart`](#method-getAutoOffStart)/[`setAutoOffStart`](#method-setAutoOffStart)
+    - [`getAutoOffEnd`](#method-getAutoOffEnd)/[`setAutoOffEnd`](#method-setAutoOffEnd)
+    
+    ***LED section***
+
+    - [`getBrightnessLimit`](#method-getBrightnessLimit)/[`setBrightnessLimit`](#method-setBrightnessLimit)
+    - [`getLedType`](#method-getLedType)/[`setLedType`](#method-setLedType)
+    - [`getPixelCount`](#method-getPixelCount)/[`setPixelCount`](#method-setPixelCount)
+    - [`getDataSpeed`](#method-getDataSpeed)/[`setDataSpeed`](#method-setDataSpeed)
+    - [`getColorOrder`](#method-getColorOrder)/[`setColorOrder`](#method-setColorOrder)
+    - [`getCpuSpeed`](#method-getCpuSpeed)/[`setCpuSpeed`](#method-setCpuSpeed)
+    - [`getNetworkPowerSave`](#method-getNetworkPowerSave)/[`setNetworkPowerSave`](#method-setNetworkPowerSave)
+    
+    ***UPDATES section***
+
+    - [`getUpdateState`](#method-getUpdateState)/[`installUpdate`](#method-installUpdate)
+    - [`getVersion`](#method-getVersion)/[`getVersionMajor`](#method-getVersionMajor)/[`getVersionMinor`](#method-getVersionMinor)/
+
+    ***BACKUPS section***
+
+    - [`saveBackup`](#method-saveBackup)/[`restoreFromBackup`](#method-restoreFromBackup)
+    - [`reboot`](#method-reboot)
+
+    **ADVANCED tab**
+
+    - [`getBrandName`](#method-getBrandName)/[`setBrandName`](#method-setBrandName)
+    - [`getSimpleUiMode`](#method-getSimpleUiMode)/[`setSimpleUiMode`](#method-setSimpleUiMode)
+    - [`getLearningUiMode`](#method-getLearningUiMode)/[`setLearningUiMode`](#method-setLearningUiMode)
+
+    **GLOBAL CONTROLS**
+
+    - [`getBrightnessSlider`](#method-getBrightnessSlider)/[`setBrightnessSlider`](#method-setBrightnessSlider)
+
+    **LOW-LEVEL SEND/RECEIVE**
+
+    - [`wsReceive`](#method-wsreceive)
+    - [`wsSendJson`](#method-wssendjson)
+    - [`wsSendBinary`](#method-wssendbinary)
+
+    **FILESYSTEM**
+
+    - [`getFileList`](#method-getfilelist)
+    - [`getFile`](#method-getfile)/[`putFile`](#method-putfile)/[`deleteFile`](#method-deletefile)
+
+    **STATISTICS**
+
+    - [`getStatistics`](#method-getStatistics)
+    - [`getFPS`](#method-getFPS)
+    - [`getUptime`](#method-getUptime)
+    - [`getStorageSize`](#method-getStorageSize)
+    - [`getStorageUsed`](#method-getStorageUsed)
+
     """
 
     # --- PRIVATE DATA
@@ -133,13 +233,20 @@ class Pixelblaze:
     # --- STATIC METHODS
     
     class LightweightEnumerator:
-        """Internal implementation class for the `EnumerateAddresses` and `EnumerateDevices` methods."""
+        """Internal implementation class for the [`EnumerateAddresses`](#method-enumerateaddresses) and [`EnumerateDevices`](#method-enumeratedevices) methods."""
 
         # Enumerated type for the type of the Enumerator.
         class EnumeratorTypes(IntEnum):
+            """Enumerator to specify the desired LightweightEnumerator type.
+
+            Args:
+                IntEnum (_type_): _description_
+            """
             noType = 0
             ipAddress = 1
+            """An enumerator that returns the IP Address of any Pixelblazes found."""
             pixelblazeObject = 2
+            """An enumerator that returns a Pixelblaze object for any Pixelblazes found."""
 
         # Members:
         listenSocket = None
@@ -152,9 +259,16 @@ class Pixelblaze:
         # private constructor:
         def __init__(self, enumeratorType:EnumeratorTypes, hostIP:str="0.0.0.0", timeout:int=1500, proxyUrl:str=None):
             """    
-            Create an interable object that listens for Pixelblaze beacon packets, returning
-            a Pixelblaze object for each unique beacon seen during the timeout period.
-            Listens on all available interfaces if hostIP is not specified.
+            Create an interable object that listens for Pixelblaze beacon packets, returning a Pixelblaze object for each unique beacon seen during the timeout period.
+
+            Args:
+                enumeratorType (EnumeratorTypes): Which of the available enumerator types to create.
+                hostIP (str, optional): The network interface on which to listen for Pixelblazes. Defaults to "0.0.0.0" meaning all available interfaces.
+                timeout (int, optional): The amount of time in milliseconds to listen for a new Pixelblaze to announce itself (They announce themselves once per second). Defaults to 1500.
+                proxyUrl (str, optional): The url of a proxy, if required, in the format "protocol://ipAddress:port" (for example, "http://192.168.0.1:8888"). Defaults to None.
+
+            Note:
+                This method is not intended to be called directly; use the static methods [`EnumerateAddresses`](#method-enumerateaddresses) or [`EnumerateDevices`](#method-enumeratedevices) to create and return an iterator object.
             """
             try:
                 self.enumeratorType = enumeratorType
@@ -194,9 +308,7 @@ class Pixelblaze:
                         if self.enumeratorType == Pixelblaze.LightweightEnumerator.EnumeratorTypes.ipAddress:
                             return ipAddress[0]
                         elif self.enumeratorType == Pixelblaze.LightweightEnumerator.EnumeratorTypes.pixelblazeObject:
-                            newOne = object.__new__(Pixelblaze)
-                            newOne.__init__(ipAddress[0], proxyUrl=self.proxyUrl)
-                            return newOne
+                            return Pixelblaze(ipAddress[0], proxyUrl=self.proxyUrl)
                         else: 
                             # No such type...How did that happen?
                             raise
@@ -281,18 +393,26 @@ class Pixelblaze:
     # --- LOW-LEVEL SEND/RECEIVE
 
     class messageTypes(IntEnum):
-        """The first byte of a binary frame contains the packet type."""
+        """Types of binary messages sent and received by a Pixelblaze.  The first byte of a binary frame contains the message type."""
         putSourceCode = 1       # from client to PB
+        """Send pattern sourceCode to the Pixelblaze"""
         putByteCode = 3         # from client to PB
+        """Send pattern byteCode to the Pixelblaze"""
         previewImage = 4        # from client to PB
+        """send pattern preview image to the Pixelblaze"""
         previewFrame = 5        # from PB to client
+        """send pattern preview frame to the client"""
         getSourceCode = 6       # from PB to client
+        """send pattern sourceCode to the client"""
         getProgramList = 7      # from client to PB
+        """send pattern list to the client"""
         putPixelMap = 8         # from client to PB
+        """send pixelMap to the Pixelblaze"""
         ExpanderConfig = 9      # from client to PB *and* PB to client
+        """send outputExpander configuration to the Pixelblaze or client"""
 
     class frameTypes(Flag):
-        """The second byte of a binary frames tells whether this packet is part of a set."""
+        """Continuation flags for messages sent and received by a Pixelblaze.  The second byte of a binary frame tells whether this packet is part of a set."""
         frameNone = 0
         frameFirst = 1
         frameMiddle = 2
@@ -1042,7 +1162,7 @@ class Pixelblaze:
             str: A string representation of a JSON dictionary containing the pattern source code.
         """
         sources = self.wsSendJson({"getSources":patternId}, expectedResponse=self.messageTypes.getSourceCode)
-        if sources is not None: return LZstring.decompress(sources)
+        if sources is not None: return _LZstring.decompress(sources)
         return None
 
     def sendPatternToRenderer(self, bytecode:bytes, controls:dict={}):
@@ -1069,7 +1189,7 @@ class Pixelblaze:
             byteCode (bytes): A valid blob of bytecode as generated by the Editor tab in the Pixelblaze webUI.
         """
         self.wsSendBinary(self.messageTypes.previewImage, previewImage, expectedResponse="ack")
-        self.wsSendBinary(self.messageTypes.putSourceCode, LZstring.compress(sourceCode), expectedResponse="ack")
+        self.wsSendBinary(self.messageTypes.putSourceCode, _LZstring.compress(sourceCode), expectedResponse="ack")
         self.wsSendBinary(self.messageTypes.putByteCode, byteCode, expectedResponse="ack")
 
     # --- MAPPER tab: Pixelmap settings
@@ -2111,6 +2231,15 @@ class PBB:
 
     # private constructor
     def __init__(self, name:str, blob:bytes):
+        """Initializes a new Pixelblaze Binary Backup (PBB) object.
+
+        Args:
+            id (str): The patternId of the pattern.
+            blob (bytes): The binary contents of the pattern.
+
+        Note:
+            This method is not intended to be called directly; use the static methods `fromFile()`, `fromIpAddress()` or `fromPixelblaze()` methods to create and return a Pixelblaze Binary Backup (PBB) object.
+        """
         self.__fromDevice = name
         self.__textData = blob
 
@@ -2362,11 +2491,14 @@ class PBP:
 
     # private constructor
     def __init__(self, id:str, blob:bytes):
-        """Initializes a new Pixelblaze Binary Pattern object.
+        """Initializes a new Pixelblaze Binary Pattern (PBP) object.
 
         Args:
             id (str): The patternId of the pattern.
             blob (bytes): The binary contents of the pattern.
+
+        Note:
+            This method is not intended to be called directly; use the static methods `fromBytes()`, `fromFile()`, `fromIpAddress()` or `fromPixelblaze()` methods to create and return a PBP object.
         """
         self.__id = id
         self.__binaryData = blob
@@ -2478,7 +2610,7 @@ class PBP:
         """
         # Calculate the offset for this component.
         offsets = struct.unpack('<9I', self.__binaryData[:36])
-        return LZstring.decompress(self.__binaryData[offsets[7]:offsets[7]+offsets[8]])
+        return _LZstring.decompress(self.__binaryData[offsets[7]:offsets[7]+offsets[8]])
 
     # Class methods:
     def toFile(self, fileName:str=None):
@@ -2563,10 +2695,13 @@ class EPE:
 
     # private constructor
     def __init__(self, blob:bytes):
-        """Creates and initializes a new Electromage Pattern Export (EPE).
+        """Initializes a new Electromage Pattern Export (EPE) object.
 
         Args:
             blob (bytes): The contents of the Electromage Pattern Export (EPE).
+
+        Note:
+            This method is not intended to be called directly; use the static methods `fromBytes()` or `fromFile()` to create and return an Electromage Pattern Export object. 
         """
         self.__textData = blob
 
@@ -2670,7 +2805,7 @@ class EPE:
 
 # ------------------------------------------------
 
-class LZstring:
+class _LZstring:
     # LZstring code borrowed (and truncated) from https://github.com/marcel-dancak/lz-string-python, which
     # on a cursory examination seems to be largely a copy of https://github.com/eduardtomasek/lz-string-python,
     # which has been forked to https://github.com/gkovacs/lz-string-python and published in PyPi as lzstring 1.0.4,

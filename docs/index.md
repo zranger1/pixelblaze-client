@@ -7,10 +7,10 @@ This site contains documentation for the Python pixelblaze-client library, which
 The documentation is organized according to the [Diátaxis documentation framework](https://diataxis.fr/)
 and consists of four separate parts:
 
-1. [Tutorials](tutorials.md)
-2. [How-To Guides](how-to-guides.md)
-3. [API Reference](pixelblaze.md)
-4. [The Pixelblaze Protocol](pixelblazeProtocol.md)
+1. [How-To Guides](how-to-guides.md)
+2. [API Reference](pixelblaze.md)
+3. [The Pixelblaze Protocol](pixelblazeProtocol.md)
+4. [Tutorials](tutorials.md)
 
 which attempt to provide information on various aspects of the library to suit the needs of different users and use cases.
 
