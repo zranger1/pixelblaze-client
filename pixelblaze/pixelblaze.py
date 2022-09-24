@@ -73,7 +73,7 @@ class Pixelblaze:
 
     The objective is to provide 99% coverage of the functionality of the Pixelblaze webUI, and so the supported methods are named and grouped according to the tabs of the webUI:
 
-    **OBJECT CREATION**
+    **CREATION**
 
     - [`__init__()`](#method-init)
     - [`EnumerateAddresses()`](#method-enumerateaddresses)
@@ -237,16 +237,10 @@ class Pixelblaze:
 
         # Enumerated type for the type of the Enumerator.
         class EnumeratorTypes(IntEnum):
-            """Enumerator to specify the desired LightweightEnumerator type.
-
-            Args:
-                IntEnum (_type_): _description_
-            """
-            noType = 0
-            ipAddress = 1
-            """An enumerator that returns the IP Address of any Pixelblazes found."""
-            pixelblazeObject = 2
-            """An enumerator that returns a Pixelblaze object for any Pixelblazes found."""
+            """Enumerator to specify the desired LightweightEnumerator type."""
+            noType = 0 # Not used
+            ipAddress = 1 # An enumerator that returns the IP Address of any Pixelblazes found.
+            pixelblazeObject = 2 # An enumerator that returns a Pixelblaze object for any Pixelblazes found.
 
         # Members:
         listenSocket = None
@@ -395,21 +389,13 @@ class Pixelblaze:
     class messageTypes(IntEnum):
         """Types of binary messages sent and received by a Pixelblaze.  The first byte of a binary frame contains the message type."""
         putSourceCode = 1       # from client to PB
-        """Send pattern sourceCode to the Pixelblaze"""
         putByteCode = 3         # from client to PB
-        """Send pattern byteCode to the Pixelblaze"""
         previewImage = 4        # from client to PB
-        """send pattern preview image to the Pixelblaze"""
         previewFrame = 5        # from PB to client
-        """send pattern preview frame to the client"""
         getSourceCode = 6       # from PB to client
-        """send pattern sourceCode to the client"""
         getProgramList = 7      # from client to PB
-        """send pattern list to the client"""
         putPixelMap = 8         # from client to PB
-        """send pixelMap to the Pixelblaze"""
         ExpanderConfig = 9      # from client to PB *and* PB to client
-        """send outputExpander configuration to the Pixelblaze or client"""
 
     class frameTypes(Flag):
         """Continuation flags for messages sent and received by a Pixelblaze.  The second byte of a binary frame tells whether this packet is part of a set."""
@@ -1920,8 +1906,7 @@ class Pixelblaze:
     def pauseRenderer(self, doPause):
         """
         Pause rendering. Lasts until unpause() is called or the Pixelblaze is reset.
-        CAUTION: For advanced users only.  If you don't know
-        exactly why you want to do this, DON'T DO IT.
+        CAUTION: For advanced users only.  If you don't know exactly why you want to do this, DON'T DO IT.
         """
         assert type(doPause) is bool
         self.wsSendJson({"pause": doPause}, expectedResponse="ack")
@@ -2048,6 +2033,8 @@ class Pixelblaze:
         self.pauseRenderer(False)
 
     def ws_flush(self):
+        """Deprecated."""
+        self.__printDeprecationMessage(self.deprecationReasons.notRequired, "ws_flush", "{not-required}")
         """
         Utility method: drain websocket receive buffers. Called to clear out unexpected
         packets before sending requests for data w/send_string(). We do not call it
@@ -2224,7 +2211,28 @@ class Pixelblaze:
 # ------------------------------------------------
 
 class PBB:
-    """This class represents a Pixelblaze Binary Backup, as created from the Settings menu on a Pixelblaze."""
+    """This class provides methods for importing, exporting, and manipulating the contents of a Pixelblaze Binary Backup, as created from the Settings menu on a Pixelblaze.
+
+    **CREATION**
+    - [`fromFile()`](method-fromfile)
+    - [`fromIpAddress()`](method-fromipaddress)
+    - [`fromPixelblaze()`](method-frompixelblaze)
+
+    **PROPERTIES**
+    - [`deviceName()`](method-devicename)
+    - [`getFileList()`](method-getfilelist)
+
+    **MANIPULATION**
+    - [`getFile()`](method-getfile)/[`putFile()`](method-putfile)/[`deleteFile()`](method-deletefile)
+
+    **PERSISTENCE**
+    - [`toFile()`](method-tofile)
+    - [`toIpAddress()`](method-toipaddress)
+    - [`toPixelblaze()`](method-topixelblaze)
+
+    Note: 
+        The constructor is not intended to be called directly; objects are created and returned from the object creation methods described above.
+    """
     # Members:
     __textData = None
     __fromDevice = None
@@ -2478,7 +2486,32 @@ class PBB:
 # ------------------------------------------------
 
 class PBP:
-    """This class represents a Pixelblaze Binary Pattern, as stored on the Pixelblaze filesystem or contained in a Pixelblaze Binary Backup."""
+    """This class represents a Pixelblaze Binary Pattern, as stored on the Pixelblaze filesystem or contained in a Pixelblaze Binary Backup.
+    
+    **CREATION**
+    - [`fromBytes()`](method-frombytes)
+    - [`fromFile()`](method-fromfile)
+    - [`fromIpAddress()`](method-fromipaddress)
+    - [`fromPixelblaze()`](method-frompixelblaze)
+
+    **PROPERTIES**
+    - [`id()`](method-id)
+    - [`name()`](method-name)
+    - [`jpeg()`](method-jpeg)
+    - [`byteCode()`](method-bytecode)
+    - [`sourceCode()`](method-sourcecode)
+
+    **PERSISTENCE**
+    - [`toFile()`](method-tofile)
+    - [`toIpAddress()`](method-toipaddress)
+    - [`toPixelblaze()`](method-topixelblaze)
+    - [`toEPE()`](method-toepe)
+    - [`explode()`](method-explode)
+
+
+    Note: 
+        The constructor is not intended to be called directly; objects are created and returned from the object creation methods described above.
+    """
     # Members:
     __id = None
     __binaryData = None
@@ -2689,7 +2722,25 @@ class PBP:
 # ------------------------------------------------
 
 class EPE:
-    """This class represents an Electromage Pattern Export (EPE), as exported from the Patterns list on a Pixelblaze."""
+    """This class provides methods for importing, exporting, and manipulating the contents of an Electromage Pattern Export (EPE), as exported from the Patterns list on a Pixelblaze.
+
+    **CREATION**
+    - [`fromBytes()`](method-frombytes)
+    - [`fromFile()`](method-fromfile)
+
+    **PROPERTIES**
+    - [`patternId()`](method-patternid)
+    - [`patternName()`](method-patternname)
+    - [`sourceCode()`](method-sourcecode)
+    - [`previewImage()`](method-previewimage)
+
+    **PERSISTENCE**
+    - [`toFile()`](method-tofile)
+    - [`explode()`](method-explode)
+
+    Note: 
+        The constructor is not intended to be called directly; objects are created and returned from the object creation methods described above.
+    """
     # Members:
     __textData = None
 

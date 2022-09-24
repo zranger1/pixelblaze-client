@@ -28,3 +28,5 @@ nav:
   - pixelblaze.md
   - pixelblazeProtocol.md
   - tutorials.md
+  - API: mkapi/api/pixelblaze/pixelblaze
+  #- api/pixelblaze.md
