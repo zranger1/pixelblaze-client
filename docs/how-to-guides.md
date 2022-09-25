@@ -90,7 +90,7 @@ The `Pixelblaze` class can be used in a `with` statement, which will automatical
 
 Otherwise the connection will remain open until the Pixelblaze object goes out of scope and is garbage-collected.
 
-## How to change the pattern?
+## How to set which pattern is playing?
 
 Pixelblaze refers to its patterns using an alphanumeric ID code which remains constant for the lifetime of a pattern.  Patterns also have a human-readable name which is displayed in the webUI pattern list and pattern editor, but it can be changed by the user so is not supported by this or the Pixelblaze API.
 
@@ -117,3 +117,8 @@ And finally, pass the patternId and the controls (which may be `None` if there w
     pb.setActivePattern(patternId, controls)
 ```
 
+## How to change the parameters of the pattern that is currently playing?
+
+Pixelblaze patterns can, if so designed, be modified at runtime in two ways.
+
+Some patterns contain user interface elements such as sliders, color pickers or input numbers that can be used in the Pixelblaze webUI to adjust the pattern.  For these patterns, the values of the UI controls for the pattern currently playing can be read and modified with the `getActiveControls()` method (which returns a dictionary containing all the controls); then new values for one or all of the controls can be modified and sent back to the Pixelblaze with the `setActiveControls()` method.

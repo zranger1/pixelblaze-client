@@ -684,7 +684,7 @@ class Pixelblaze:
         with requests.get(self.getUrl(fileName), proxies=self.proxyDict) as rGet:
             if rGet.status_code not in [200, 404]:
                 rGet.raise_for_status()
-                return None
+            if rGet.status_code != 200: return None
             return rGet.content
 
     def putFile(self, fileName:str, fileContents:bytes) -> bool:
