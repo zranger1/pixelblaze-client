@@ -1,6 +1,17 @@
 #!/usr/bin/env python3
-import argparse, fnmatch, pathlib
-# Pixelblaze client library
+# Import standard library modules.
+import os
+import subprocess
+import sys
+import argparse
+import fnmatch
+import pathlib
+import json
+import base64
+import re
+import io
+
+# Install (if necessary) and import 3rd-party modules.
 from pixelblaze import *
 
 # ------------------------------------------------
@@ -32,7 +43,7 @@ def pbbTool():
             if args.verbose: print(f"  Uploading {filename}")
             pb.putFile(filename, pbb.getFile(filename))
 
-    def listPBB(pbb):
+    def listPBB(pbb:PBB):
         if args.verbose:
             # List all the files on the filesystem by internal name.
             print(f"The backup of '{pbb.deviceName}' contains the following files:")
@@ -142,7 +153,7 @@ def pbbTool():
             # Enumerate the available Pixelblazes on the network and see which ones match.
             for ipAddress in Pixelblaze.EnumerateAddresses(timeout=1500):
                 if (fnmatch.fnmatch(ipAddress, args.ipAddress)):
-                    args.func(PBB.fromIpAddress(ipAddress, proxyUrl=args.proxyUrl, verbose=args.verbose))
+                    args.func(PBB.fromIpAddress(ipAddress, args.verbose))
         else:
             parser.print_usage()
 

@@ -60,6 +60,7 @@ import requests
 import pytz
 import math
 import pathlib
+import errno
 from re import T
 from urllib.parse import urlparse, urljoin
 from enum import Enum, Flag, IntEnum, IntFlag
@@ -194,6 +195,7 @@ class Pixelblaze:
     latestExpander = None
     latestVersion = None
     latestUpdateCheck = None
+    connectionBroken = False
 
     # --- OBJECT LIFETIME MANAGEMENT (CREATION/DELETION)
 
@@ -433,16 +435,16 @@ class Pixelblaze:
                     frameType = frame[0]
                     if frameType == self.messageTypes.previewFrame.value: 
                         # This packet type doesn't have frameType flags.
-                        if binaryMessageType == self.messageTypes.previewFrame: 
-                            return frame[1:] 
-                        else:
-                            continue
+                        if binaryMessageType == self.messageTypes.previewFrame: return frame[1:] 
+                        else: continue # We weren't looking for a preview frame, so ignore it.
+                            
                     # Check the flags to see if we need to read more packets.
                     frameFlags = frame[1]
                     if message is None and not (frameFlags & self.frameTypes.frameFirst.value): raise # The first frame must be a start frame
                     if message is not None and (frameFlags & self.frameTypes.frameFirst.value): raise # We shouldn't get a start frame after we've started
-                    if message is None: message = frame[2:]
-                    else: message += frame[2:]
+                    if message is None: message = frame[2:] # Start with the first packet...
+                    else: message += frame[2:] #...and append the rest until we reach the end.
+                    
                     # If we've received all the packets, deal with the message.
                     if (frameFlags & self.frameTypes.frameLast.value):
                         # Expander config frames are ONLY sent during a config request, but they sometimes arrive
@@ -462,10 +464,18 @@ class Pixelblaze:
 
             except websocket._exceptions.WebSocketConnectionClosedException: # try reopening
                 #print("wsReceive reconnection")
+                self.connectionBroken = True
                 self._close()
                 self._open()
 
+            except IOError as e:  
+                if e.errno == errno.EPIPE:
+                    self.connectionBroken = True
+                    self._close()
+                    self._open()
+
             except Exception as e:
+                self.connectionBroken = True
                 print(f"wsReceive: unknown exception: {e}")
                 raise
 
@@ -487,12 +497,16 @@ class Pixelblaze:
         Returns:
             Union[str, bytes, None]: The message received from the Pixelblaze (of type bytes for binaryMessageTypes, otherwise of type str), or None if a timeout occurred.
         """
+        self.connectionBroken = False
         while True:
             try:
                 self._open() # make sure it's open, even if it closed while we were doing other things.
                 self.ws.send(json.dumps(command, indent=None, separators=(',', ':')).encode("utf-8"))
                 if expectedResponse is None: 
                     return None
+
+                # If the pipe broke while we were sending, restart from the beginning.
+                if self.connectionBroken: break
 
                 # Wait for the expected response.
                 while True:
@@ -509,10 +523,18 @@ class Pixelblaze:
                 return response
 
             except websocket._exceptions.WebSocketConnectionClosedException:
+                self.connectionBroken = True
                 self._close()
                 self._open()   # try reopening
 
+            except IOError as e:  
+                if e.errno == errno.EPIPE:
+                    self.connectionBroken = True
+                    self._close()
+                    self._open()
+
             except:
+                self.connectionBroken = True
                 self._close()
                 self._open()   # try reopening
                 #raise
@@ -528,6 +550,7 @@ class Pixelblaze:
         Returns:
             response: The message received from the Pixelblaze (of type bytes for binaryMessageTypes, otherwise of type str), or None if a timeout occurred.
         """
+        self.connectionBroken = False
         while True:
             try:
                 # Break the frame into manageable chunks.
@@ -548,6 +571,9 @@ class Pixelblaze:
                     # Send the packet.
                     self.ws.send_binary(bytes(frameHeader) + blob[i:i + maxFrameSize])
 
+                    # If the pipe broke while we were sending, restart from the beginning.
+                    if self.connectionBroken: break
+
                     # Wait for the expected response.
                     while True:
                         # Loop until we get the right text response.
@@ -565,12 +591,20 @@ class Pixelblaze:
             except websocket._exceptions.WebSocketConnectionClosedException:
                 print("wsSendBinary reconnection")
                 # try reopening
+                self.connectionBroken = True
                 self._close()
                 self._open()   
+
+            except IOError as e:  
+                if e.errno == errno.EPIPE:
+                    self.connectionBroken = True
+                    self._close()
+                    self._open()
 
             except:
                 print("wsSendBinary received unexpected exception")
                 # try reopening
+                self.connectionBroken = True
                 self._close()
                 self._open()
                 #raise
