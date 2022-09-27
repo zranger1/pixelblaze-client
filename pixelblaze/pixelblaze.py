@@ -1058,7 +1058,7 @@ class Pixelblaze:
             save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         """Functionality changed."""
-        self.__printDeprecationMessage(self.deprecationReasons.functionalityChanged, "setActivePattern(name_or_id)", "setActivePattern(id)")
+        if len(patternId) != 17: self.__printDeprecationMessage(self.deprecationReasons.functionalityChanged, "setActivePattern(name_or_id)", "setActivePattern(id)")
         self.wsSendJson({"activeProgramId": patternId, "save": save}, expectedResponse="activeProgram")
 
     def getPatternAsEpe(self, patternId:str) -> str:
