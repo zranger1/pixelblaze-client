@@ -16,14 +16,10 @@ There is no guarantee that this information has been, is, or will remain correct
 - The Pixelblaze runs both a webserver (listening on :80) and a websocket server (listening on port 81).  When a client webbrowser connects to the Pixelblaze webUI on port 80, the webserver  returns the file `index.html.gz` which contains the webUI application. The webbrowser unpacks and executes the webUI application (written in javascript), and _most_ of the subsequent interactions take place over the websocket (the exceptions are structured as REST-ish commands to `GET`, `POST` or `DELETE` information using HTTP).
 
 - In general, the websocket protocol is client-server with the webUI making a request and, in most cases, the Pixelblaze sending a response. HOWEVER, the Pixelblaze also sends four packets out-of-band which can interrupt the request/response flow:
-
-  - After each render cycle, a preview frame representing the pixels of the currently executing pattern are sent as a binary packet of type 05 (_previewFrame_) whose format is described below;
-
-  - Whenever the current pattern is changed by the sequencer, the Pixelblaze sends the new  state of the sequencer: `{"activeProgram":{"activeProgramId":patternId,"controls":{}},"sequencerMode":sequencerMode,"runSequencer":true,"playlist":{"position":0,"id":"\_defaultplaylist\_","ms":sequencerTime,"remainingMs":countdown}}`; 
-  
-  - Once every second, the Pixelblaze sends a message with diagnostics and statistics: `{"fps":41.95804,"vmerr":0,"vmerrpc":-1,"mem":2111,"exp":0,"renderType":2,"uptime":48156306,"storageUsed":795419,"storageSize":2949250}`; and
-
-  - The response to the `{"getConfig":true}` request consists of three separate messages (detailed below) that can come out of sequence.
+  * After each render cycle, a preview frame representing the pixels of the currently executing pattern are sent as a binary packet of type 05 (_previewFrame_) whose format is described below;
+  * Whenever the current pattern is changed by the sequencer, the Pixelblaze sends the new  state of the sequencer: `{"activeProgram":{"activeProgramId":patternId,"controls":{}},"sequencerMode":sequencerMode,"runSequencer":true,"playlist":{"position":0,"id":"\_defaultplaylist\_","ms":sequencerTime,"remainingMs":countdown}}`; 
+  * Once every second, the Pixelblaze sends a message with diagnostics and statistics: `{"fps":41.95804,"vmerr":0,"vmerrpc":-1,"mem":2111,"exp":0,"renderType":2,"uptime":48156306,"storageUsed":795419,"storageSize":2949250}`; and
+  * The response to the `{"getConfig":true}` request consists of three separate messages (detailed below) that can come out of sequence.
 
 - Most websocket messages are JSON strings, but a few messages are sent as binary packets containing a *messageType* byte, a *continuationFlags* byte, and *dataBlock*s of varying lengths.
 
