@@ -92,33 +92,31 @@ Otherwise the connection will remain open until the Pixelblaze object goes out o
 
 ## How to set which pattern is playing?
 
-Pixelblaze refers to its patterns using an alphanumeric ID code which remains constant for the lifetime of a pattern.  Patterns also have a human-readable name which is displayed in the webUI pattern list and pattern editor, but it can be changed by the user so is not supported by this or the Pixelblaze API.
+Pixelblaze refers to its patterns using an alphanumeric ID code which remains constant for the lifetime of a pattern.  Patterns also have a human-readable name which is displayed in the webUI pattern list and pattern editor, but it can be changed by the user so is not supported the Pixelblaze API.
 
-To find the ID of a pattern, use the `getPatternList()` method which returns a list of `(patternId, patternName)` tuples:
+To find the ID of the patterns on the Pixelblaze, use the `getPatternList()` method which returns a dictionary where the key is the patternId and the value is the patternName:
 
 ```
     # Get the pattern list.
-    list = pb.getPatternList()
+    patterns = pb.getPatternList()
 
     # Select first element of the first tuple in the list.
-    patternId = list[0][0]
+    patternId = patterns[0].key
+
+    # Or search for a pattern by name.
+    patternId = dict((value, key) for key, value in patterns.items()).get("patternName")
 ```
 
-Some patterns have UI controls which can be used to adjust the appearance of the patterns.  To retrieve the UI controls, use the `getPatternControls()` method:
-
-```
-    # Fetch any UI controls for this pattern.
-    controls = pb.getPatternControls(patternId)
-```
-
-And finally, pass the patternId and the controls (which may be `None` if there were no controls) to the `setActivePattern()` method:
+And finally, pass the patternId to the `setActivePattern()` method:
 ```
     # Ask the Pixelblaze to display this pattern.
-    pb.setActivePattern(patternId, controls)
+    pb.setActivePattern(patternId)
 ```
 
 ## How to change the parameters of the pattern that is currently playing?
 
 Pixelblaze patterns can, if so designed, be modified at runtime in two ways.
 
-Some patterns contain user interface elements such as sliders, color pickers or input numbers that can be used in the Pixelblaze webUI to adjust the pattern.  For these patterns, the values of the UI controls for the pattern currently playing can be read and modified with the `getActiveControls()` method (which returns a dictionary containing all the controls); then new values for one or all of the controls can be modified and sent back to the Pixelblaze with the `setActiveControls()` method.
+Patterns can contain user interface elements such as sliders, color pickers or input numbers that allow a user of the Pixelblaze webUI to adjust the pattern.  The values of the UI controls for the pattern currently playing can be read with the `getActiveControls()` method (which returns a dictionary containing all the controls); then new values for one or all of the controls can be modified and sent back to the Pixelblaze with the `setActiveControls()` method.
+
+Patterns can also export variables that can be accessed and modified by external clients. The values of the variables for the pattern currently playing can be read with the `getActiveVariables()` method (which returns a dictionary containing all the variables); then new values for one or all of the variables can be modified and sent back to the Pixelblaze with the `setActiveVariables()` method.
