@@ -92,7 +92,7 @@ Otherwise the connection will remain open until the Pixelblaze object goes out o
 
 ## How to set which pattern is playing?
 
-Pixelblaze refers to its patterns using an alphanumeric ID code which remains constant for the lifetime of a pattern.  Patterns also have a human-readable name which is displayed in the webUI pattern list and pattern editor, but it can be changed by the user so is not supported the Pixelblaze API.
+Pixelblaze refers to its patterns using an alphanumeric ID code which remains constant for the lifetime of a pattern.  Patterns also have a human-readable name which is displayed in the webUI pattern list and pattern editor, but this can be changed by the user so it is not supported by the Pixelblaze API.
 
 To find the ID of the patterns on the Pixelblaze, use the `getPatternList()` method which returns a dictionary where the key is the patternId and the value is the patternName:
 
