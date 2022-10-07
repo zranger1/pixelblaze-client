@@ -8,12 +8,12 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name = 'pixelblaze-client',
-    version = "0.9.6",
+    version = "1.0.0",
     description = 'Library for Pixelblaze addressable LED controller.',
     long_description=long_description,
     long_description_content_type="text/markdown",
     url = 'https://github.com/zranger1/pixelblaze-client',
-    author = 'ZRanger1',
+    author = 'pixxxie & ZRanger1'
     license='MIT',
     classifiers=[
       "Development Status :: 4 - Beta",    
