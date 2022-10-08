@@ -14,6 +14,8 @@ This module contains the following classes:
 - [`EPE`](#class-epe): an object for creating and manipulating Electromage Pattern Exports.
 """
 
+# ----------------------------------------------------------------------------
+
 # Copyright 2020-2022 JEM (ZRanger1)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -33,6 +35,8 @@ This module contains the following classes:
 # THE SOFTWARE.
 #
 
+# ----------------------------------------------------------------------------
+
 __version__ = "1.0.0"
 
 #| Version | Date       | Author        | Comment                                 |
@@ -48,23 +52,32 @@ __version__ = "1.0.0"
 #|  v0.0.2 | 12/01/2020 | "             | Name change + color control methods |
 #|  v0.0.1 | 11/20/2020 | JEM(ZRanger1) |  Created |
 
-from typing import Union
-import websocket
-import socket
-import json
-import base64
-import time
-import struct
-import threading
-import requests
-import pytz
-import math
-import pathlib
-import errno
-from re import T
-from urllib.parse import urlparse, urljoin
-from enum import Enum, Flag, IntEnum, IntFlag
+# ----------------------------------------------------------------------------
 
+#   Standard library imports.
+import socket
+import errno
+import json
+import time
+import threading
+import math
+import base64
+import struct
+import pathlib
+import pytz
+from re import T
+from typing import Union
+from enum import Enum, Flag, IntEnum, IntFlag
+from urllib.parse import urlparse, urljoin
+
+#   Related third party imports.
+import websocket
+import requests
+
+#   Local application/library specific imports.
+#   -None-
+
+# ----------------------------------------------------------------------------
 
 class Pixelblaze:
     """
@@ -2241,8 +2254,7 @@ class Pixelblaze:
         self.setSequencerMode(self.sequencerModes.Off) 
         self.pauseSequencer()
 
-
-# ------------------------------------------------
+# ----------------------------------------------------------------------------
 
 class PBB:
     """This class provides methods for importing, exporting, and manipulating the contents of a Pixelblaze Binary Backup, as created from the Settings menu on a Pixelblaze.
@@ -2517,7 +2529,7 @@ class PBB:
         if verbose: print(f"  Rebooting {pb.ipAddress}")
         pb.reboot()
 
-# ------------------------------------------------
+# ----------------------------------------------------------------------------
 
 class PBP:
     """This class represents a Pixelblaze Binary Pattern, as stored on the Pixelblaze filesystem or contained in a Pixelblaze Binary Backup.
@@ -2753,7 +2765,7 @@ class PBP:
         # and combine the above into a portable JSON archive (.EPE)
         self.toEPE().toFile(patternPath.with_suffix('.epe'))
 
-# ------------------------------------------------
+# ----------------------------------------------------------------------------
 
 class EPE:
     """This class provides methods for importing, exporting, and manipulating the contents of an Electromage Pattern Export (EPE), as exported from the Patterns list on a Pixelblaze.
@@ -2888,7 +2900,7 @@ class EPE:
         with open(patternPath.with_suffix('.js'), 'w') as outfile:
             outfile.write(self.sourceCode)
 
-# ------------------------------------------------
+# ----------------------------------------------------------------------------
 
 class _LZstring:
     # LZstring code borrowed (and truncated) from https://github.com/marcel-dancak/lz-string-python, which
@@ -3228,7 +3240,7 @@ class _LZstring:
 
         return "".join(context_data)
 
-# ------------------------------------------------
+# ----------------------------------------------------------------------------
 
 class PixelblazeEnumerator:
     """
@@ -3407,5 +3419,3 @@ class PixelblazeEnumerator:
         for record in self.devices.values():
             dev.append(record["address"][0])  # just the ip
         return dev
-
-
