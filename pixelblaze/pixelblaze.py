@@ -2025,8 +2025,8 @@ class Pixelblaze:
 
     def setSequenceTimer(self, n):
         """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.renamed, "setSequenceTimer", "setShuffleTime")
-        self.setShuffleTime(n)
+        self.__printDeprecationMessage(self.deprecationReasons.renamed, "setSequenceTimer", "setSequencerShuffleTime")
+        self.setSequencerShuffleTime(n)
 
     def ws_recv(self, wantBinary=False, packetType=0x07):
         """Deprecated."""
