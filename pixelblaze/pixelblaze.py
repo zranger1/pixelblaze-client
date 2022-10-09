@@ -1058,7 +1058,7 @@ class Pixelblaze:
             save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         """Functionality changed."""
-        if len(patternId) != 17: self.__printDeprecationMessage(self.deprecationReasons.functionalityChanged, "setActivePattern(name_or_id)", "setActivePattern(id)")
+        if len(patternId) != 17: self.__printDeprecationMessage(self.deprecationReasons.functionalityChanged, "setActivePattern(name_or_id)", "setActivePattern(id)/setActivePatternByName(name")
         self.wsSendJson({"activeProgramId": patternId, "save": save}, expectedResponse="activeProgram")
 
     def getPatternAsEpe(self, patternId:str) -> str:
@@ -1935,7 +1935,11 @@ class Pixelblaze:
         """
         return int(round(time.time() * 1000))
 
-    # --- LEGACY FUNCTIONS (may be deprecated in the near future)
+    # --- LEGACY FUNCTIONS (may be deprecated, removed or altered in the near future)
+    #    
+    # (Note to future editors:  Some of these functions exist because they're very
+    # handy for home automation integrations.  If you deprecate or eliminate, make
+    # sure you've provided an easy-to-use replacement in the current API.  
 
     def pauseRenderer(self, doPause):
         """
@@ -2014,233 +2018,6 @@ class Pixelblaze:
         """
         # a million seconds is about 277 hours or about 11.5 days.  Probably long enough.
         self.cacheRefreshInterval = 1000 * self._clamp(seconds, 0, 1000000)
-
-    # --- PUBLIC FUNCTIONS TO BE DEPRECATED
-
-    @property
-    def ipAddr(self):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.renamed, "ipAddr", "ipAddress")
-        return self.ipAddress
-
-    def setSequenceTimer(self, n):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.renamed, "setSequenceTimer", "setSequencerShuffleTime")
-        self.setSequencerShuffleTime(n)
-
-    def ws_recv(self, wantBinary=False, packetType=0x07):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.functionalityChanged, "ws_recv", "wsReceive")
-        """
-        Utility method: Blocking websocket receive that waits for a packet of a given type
-        and gracefully handles errors and stray extra packets.
-        """
-        result = None
-        try:
-            while True:  # loop until we hit timeout or have the packet we want
-                result = self.ws.recv()
-                #resp_opcode, result = self.ws.recv_data()
-                if type(result) is str:
-                    if wantBinary is False: break
-                elif result[0] is packetType: break
-                else: continue
-
-        except websocket._exceptions.WebSocketTimeoutException:
-            return None  # timeout -- we can just ignore this
-
-        except websocket._exceptions.WebSocketConnectionClosedException:
-            self._close()
-            self._open()   # try reopening
-        except Exception as e:
-            print(f"ws_recv unknown exception: {e}")
-
-        return result
-
-    def pause(self):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.functionalityChanged, "pause", "pauseRenderer(true)")
-        self.pauseRenderer(True)
-
-    def unpause(self):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.functionalityChanged, "pause", "pauseRenderer(false)")
-        self.pauseRenderer(False)
-
-    def ws_flush(self):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.notRequired, "ws_flush", "{not-required}")
-        """
-        Utility method: drain websocket receive buffers. Called to clear out unexpected
-        packets before sending requests for data w/send_string(). We do not call it
-        before simply sending commands because it has a small performance cost.
-
-        This is one of the treacherously "clever" things done to make pixelblaze-client
-        work as a synchronous API when the Pixelblaze may be sending out unexpected
-        packets or talking to multiple devices.  We do some extra work to make sure
-        we're only receiving the packets we want.
-        """
-
-        # set very short timeout.
-        self.ws.settimeout(0.1)
-
-        # eat packets until we get a timeout exception on recv(), indicating
-        # that there are no more pending packets
-        try:
-            while True:
-                self.ws.recv()
-        except websocket._exceptions.WebSocketTimeoutException:
-            # restore normal timeout when done
-            self.ws.settimeout(self.default_recv_timeout)
-        return
-
-    def waitForEmptyQueue(self, timeout_ms=1000):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.notRequired, "waitForEmptyQueue", "{no longer needed}")
-        """
-        Wait until the Pixelblaze's websocket message queue is empty, or until
-        timeout_ms milliseconds have elapsed.  Returns True if an empty queue
-        acknowledgement was received, False otherwise.  Throws an exception
-        if the socket is disconnected.
-        """
-        self.ws_flush()
-        self.ws.settimeout(timeout_ms / 1000)
-        try:
-            result = self.wsSendJson({"ping": True}, expectedResponse="ack")
-            self.ws.settimeout(self.default_recv_timeout)
-            #return True if ((result is not None) and (result.startswith('{"ack"'))) else False
-            # was failing with "startswith needs string, not int"
-            if result is not None:
-                if len(result) > 0:
-                    if result[0] == '{':
-                        if result.startswith('{"ack"'):
-                            return True
-            return False
-
-        except websocket._exceptions.WebSocketTimeoutException:
-            self.ws.settimeout(self.default_recv_timeout)
-
-        return False
-
-    def setBrightness(self, n, save=False):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.renamed, "setBrightness", "setBrightnessLimit")
-        self.setBrightnessLimit(n, save)
-
-    def getHardwareConfig(self):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.functionalityChanged, "getHardwareConfig", "getConfig{Settings|Sequencer|Expander}")
-        return self.getConfigSettings()
-
-    def set_timeout(self, timeout):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.notRequired, "set_timeout", "{no longer needed}")
-        """Sets the websocket timeout. If you don't know why you need to do this, you don't need to do this."""
-        self.ws.settimeout(timeout)
-
-    def get_timeout(self):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.notRequired, "get_timeout", "{no longer needed}")
-        """Gets the websocket timeout. If you don't know why you need to do this, you don't need to do this."""
-        return self.ws.gettimeout()
-
-    def _enable_flash_save(self):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.notRequired, "_enable_flash_save", "{no longer needed}")
-        """
-        IMPORTANT SAFETY TIP:
-           To preserve your Pixelblaze's flash memory, which can wear out after a number of
-           cycles, you must call this method before using setControls() with the
-           save parameter set to True.
-           If this method is not called, setControls() will ignore the save parameter
-           and will not save settings to flash memory.
-        """
-        return
-
-    def getControls(self, pattern=None):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.renamed, "getControls()", "getPatternControls()")
-        if pattern is None: return self.getActiveControls()
-        else: return self.getPatternControls(pattern)
-
-    def setControls(self, json_ctl, save=False):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.renamed, "setControls()", "setActiveControls()")
-        return self.setActiveControls(json_ctl, save)
-
-    def _get_current_controls(self):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.notRequired, "_get_current_controls", "{not required}")
-        return self.getConfigSequencer().get('activeProgram', {}).get('controls', {})
-
-    def getVars(self):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.renamed, "getVars", "getActiveVariables")
-        return self.getActiveVariables()
-
-    def setVars(self, json_vars):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.renamed, "setVars", "setActiveVariables")
-        return self.setActiveVariables(json_vars)
-
-    def setVariable(self, var_name, value):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.renamed, "setVariable", "setActiveVariables")
-        self.setActiveVariables({var_name: value})
-
-    def variableExists(self, var_name):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.notRequired, "variableExists(variableName)", "getActiveVariables().get(variableName, None)")
-        """
-        Returns True if the specified variable exists in the active pattern,
-        False otherwise.
-        """
-        return self.getActiveVariables().get('var_name', None) is None
-
-    def setControl(self, ctl_name, value, save=False):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.renamed, "setControl", "setActiveControls")
-        """
-        Sets the value of a single UI controls in the active pattern.
-        to values contained in in argument json_ctl. To reduce wear on
-        Pixelblaze's flash memory, the save parameter is ignored
-        by default.  See documentation for _enable_flash_save() for
-        more information.
-        """
-        self.setActiveControls({ctl_name: max(0, min(value, 1))}, save)
-
-    def setColorControl(self, ctl_name, color, save=False):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.renamed, "setColorControl", "setActiveVariables")
-        """
-        Sets the 3-element color of the specified HSV or RGB color picker.
-        The color argument should contain an RGB or HSV color with all values
-        in the range 0-1. To reduce wear on Pixelblaze's flash memory, the save parameter
-        is ignored by default.  See documentation for _enable_flash_save() for
-        more information.
-        """
-        # based on testing w/Pixelblaze, no run-time length or range validation is performed
-        # on color. Pixelblaze ignores extra elements, sets unspecified elements to zero,
-        # takes only the fractional part of elements outside the range 0-1, and
-        # does something (1-(n % 1)) for negative elements.
-        val = {ctl_name: color}
-        self.setActiveControls(val, save)
-
-    def startSequencer(self, mode=sequencerModes.ShuffleAll):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.functionalityChanged, "startSequencer", "setSequencerMode")
-        """
-        Enable and start the Pixelblaze's internal sequencer.
-        """
-        self.setSequencerMode(mode)
-        self.playSequencer()
-
-    def stopSequencer(self):
-        """Deprecated."""
-        self.__printDeprecationMessage(self.deprecationReasons.functionalityChanged, "stopSequencer", "setSequencerMode")
-        """Stop and disable the Pixelblaze's internal sequencer"""
-        self.setSequencerMode(self.sequencerModes.Off) 
-        self.pauseSequencer()
-
 
 # ------------------------------------------------
 
