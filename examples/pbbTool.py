@@ -22,18 +22,18 @@ def pbbTool():
     def backupToPBB(ipAddress, fileName):
         print(f"Backing up {ipAddress} to {fileName}")
         # Read a Pixelblaze Binary Backup (PBB) from the Pixelblaze at {ipAddress} and write it to {fileName}.
-        PBB.fromIpAddress(ipAddress, proxyUrl=args.proxyUrl, verbose=args.verbose).toFile(fileName, args.explode)
+        PBB.fromIpAddress(ipAddress, verbose=args.verbose).toFile(fileName, args.explode)
 
     def restoreFromPBB(ipAddress, fileName):
         print(f"Restoring {ipAddress} from {fileName}")
         # Read a Pixelblaze Binary Backup (PBB) from {fileName} and write it to the Pixelblaze at {ipAddress}.
-        PBB.fromFile(fileName).toIpAddress(ipAddress, proxyUrl=args.proxyUrl, verbose=args.verbose)
+        PBB.fromFile(fileName).toIpAddress(ipAddress, verbose=args.verbose)
 
     def cloneFromPBB(ipAddress, fileName):
         print(f"Cloning {ipAddress} from {fileName}")
         # Read a Pixelblaze Binary Backup (PBB) from {fileName} and write only the patterns to the Pixelblaze at {ipAddress}.
         pbb = PBB.fromFile(fileName)
-        pb = Pixelblaze(ipAddress, proxyUrl=args.proxyUrl)
+        pb = Pixelblaze(ipAddress)
         # Delete all the patterns that are currently loaded on the Pixelblaze.
         for filename in pb.getFileList(PBB.fileTypes.filePattern | PBB.fileTypes.filePatternSetting):
             if args.verbose: print(f"  Deleting {filename}")
@@ -120,8 +120,6 @@ def pbbTool():
     parserExtract.add_argument("--patternName", required=True, default='*', help="The (wildcard-enabled) name of the pattern(s) to extract")
     parserExtract.add_argument("--verbose", action='store_true', help="Display debugging output")
     parserExtract.set_defaults(func=extractFromPBB)
-    # Add common arguments.
-    parser.add_argument("--proxyUrl", default=None, help="Redirect Pixelblaze traffic through a proxy at 'protocol://address:port'")
 
     # Parse the command line.
     args = parser.parse_args()
@@ -130,7 +128,7 @@ def pbbTool():
         # Enumerate the available Pixelblazes on the network and see which ones match.
         for ipAddress in Pixelblaze.EnumerateAddresses(timeout=1500):
             if (fnmatch.fnmatch(ipAddress, args.ipAddress)):
-                with Pixelblaze(ipAddress, proxyUrl=args.proxyUrl) as pixelblaze:
+                with Pixelblaze(ipAddress) as pixelblaze:
                     # Substitute in the correct device name for any wildcards in the filename.
                     fileName = pathlib.Path(args.pbbFile.replace('*', pixelblaze.getDeviceName())).with_suffix('.pbb')
                     # Call the appropriate routine to backup.
@@ -153,7 +151,7 @@ def pbbTool():
             # Enumerate the available Pixelblazes on the network and see which ones match.
             for ipAddress in Pixelblaze.EnumerateAddresses(timeout=1500):
                 if (fnmatch.fnmatch(ipAddress, args.ipAddress)):
-                    args.func(PBB.fromIpAddress(ipAddress, args.verbose))
+                    args.func(PBB.fromIpAddress(ipAddress))
         else:
             parser.print_usage()
 
