@@ -14,6 +14,8 @@ This module contains the following classes:
 - [`EPE`](#class-epe): an object for creating and manipulating Electromage Pattern Exports.
 """
 
+# ----------------------------------------------------------------------------
+
 # Copyright 2020-2022 JEM (ZRanger1)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -33,6 +35,8 @@ This module contains the following classes:
 # THE SOFTWARE.
 #
 
+# ----------------------------------------------------------------------------
+
 __version__ = "1.0.0"
 
 #| Version | Date       | Author        | Comment                                 |
@@ -48,23 +52,32 @@ __version__ = "1.0.0"
 #|  v0.0.2 | 12/01/2020 | "             | Name change + color control methods |
 #|  v0.0.1 | 11/20/2020 | JEM(ZRanger1) |  Created |
 
-from typing import Union
-import websocket
-import socket
-import json
-import base64
-import time
-import struct
-import threading
-import requests
-import pytz
-import math
-import pathlib
-import errno
-from re import T
-from urllib.parse import urlparse, urljoin
-from enum import Enum, Flag, IntEnum, IntFlag
+# ----------------------------------------------------------------------------
 
+#   Standard library imports.
+import socket
+import errno
+import json
+import time
+import threading
+import math
+import base64
+import struct
+import pathlib
+import pytz
+from re import T
+from typing import Union
+from enum import Enum, Flag, IntEnum, IntFlag
+from urllib.parse import urlparse, urljoin
+
+#   Related third party imports.
+import websocket
+import requests
+
+#   Local application/library specific imports.
+#   -None-
+
+# ----------------------------------------------------------------------------
 
 class Pixelblaze:
     """
@@ -1937,9 +1950,10 @@ class Pixelblaze:
 
     # --- LEGACY FUNCTIONS (may be deprecated, removed or altered in the near future)
     #    
-    # (Note to future editors:  Some of these functions exist because they're very
-    # handy for home automation integrations.  If you deprecate or eliminate, make
-    # sure you've provided an easy-to-use replacement in the current API.  
+    # (Note to future editors: Some of these will probably need to stay around as a 
+    # simplified syntax "convenience" layer. In particular, the color control functions are handy
+    # for home automation integrations. When deprecating or eliminating, make sure there's an
+    # easy-to-use replacement in the current API.  
 
     def pauseRenderer(self, doPause):
         """
@@ -2010,7 +2024,22 @@ class Pixelblaze:
             return result
         else:
             return result[0]
-
+            
+    def setColorControl(self, ctl_name, color, save=False):
+        """
+        Sets the 3-element color of the specified HSV or RGB color picker.
+        The color argument should contain an RGB or HSV color with all values
+        in the range 0-1. To reduce wear on Pixelblaze's flash memory, the save parameter
+        is ignored by default.  See documentation for _enable_flash_save() for
+        more information.
+        """
+        # based on testing w/Pixelblaze, no run-time length or range validation is performed
+        # on color. Pixelblaze ignores extra elements, sets unspecified elements to zero,
+        # takes only the fractional part of elements outside the range 0-1, and
+        # does something (1-(n % 1)) for negative elements.
+        val = {ctl_name: color}
+        self.setActiveControls(val, save)            
+            
     def setCacheRefreshTime(self, seconds):
         """
         Set the interval, in seconds, at which the pattern cache is cleared and
@@ -2019,7 +2048,8 @@ class Pixelblaze:
         # a million seconds is about 277 hours or about 11.5 days.  Probably long enough.
         self.cacheRefreshInterval = 1000 * self._clamp(seconds, 0, 1000000)
 
-# ------------------------------------------------
+
+# ----------------------------------------------------------------------------
 
 class PBB:
     """This class provides methods for importing, exporting, and manipulating the contents of a Pixelblaze Binary Backup, as created from the Settings menu on a Pixelblaze.
@@ -2294,7 +2324,7 @@ class PBB:
         if verbose: print(f"  Rebooting {pb.ipAddress}")
         pb.reboot()
 
-# ------------------------------------------------
+# ----------------------------------------------------------------------------
 
 class PBP:
     """This class represents a Pixelblaze Binary Pattern, as stored on the Pixelblaze filesystem or contained in a Pixelblaze Binary Backup.
@@ -2530,7 +2560,7 @@ class PBP:
         # and combine the above into a portable JSON archive (.EPE)
         self.toEPE().toFile(patternPath.with_suffix('.epe'))
 
-# ------------------------------------------------
+# ----------------------------------------------------------------------------
 
 class EPE:
     """This class provides methods for importing, exporting, and manipulating the contents of an Electromage Pattern Export (EPE), as exported from the Patterns list on a Pixelblaze.
@@ -2665,7 +2695,7 @@ class EPE:
         with open(patternPath.with_suffix('.js'), 'w') as outfile:
             outfile.write(self.sourceCode)
 
-# ------------------------------------------------
+# ----------------------------------------------------------------------------
 
 class _LZstring:
     # LZstring code borrowed (and truncated) from https://github.com/marcel-dancak/lz-string-python, which
@@ -3005,7 +3035,7 @@ class _LZstring:
 
         return "".join(context_data)
 
-# ------------------------------------------------
+# ----------------------------------------------------------------------------
 
 class PixelblazeEnumerator:
     """
@@ -3184,5 +3214,3 @@ class PixelblazeEnumerator:
         for record in self.devices.values():
             dev.append(record["address"][0])  # just the ip
         return dev
-
-
