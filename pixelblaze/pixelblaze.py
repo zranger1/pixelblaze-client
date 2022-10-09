@@ -16,7 +16,7 @@ This module contains the following classes:
 
 # ----------------------------------------------------------------------------
 
-# Copyright 2020-2022 JEM (ZRanger1)
+# Copyright 2020-2022 by the pixelblaze-client team
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this
 # software and associated documentation files (the "Software"), to deal in the Software
@@ -50,7 +50,7 @@ __version__ = "1.0.0"
 #|  v0.9.1 | 12/16/2020 | "             | Support for pypi upload |
 #|  v0.9.0 | 12/06/2020 | "             | Added PixelblazeEnumerator class |
 #|  v0.0.2 | 12/01/2020 | "             | Name change + color control methods |
-#|  v0.0.1 | 11/20/2020 | JEM(ZRanger1) |  Created |
+#|  v0.0.1 | 11/20/2020 | ZRanger1      |  Created |
 
 # ----------------------------------------------------------------------------
 
