@@ -266,7 +266,7 @@ class Pixelblaze:
         proxyUrl = None
 
         # private constructor:
-        def __init__(self, enumeratorType:EnumeratorTypes, *, hostIP:str="0.0.0.0", timeout:int=1500, proxyUrl:str=None):
+        def __init__(self, enumeratorType:EnumeratorTypes, *, timeout:int=1500, proxyUrl:str=None, hostIP:str="0.0.0.0"):
             """    
             Create an interable object that listens for Pixelblaze beacon packets, returning a Pixelblaze object for each unique beacon seen during the timeout period.
 
@@ -333,7 +333,7 @@ class Pixelblaze:
 
     # Static methods:
     @staticmethod
-    def EnumerateAddresses(*, timeout:int=1500, hostIP:str="0.0.0.0", proxyUrl:str=None) -> LightweightEnumerator:
+    def EnumerateAddresses(*, timeout:int=1500, proxyUrl:str=None, hostIP:str="0.0.0.0") -> LightweightEnumerator:
         """Returns an enumerator that will iterate through all the Pixelblazes on the local network, until {timeout} milliseconds have passed with no new devices appearing.
 
         Args:
@@ -344,10 +344,10 @@ class Pixelblaze:
         Returns:
             LightweightEnumerator: A subclassed Python enumerator object that returns (as a string) the IPv4 address of a Pixelblaze, in the usual dotted-quads numeric format.
         """
-        return Pixelblaze.LightweightEnumerator(Pixelblaze.LightweightEnumerator.EnumeratorTypes.ipAddress, hostIP=hostIP, timeout=timeout, proxyUrl=proxyUrl)
+        return Pixelblaze.LightweightEnumerator(Pixelblaze.LightweightEnumerator.EnumeratorTypes.ipAddress, timeout=timeout, proxyUrl=proxyUrl, hostIP=hostIP)
 
     @staticmethod
-    def EnumerateDevices(*, timeout:int=1500, hostIP:str="0.0.0.0", proxyUrl:str=None) -> LightweightEnumerator:
+    def EnumerateDevices(*, timeout:int=1500, proxyUrl:str=None, hostIP:str="0.0.0.0") -> LightweightEnumerator:
         """Returns an enumerator that will iterate through all the Pixelblazes on the local network, until {timeout} milliseconds have passed with no new devices appearing.
 
         Args:
@@ -358,7 +358,7 @@ class Pixelblaze:
         Returns:
             LightweightEnumerator: A subclassed Python enumerator object that returns a Pixelblaze object for controlling a discovered Pixelblaze.
         """
-        return Pixelblaze.LightweightEnumerator(Pixelblaze.LightweightEnumerator.EnumeratorTypes.pixelblazeObject, hostIP=hostIP, timeout=timeout, proxyUrl=proxyUrl)
+        return Pixelblaze.LightweightEnumerator(Pixelblaze.LightweightEnumerator.EnumeratorTypes.pixelblazeObject, timeout=timeout, proxyUrl=proxyUrl, hostIP=hostIP)
 
     # --- CONNECTION MANAGEMENT
 
