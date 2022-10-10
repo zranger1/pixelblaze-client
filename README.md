@@ -4,8 +4,9 @@ controlling one or more Pixelblaze LED controllers. Requires Python 3 and the we
 module.
 
 ## Requirements
-- Python 3.4-3.10
+- Python 3.9-3.10
 - websocket-client (installable via pip, or from https://github.com/websocket-client/websocket-client)
+- requests (installable via pip, or from https://github.com/psf/requests)
 
 ## Installation
 Install with pip:
