@@ -175,8 +175,8 @@ Initializes an object for communicating with and controlling a Pixelblaze.
 
 ```python
 EnumerateAddresses(
-    hostIP: str = '0.0.0.0',
     timeout: int = 1500,
+    hostIP: str = '0.0.0.0',
     proxyUrl: str = None
 ) → LightweightEnumerator
 ```
@@ -205,8 +205,8 @@ Returns an enumerator that will iterate through all the Pixelblazes on the local
 
 ```python
 EnumerateDevices(
-    hostIP: str = '0.0.0.0',
     timeout: int = 1500,
+    hostIP: str = '0.0.0.0',
     proxyUrl: str = None
 ) → LightweightEnumerator
 ```
@@ -235,9 +235,9 @@ Returns an enumerator that will iterate through all the Pixelblazes on the local
 
 ```python
 addToSequencerPlaylist(
+    playlistContents: dict,
     patternId: str,
-    duration: int,
-    playlistContents: dict
+    duration: int
 ) → dict
 ```
 
@@ -259,15 +259,30 @@ Appends a new entry to the specified playlist.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1984"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1981"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `controlExists`
 
 ```python
-controlExists(ctl_name, pattern=None)
+controlExists(controlName: str, patternId: str = None) → bool
 ```
 
-Returns True if the specified control exists, False otherwise. The pattern argument takes the name or ID of the pattern to check. If pattern argument is not specified, checks the currently running pattern. Note that getActivePattern() can return None on a freshly started Pixelblaze until the pattern has been explicitly set.  This function also will return False if the active pattern is not available. 
+Tests whether the named control exists in the specified pattern. If no pattern is specified, the currently active pattern is assumed. 
+
+Note that the active pattern can be undefined on a freshly started Pixelblaze until the pattern has been explicitly set.  This function also will return False if the active pattern is not available. 
+
+
+
+**Args:**
+ 
+ - <b>`controlName`</b> (str):  The name of the control. 
+ - <b>`patternId`</b> (str, optional):  The pattern in which to test for the presence of the control. Defaults to None. 
+
+
+
+**Returns:**
+ 
+ - <b>`bool`</b>:  True if the specified control exists, False otherwise. 
 
 ---
 
@@ -525,24 +540,36 @@ Get the value of the UI brightness slider.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2016"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2019"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getColorControlName`
 
 ```python
-getColorControlName(pattern=None)
+getColorControlName(patternId: str = None) → str
 ```
 
-Returns the name of the specified pattern's first rgbPicker or hsvPicker control if one exists, None otherwise.  If the pattern argument is not specified, checks in the currently running pattern 
+Returns the name of the specified pattern's first rgbPicker or hsvPicker control if one exists, or None otherwise. 
+
+
+
+**Args:**
+ 
+ - <b>`patternId`</b> (str, optional):  The pattern to search for color controls; or the currently active pattern if not specified. Defaults to None. 
+
+
+
+**Returns:**
+ 
+ - <b>`str`</b>:  The name of the specified pattern's first rgbPicker or hsvPicker control if one exists, or None otherwise. 
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1996"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1999"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getColorControlNames`
 
 ```python
-getColorControlNames(pattern=None)
+getColorControlNames(patternId: str = None) → list
 ```
 
 Returns a list of names of the specified pattern's rgbPicker or hsvPicker controls if any exist, None otherwise.  If the pattern argument is not specified, check the currently running pattern 
@@ -1428,7 +1455,7 @@ Installs new Pixelblaze firmware, if the current updateState indicates that an u
 ### <kbd>method</kbd> `nextSequencer`
 
 ```python
-nextSequencer(save: bool = False)
+nextSequencer(saveToFlash: bool = False)
 ```
 
 Mimics the 'Next' button in the UI.  If the sequencerMode is ShuffleAll or Playlist, advances the pattern sequencer to the next pattern. 
@@ -1437,7 +1464,7 @@ Mimics the 'Next' button in the UI.  If the sequencerMode is ShuffleAll or Playl
 
 **Args:**
  
- - <b>`save`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
+ - <b>`saveToFlash`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
 
 ---
 
@@ -1446,10 +1473,20 @@ Mimics the 'Next' button in the UI.  If the sequencerMode is ShuffleAll or Playl
 ### <kbd>method</kbd> `pauseRenderer`
 
 ```python
-pauseRenderer(doPause)
+pauseRenderer(doPause: bool)
 ```
 
-Pause rendering. Lasts until unpause() is called or the Pixelblaze is reset. CAUTION: For advanced users only.  If you don't know exactly why you want to do this, DON'T DO IT. 
+Pause rendering. Lasts until unpause() is called or the Pixelblaze is reset. 
+
+CAUTION: For advanced users only.  Only used to stop the render engine before sending new bytecode.   
+
+If you don't know exactly why you want to do this, DON'T DO IT. 
+
+
+
+**Args:**
+ 
+ - <b>`doPause`</b> (bool):  If True, pause the render engine; if False, resume it. 
 
 ---
 
@@ -1458,7 +1495,7 @@ Pause rendering. Lasts until unpause() is called or the Pixelblaze is reset. CAU
 ### <kbd>method</kbd> `pauseSequencer`
 
 ```python
-pauseSequencer(save: bool = False)
+pauseSequencer(saveToFlash: bool = False)
 ```
 
 Mimics the 'Pause' button in the UI.  Pauses the pattern sequencer,  without changing the current position in the shuffle or playlist.  Has no effect if the sequencer is not currently running. 
@@ -1467,7 +1504,7 @@ Mimics the 'Pause' button in the UI.  Pauses the pattern sequencer,  without cha
 
 **Args:**
  
- - <b>`save`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
+ - <b>`saveToFlash`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
 
 ---
 
@@ -1476,7 +1513,7 @@ Mimics the 'Pause' button in the UI.  Pauses the pattern sequencer,  without cha
 ### <kbd>method</kbd> `playSequencer`
 
 ```python
-playSequencer(save: bool = False)
+playSequencer(saveToFlash: bool = False)
 ```
 
 Mimics the 'Play' button in the UI. Starts the pattern sequencer, the consequences of which will vary depending upon the sequencerMode. 
@@ -1485,7 +1522,7 @@ Mimics the 'Play' button in the UI. Starts the pattern sequencer, the consequenc
 
 **Args:**
  
- - <b>`save`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
+ - <b>`saveToFlash`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
 
 ---
 
@@ -1628,7 +1665,7 @@ Send a Ping message to the Pixelblaze and wait for the Acknowledgement response.
 ### <kbd>method</kbd> `setActiveControls`
 
 ```python
-setActiveControls(dictControls: dict, save: bool = False)
+setActiveControls(dictControls: dict, saveToFlash: bool = False)
 ```
 
 Sets the value of one or more UI controls exported from the active pattern. 
@@ -1638,7 +1675,7 @@ Sets the value of one or more UI controls exported from the active pattern.
 **Args:**
  
  - <b>`dictControls`</b> (dict):  A dictionary containing the values to be set, with controlName as the key and controlValue as the value. 
- - <b>`save`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
+ - <b>`saveToFlash`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
 
 ---
 
@@ -1647,7 +1684,7 @@ Sets the value of one or more UI controls exported from the active pattern.
 ### <kbd>method</kbd> `setActivePattern`
 
 ```python
-setActivePattern(patternId: str, save: bool = False)
+setActivePattern(patternId: str, saveToFlash: bool = False)
 ```
 
 Sets the active pattern. 
@@ -1657,19 +1694,26 @@ Sets the active pattern.
 **Args:**
  
  - <b>`patternId`</b> (str):  The patternId of the desired pattern. 
- - <b>`save`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
+ - <b>`saveToFlash`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1980"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1971"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setActivePatternByName`
 
 ```python
-setActivePatternByName(patternName, save=False)
+setActivePatternByName(patternName: str, saveToFlash: bool = False)
 ```
 
-Sets the currently running pattern using a text name 
+Sets the currently running pattern using a text name. 
+
+
+
+**Args:**
+ 
+ - <b>`patternName`</b> (str):  The name of the pattern. 
+ - <b>`saveToFlash`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
 
 ---
 
@@ -1698,7 +1742,7 @@ Variables not present in the current pattern are ignored.
 ### <kbd>method</kbd> `setAutoOffEnable`
 
 ```python
-setAutoOffEnable(boolValue: bool, save: bool = False)
+setAutoOffEnable(boolValue: bool, saveToFlash: bool = False)
 ```
 
 Enables or disables the Pixelblaze's auto-Off scheduler. 
@@ -1708,7 +1752,7 @@ Enables or disables the Pixelblaze's auto-Off scheduler.
 **Args:**
  
  - <b>`boolValue`</b> (bool):  A boolean indicating whether the auto-Off scheduler should be used. 
- - <b>`save`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
+ - <b>`saveToFlash`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
 
 ---
 
@@ -1717,7 +1761,7 @@ Enables or disables the Pixelblaze's auto-Off scheduler.
 ### <kbd>method</kbd> `setAutoOffEnd`
 
 ```python
-setAutoOffEnd(timeValue: str, save=False)
+setAutoOffEnd(timeValue: str, saveToFlash: bool = False)
 ```
 
 Sets the time at which the Pixelblaze will turn on the pattern. 
@@ -1727,7 +1771,7 @@ Sets the time at which the Pixelblaze will turn on the pattern.
 **Args:**
  
  - <b>`timeValue`</b> (str):  A Unix time string in "HH:MM" format. 
- - <b>`save`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
+ - <b>`saveToFlash`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
 
 ---
 
@@ -1736,7 +1780,7 @@ Sets the time at which the Pixelblaze will turn on the pattern.
 ### <kbd>method</kbd> `setAutoOffStart`
 
 ```python
-setAutoOffStart(timeValue: str, save=False)
+setAutoOffStart(timeValue: str, saveToFlash: bool = False)
 ```
 
 Sets the time at which the Pixelblaze will turn off the pattern. 
@@ -1746,7 +1790,7 @@ Sets the time at which the Pixelblaze will turn off the pattern.
 **Args:**
  
  - <b>`timeValue`</b> (str):  A Unix time string in "HH:MM" format. 
- - <b>`save`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
+ - <b>`saveToFlash`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
 
 ---
 
@@ -1773,7 +1817,7 @@ Sets the brand name of the Pixelblaze (used by VARs to change the brand name tha
 ### <kbd>method</kbd> `setBrightnessLimit`
 
 ```python
-setBrightnessLimit(maxBrightness: int, save: bool = False)
+setBrightnessLimit(maxBrightness: int, saveToFlash: bool = False)
 ```
 
 Sets the Pixelblaze's global brightness limit. 
@@ -1783,7 +1827,7 @@ Sets the Pixelblaze's global brightness limit.
 **Args:**
  
  - <b>`maxBrightness`</b> (int):  The maximum brightness, expressed as a percent value between 0 and 100 (yes, it's inconsistent with the 'brightness' settings). 
- - <b>`save`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
+ - <b>`saveToFlash`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
 
 ---
 
@@ -1792,7 +1836,7 @@ Sets the Pixelblaze's global brightness limit.
 ### <kbd>method</kbd> `setBrightnessSlider`
 
 ```python
-setBrightnessSlider(brightness: float, save: bool = False)
+setBrightnessSlider(brightness: float, saveToFlash: bool = False)
 ```
 
 Set the value of the UI brightness slider. 
@@ -1802,31 +1846,47 @@ Set the value of the UI brightness slider.
 **Args:**
  
  - <b>`brightness`</b> (float):  A floating-point value between 0.0 and 1.0. 
- - <b>`save`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
+ - <b>`saveToFlash`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2043"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2049"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setCacheRefreshTime`
 
 ```python
-setCacheRefreshTime(seconds)
+setCacheRefreshTime(seconds: int)
 ```
 
-Set the interval, in seconds, at which the pattern cache is cleared and a new pattern list is loaded from the Pixelblaze.  Default is 600 (10 minutes) 
+Set the interval, in seconds, after which calls to `getPatternList()` clear the pattern cache and fetch a new pattern list from the Pixelblaze.   
+
+The Default is 600 seconds (10 minutes); the maximum allowable value is clamped to a million seconds (about 277 hours, or 11.5 days). Anything else would be excessive. 
+
+
+
+**Args:**
+ 
+ - <b>`seconds`</b> (int):  The maximum age of the pattern cache. 
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2028"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2035"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setColorControl`
 
 ```python
-setColorControl(ctl_name, color, save=False)
+setColorControl(controlName: str, color: dict, saveToFlash: bool = False)
 ```
 
-Sets the 3-element color of the specified HSV or RGB color picker. The color argument should contain an RGB or HSV color with all values in the range 0-1. To reduce wear on Pixelblaze's flash memory, the save parameter is ignored by default.  See documentation for _enable_flash_save() for more information. 
+Sets the 3-element color of the specified HSV or RGB color picker. 
+
+
+
+**Args:**
+ 
+ - <b>`controlName`</b> (str):  The name of the color control to change. 
+ - <b>`color`</b> (dict):  A dictionary of RGB or HSV colors, with all values in the range 0-1.  
+ - <b>`saveToFlash`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
 
 ---
 
@@ -1835,7 +1895,7 @@ Sets the 3-element color of the specified HSV or RGB color picker. The color arg
 ### <kbd>method</kbd> `setColorOrder`
 
 ```python
-setColorOrder(colorOrder: colorOrders, save: bool = False)
+setColorOrder(colorOrder: colorOrders, saveToFlash: bool = False)
 ```
 
 Sets the color order for the LEDs connected to the Pixelblaze. 
@@ -1845,7 +1905,7 @@ Sets the color order for the LEDs connected to the Pixelblaze.
 **Args:**
  
  - <b>`colorOrder`</b> (colorOrders):  The ordering for the color data sent to the LEDs. 
- - <b>`save`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
+ - <b>`saveToFlash`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
 
 ---
 
@@ -1874,7 +1934,7 @@ Note that this setting will not take effect until the Pixelblaze is rebooted (wh
 ### <kbd>method</kbd> `setDataSpeed`
 
 ```python
-setDataSpeed(speed: int, save: bool = False)
+setDataSpeed(speed: int, saveToFlash: bool = False)
 ```
 
 Sets custom data rate for communicating with the LEDs. 
@@ -1886,7 +1946,7 @@ CAUTION: For advanced users only.  If you don't know exactly why you want to do 
 **Args:**
  
  - <b>`speed`</b> (int):  The data rate for communicating with the LEDs. 
- - <b>`save`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
+ - <b>`saveToFlash`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
 
 ---
 
@@ -1950,7 +2010,7 @@ Enables or disables "Learning UI Mode" which has additional UI help for new user
 ### <kbd>method</kbd> `setLedType`
 
 ```python
-setLedType(ledType: ledTypes, dataSpeed: int = None, save: bool = False)
+setLedType(ledType: ledTypes, dataSpeed: int = None, saveToFlash: bool = False)
 ```
 
 Defines the type of LEDs connected to the Pixelblaze. 
@@ -1961,7 +2021,7 @@ Defines the type of LEDs connected to the Pixelblaze.
  
  - <b>`ledType`</b> (ledTypes):  The type of LEDs connected to the Pixelblaze. 
  - <b>`dataSpeed`</b> (int, optional):  If provided, sets a custom data speed for communication with the LEDs; otherwise the defaults from the webUI are used. Defaults to None. 
- - <b>`save`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
+ - <b>`saveToFlash`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
 
 ---
 
@@ -1970,7 +2030,7 @@ Defines the type of LEDs connected to the Pixelblaze.
 ### <kbd>method</kbd> `setMapData`
 
 ```python
-setMapData(mapData: bytes, save: bool = True)
+setMapData(mapData: bytes, saveToFlash: bool = True)
 ```
 
 Sets the binary mapData used by the Pixelblaze. 
@@ -1980,7 +2040,7 @@ Sets the binary mapData used by the Pixelblaze.
 **Args:**
  
  - <b>`mapData`</b> (bytes):  a blob of binary mapData as generated by the Mapper tab of the Pixelblaze webUI. 
- - <b>`save`</b> (bool, optional):  A boolean indicating whether the mapData should be saved to Flash. Defaults to True. 
+ - <b>`saveToFlash`</b> (bool, optional):  A boolean indicating whether the mapData should be saved to Flash. Defaults to True. 
 
 ---
 
@@ -2035,7 +2095,7 @@ Note that this setting will not take effect until the Pixelblaze is rebooted (wh
 ### <kbd>method</kbd> `setPixelCount`
 
 ```python
-setPixelCount(nPixels: int, save: bool = False)
+setPixelCount(nPixels: int, saveToFlash: bool = False)
 ```
 
 Sets the number of LEDs attached to the Pixelblaze.  
@@ -2047,7 +2107,7 @@ Note that changing the number of pixels does not recalculate the pixelMap.
 **Args:**
  
  - <b>`nPixels`</b> (int):  The number of pixels. 
- - <b>`save`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
+ - <b>`saveToFlash`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
 
 ---
 
@@ -2074,7 +2134,7 @@ Set whether or not the Pixelblaze sends pattern preview frames.
 ### <kbd>method</kbd> `setSequencerMode`
 
 ```python
-setSequencerMode(sequencerMode: sequencerModes, save: bool = False)
+setSequencerMode(sequencerMode: sequencerModes, saveToFlash: bool = False)
 ```
 
 Sets the sequencer mode to one of the available sequencerModes (Off, ShuffleAll, or Playlist). 
@@ -2084,7 +2144,7 @@ Sets the sequencer mode to one of the available sequencerModes (Off, ShuffleAll,
 **Args:**
  
  - <b>`sequencerMode`</b> (enum):  The desired sequencer mode. 
- - <b>`save`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
+ - <b>`saveToFlash`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
 
 ---
 
@@ -2115,7 +2175,7 @@ Replaces the entire contents of the specified playlist.  At the moment, only the
 ### <kbd>method</kbd> `setSequencerShuffleTime`
 
 ```python
-setSequencerShuffleTime(nMillis: int, save: bool = False)
+setSequencerShuffleTime(nMillis: int, saveToFlash: bool = False)
 ```
 
 Sets the time the Pixelblaze's sequencer will run each pattern before switching to the next. 
@@ -2125,7 +2185,7 @@ Sets the time the Pixelblaze's sequencer will run each pattern before switching 
 **Args:**
  
  - <b>`nMillis`</b> (int):  The number of milliseconds to play each pattern. 
- - <b>`save`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
+ - <b>`saveToFlash`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
 
 ---
 
@@ -2134,7 +2194,7 @@ Sets the time the Pixelblaze's sequencer will run each pattern before switching 
 ### <kbd>method</kbd> `setSequencerState`
 
 ```python
-setSequencerState(sequencerState: bool, save: bool = False)
+setSequencerState(sequencerState: bool, saveToFlash: bool = False)
 ```
 
 Set the run state of the sequencer. 
@@ -2144,7 +2204,7 @@ Set the run state of the sequencer.
 **Args:**
  
  - <b>`sequencerState`</b> (bool):  A boolean value determining whether or not the sequencer should run. 
- - <b>`save`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
+ - <b>`saveToFlash`</b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. 
 
 ---
 
@@ -2266,7 +2326,7 @@ Send a JSON-formatted command to the Pixelblaze, and optionally wait for a suita
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2054"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2061"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PBB`
 This class provides methods for importing, exporting, and manipulating the contents of a Pixelblaze Binary Backup, as created from the Settings menu on a Pixelblaze. 
@@ -2294,7 +2354,7 @@ This class provides methods for importing, exporting, and manipulating the conte
 
 > The constructor is not intended to be called directly; objects are created and returned from the object creation methods described above. 
 
-<a href="../pixelblaze/pixelblaze.py#L2082"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2089"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -2334,7 +2394,7 @@ Gets the user-friendly name of the device from which this PixelBlazeBackup was m
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2235"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `deleteFile`
 
@@ -2352,7 +2412,7 @@ Removes a particular file from this PixelBlazeBackup.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2096"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fromFile`
 
@@ -2376,7 +2436,7 @@ Creates and returns a new Pixelblaze Binary Backup whose contents are loaded fro
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2108"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2115"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fromIpAddress`
 
@@ -2402,7 +2462,7 @@ Creates and returns a new Pixelblaze Binary Backup whose contents are loaded fro
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2124"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2131"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fromPixelblaze`
 
@@ -2427,7 +2487,7 @@ Creates and returns a new Pixelblaze Binary Backup whose contents are loaded fro
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2213"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2220"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getFile`
 
@@ -2451,7 +2511,7 @@ Returns the contents of a particular file contained in this PixelBlazeBackup.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2166"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2173"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getFileList`
 
@@ -2475,7 +2535,7 @@ Returns a sorted list of the files contained in this PixelBlazeBackup.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2224"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2231"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `putFile`
 
@@ -2494,7 +2554,7 @@ Inserts or replaces the contents of a particular file into this PixelBlazeBackup
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2246"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2253"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `toFile`
 
@@ -2513,7 +2573,7 @@ Writes this Pixelblaze Binary Backup to a file on disk.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2296"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2303"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `toIpAddress`
 
@@ -2533,7 +2593,7 @@ Restores the contents of this PixelBlazeBackup to a Pixelblaze identified by IP 
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2308"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2315"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `toPixelblaze`
 
@@ -2553,7 +2613,7 @@ Uploads the contents of this PixelBlazeBackup to the destination Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2329"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2336"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PBP`
 This class represents a Pixelblaze Binary Pattern, as stored on the Pixelblaze filesystem or contained in a Pixelblaze Binary Backup. 
@@ -2586,7 +2646,7 @@ This class represents a Pixelblaze Binary Pattern, as stored on the Pixelblaze f
 
 > The constructor is not intended to be called directly; objects are created and returned from the object creation methods described above. 
 
-<a href="../pixelblaze/pixelblaze.py#L2367"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2374"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -2674,7 +2734,7 @@ Returns the source code of the pattern in this Pixelblaze Binary Pattern (PBP).
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2534"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2541"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `explode`
 
@@ -2692,7 +2752,7 @@ Exports all the components of this Pixelblaze Binary Pattern (PBP) as separate f
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2381"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2388"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fromBytes`
 
@@ -2717,7 +2777,7 @@ Creates and returns a new Pixelblaze Binary Pattern (PBP) whose contents are ini
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2394"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2401"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fromFile`
 
@@ -2741,7 +2801,7 @@ Creates and returns a new Pixelblaze Binary Pattern (PBP) whose contents are loa
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2406"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2413"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fromIpAddress`
 
@@ -2767,7 +2827,7 @@ Creates and returns a new pattern Pixelblaze Binary Pattern (PBP) whose contents
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2422"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2429"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fromPixelblaze`
 
@@ -2792,7 +2852,7 @@ Creates and returns a new pattern Pixelblaze Binary Pattern (PBP) whose contents
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2520"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2527"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `toEPE`
 
@@ -2810,7 +2870,7 @@ Creates a new Electromage Pattern Export (EPE) and initializes it from the conte
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2490"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2497"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `toFile`
 
@@ -2828,7 +2888,7 @@ Saves this Pixelblaze Binary Pattern (PBP) to a file on disk.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2501"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2508"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `toIpAddress`
 
@@ -2847,7 +2907,7 @@ Uploads this Pixelblaze Binary Pattern (PBP) to a Pixelblaze identified by its I
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2512"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2519"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `toPixelblaze`
 
@@ -2866,7 +2926,7 @@ Uploads this Pixelblaze Binary Pattern (PBP) to an active Pixelblaze object.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2565"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2572"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `EPE`
 This class provides methods for importing, exporting, and manipulating the contents of an Electromage Pattern Export (EPE), as exported from the Patterns list on a Pixelblaze. 
@@ -2891,7 +2951,7 @@ This class provides methods for importing, exporting, and manipulating the conte
 
 > The constructor is not intended to be called directly; objects are created and returned from the object creation methods described above. 
 
-<a href="../pixelblaze/pixelblaze.py#L2589"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2596"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -2966,7 +3026,7 @@ Returns the source code of the pattern contained in this Electromage Pattern Exp
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2676"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2683"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `explode`
 
@@ -2984,7 +3044,7 @@ Exports the components of this Electromage Pattern Export (EPE) to separate file
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2601"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2608"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fromBytes`
 
@@ -3008,7 +3068,7 @@ Creates and returns a new Electromage Pattern Export (EPE) whose contents are lo
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2613"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2620"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fromFile`
 
@@ -3032,7 +3092,7 @@ Creates and returns a new portable pattern EPE whose contents are loaded from a 
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2665"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2672"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `toFile`
 
@@ -3051,12 +3111,12 @@ Saves this Electromage Pattern Export (EPE) to a file on disk.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L3040"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L3047"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PixelblazeEnumerator`
 Listens on a network to detect available Pixelblazes, which the user can then list or open as Pixelblaze objects.  Also provides time synchronization services for running synchronized patterns on a network of Pixelblazes. 
 
-<a href="../pixelblaze/pixelblaze.py#L3060"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L3067"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -3071,7 +3131,7 @@ Create an object that listens continuously for Pixelblaze beacon packets, mainta
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L3120"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L3127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `disableTimesync`
 
@@ -3083,7 +3143,7 @@ Turns off the time synchronization -- the PixelblazeEnumerator will not automati
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L3112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L3119"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `enableTimesync`
 
@@ -3095,7 +3155,7 @@ Instructs the PixelblazeEnumerator object to automatically synchronize time on a
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L3212"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L3219"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getPixelblazeList`
 
@@ -3109,7 +3169,7 @@ getPixelblazeList()
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L3103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L3110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setDeviceTimeout`
 
@@ -3123,7 +3183,7 @@ The default timeout is 30000 (30 seconds).
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L3127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L3134"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `start`
 
@@ -3135,7 +3195,7 @@ Open socket for listening to Pixelblaze datagram traffic, set appropriate option
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L3149"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L3156"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `stop`
 

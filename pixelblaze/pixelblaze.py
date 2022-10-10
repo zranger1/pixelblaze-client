@@ -212,7 +212,7 @@ class Pixelblaze:
 
     # --- OBJECT LIFETIME MANAGEMENT (CREATION/DELETION)
 
-    def __init__(self, ipAddress:str, proxyUrl:str=None):
+    def __init__(self, ipAddress:str, *, proxyUrl:str=None):
         """Initializes an object for communicating with and controlling a Pixelblaze.
 
         Args:
@@ -266,7 +266,7 @@ class Pixelblaze:
         proxyUrl = None
 
         # private constructor:
-        def __init__(self, enumeratorType:EnumeratorTypes, hostIP:str="0.0.0.0", timeout:int=1500, proxyUrl:str=None):
+        def __init__(self, enumeratorType:EnumeratorTypes, *, hostIP:str="0.0.0.0", timeout:int=1500, proxyUrl:str=None):
             """    
             Create an interable object that listens for Pixelblaze beacon packets, returning a Pixelblaze object for each unique beacon seen during the timeout period.
 
@@ -333,7 +333,7 @@ class Pixelblaze:
 
     # Static methods:
     @staticmethod
-    def EnumerateAddresses(hostIP:str="0.0.0.0", timeout:int=1500, proxyUrl:str=None) -> LightweightEnumerator:
+    def EnumerateAddresses(*, timeout:int=1500, hostIP:str="0.0.0.0", proxyUrl:str=None) -> LightweightEnumerator:
         """Returns an enumerator that will iterate through all the Pixelblazes on the local network, until {timeout} milliseconds have passed with no new devices appearing.
 
         Args:
@@ -344,10 +344,10 @@ class Pixelblaze:
         Returns:
             LightweightEnumerator: A subclassed Python enumerator object that returns (as a string) the IPv4 address of a Pixelblaze, in the usual dotted-quads numeric format.
         """
-        return Pixelblaze.LightweightEnumerator(Pixelblaze.LightweightEnumerator.EnumeratorTypes.ipAddress, hostIP, timeout, proxyUrl)
+        return Pixelblaze.LightweightEnumerator(Pixelblaze.LightweightEnumerator.EnumeratorTypes.ipAddress, hostIP=hostIP, timeout=timeout, proxyUrl=proxyUrl)
 
     @staticmethod
-    def EnumerateDevices(hostIP:str="0.0.0.0", timeout:int=1500, proxyUrl:str=None) -> LightweightEnumerator:
+    def EnumerateDevices(*, timeout:int=1500, hostIP:str="0.0.0.0", proxyUrl:str=None) -> LightweightEnumerator:
         """Returns an enumerator that will iterate through all the Pixelblazes on the local network, until {timeout} milliseconds have passed with no new devices appearing.
 
         Args:
@@ -358,7 +358,7 @@ class Pixelblaze:
         Returns:
             LightweightEnumerator: A subclassed Python enumerator object that returns a Pixelblaze object for controlling a discovered Pixelblaze.
         """
-        return Pixelblaze.LightweightEnumerator(Pixelblaze.LightweightEnumerator.EnumeratorTypes.pixelblazeObject, hostIP, timeout, proxyUrl)
+        return Pixelblaze.LightweightEnumerator(Pixelblaze.LightweightEnumerator.EnumeratorTypes.pixelblazeObject, hostIP=hostIP, timeout=timeout, proxyUrl=proxyUrl)
 
     # --- CONNECTION MANAGEMENT
 
@@ -419,7 +419,7 @@ class Pixelblaze:
         frameMiddle = 2
         frameLast = 4
 
-    def wsReceive(self, binaryMessageType:messageTypes=None) -> Union[str, bytes, None]:
+    def wsReceive(self, *, binaryMessageType:messageTypes=None) -> Union[str, bytes, None]:
         """Wait for a message of a particular type from the Pixelblaze.
 
         Args:
@@ -500,7 +500,7 @@ class Pixelblaze:
         """
         return self.wsSendJson({"ping": True}, expectedResponse="ack")
 
-    def wsSendJson(self, command:dict, expectedResponse=None) -> Union[str, bytes, None]:
+    def wsSendJson(self, command:dict, *, expectedResponse=None) -> Union[str, bytes, None]:
         """Send a JSON-formatted command to the Pixelblaze, and optionally wait for a suitable response.
 
         Args:
@@ -552,7 +552,7 @@ class Pixelblaze:
                 self._open()   # try reopening
                 #raise
 
-    def wsSendBinary(self, binaryMessageType:messageTypes, blob:bytes, expectedResponse:str=None):
+    def wsSendBinary(self, binaryMessageType:messageTypes, blob:bytes, *, expectedResponse:str=None):
         """Send a binary command to the Pixelblaze, and optionally wait for a suitable response.
 
         Args:
@@ -858,14 +858,14 @@ class Pixelblaze:
 
     # --- GLOBAL functions: CONTROLS (available on all tabs):
 
-    def setBrightnessSlider(self, brightness:float, save:bool=False):
+    def setBrightnessSlider(self, brightness:float, *, saveToFlash:bool=False):
         """Set the value of the UI brightness slider.
 
         Args:
             brightness (float): A floating-point value between 0.0 and 1.0.
-            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+            saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
-        self.wsSendJson({"brightness": self._clamp(brightness, 0, 1), "save": save}, expectedResponse=None)
+        self.wsSendJson({"brightness": self._clamp(brightness, 0, 1), "save": saveToFlash}, expectedResponse=None)
 
     # --- GLOBAL functions: CONTROLS: helper functions:
     """The Pixelblaze API has functions to 'set' individual property values, 
@@ -892,21 +892,21 @@ class Pixelblaze:
         ShuffleAll = 1
         Playlist = 2
 
-    def setSequencerMode(self, sequencerMode:sequencerModes, save:bool=False):
+    def setSequencerMode(self, sequencerMode:sequencerModes, *, saveToFlash:bool=False):
         """Sets the sequencer mode to one of the available sequencerModes (Off, ShuffleAll, or Playlist).
 
         Args:
             sequencerMode (enum): The desired sequencer mode.
-            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+            saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
-        self.wsSendJson({"sequencerMode": sequencerMode, "save": save}, expectedResponse=None)
+        self.wsSendJson({"sequencerMode": sequencerMode, "save": saveToFlash}, expectedResponse=None)
 
-    def setSequencerState(self, sequencerState:bool, save:bool=False):
+    def setSequencerState(self, sequencerState:bool, *, saveToFlash:bool=False):
         """Set the run state of the sequencer.
 
         Args:
             sequencerState (bool): A boolean value determining whether or not the sequencer should run.
-            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+            saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         self.wsSendJson({"runSequencer": sequencerState}, expectedResponse=None)
 
@@ -942,41 +942,41 @@ class Pixelblaze:
 
     # --- PATTERNS tab: SEQUENCER section: SHUFFLE ALL mode
 
-    def playSequencer(self, save:bool=False):
+    def playSequencer(self, *, saveToFlash:bool=False):
         """Mimics the 'Play' button in the UI. Starts the pattern sequencer,
         the consequences of which will vary depending upon the sequencerMode.
 
         Args:
-            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+            saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
-        self.setSequencerState(True, save)
+        self.setSequencerState(True, saveToFlash)
 
-    def pauseSequencer(self, save:bool=False):
+    def pauseSequencer(self, *, saveToFlash:bool=False):
         """Mimics the 'Pause' button in the UI.  Pauses the pattern sequencer, 
         without changing the current position in the shuffle or playlist. 
         Has no effect if the sequencer is not currently running.
 
         Args:
-            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+            saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
-        self.setSequencerState(False, save)
+        self.setSequencerState(False, saveToFlash)
 
-    def nextSequencer(self, save:bool=False):
+    def nextSequencer(self, *, saveToFlash:bool=False):
         """Mimics the 'Next' button in the UI.  If the sequencerMode is ShuffleAll or Playlist, advances the pattern sequencer to the next pattern.
 
         Args:
-            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+            saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
-        self.wsSendJson({"nextProgram": True, "save": save}, expectedResponse=None)
+        self.wsSendJson({"nextProgram": True, "save": saveToFlash}, expectedResponse=None)
 
-    def setSequencerShuffleTime(self, nMillis:int, save:bool=False):
+    def setSequencerShuffleTime(self, nMillis:int, *, saveToFlash:bool=False):
         """Sets the time the Pixelblaze's sequencer will run each pattern before switching to the next.
 
         Args:
             nMillis (int): The number of milliseconds to play each pattern.
-            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+            saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
-        self.wsSendJson({"sequenceTimer": nMillis, "save": save}, expectedResponse=None)
+        self.wsSendJson({"sequenceTimer": nMillis, "save": saveToFlash}, expectedResponse=None)
 
     # --- PATTERNS tab: SEQUENCER section: helper functions:
     """The Pixelblaze API has functions to 'set' individual property values, 
@@ -1019,7 +1019,7 @@ class Pixelblaze:
         self.latestSequencer = None # clear cache to force refresh
         ignored = self.wsSendJson(playlistContents, expectedResponse=None)
 
-    def addToSequencerPlaylist(self, patternId:str, duration:int, playlistContents:dict) -> dict:
+    def addToSequencerPlaylist(self, playlistContents:dict, *, patternId:str, duration:int) -> dict:
         """Appends a new entry to the specified playlist.
 
         Args:
@@ -1063,16 +1063,16 @@ class Pixelblaze:
         # Return the cached list.
         return self.patternCache
 
-    def setActivePattern(self, patternId:str, save:bool=False):
+    def setActivePattern(self, patternId:str, *, saveToFlash:bool=False):
         """Sets the active pattern.
 
         Args:
             patternId (str): The patternId of the desired pattern.
-            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+            saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         """Functionality changed."""
         if len(patternId) != 17: self.__printDeprecationMessage(self.deprecationReasons.functionalityChanged, "setActivePattern(name_or_id)", "setActivePattern(id)/setActivePatternByName(name")
-        self.wsSendJson({"activeProgramId": patternId, "save": save}, expectedResponse="activeProgram")
+        self.wsSendJson({"activeProgramId": patternId, "save": saveToFlash}, expectedResponse="activeProgram")
 
     def getPatternAsEpe(self, patternId:str) -> str:
         """Convert a stored pattern into an exportable, portable JSON format (which then needs to be saved by the caller).
@@ -1129,14 +1129,14 @@ class Pixelblaze:
         """
         self.wsSendJson({"setVars": dictVariables}, expectedResponse=None)
 
-    def setActiveControls(self, dictControls:dict, save:bool=False):
+    def setActiveControls(self, dictControls:dict, *, saveToFlash:bool=False):
         """Sets the value of one or more UI controls exported from the active pattern.
 
         Args:
             dictControls (dict): A dictionary containing the values to be set, with controlName as the key and controlValue as the value.
-            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+            saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
-        self.wsSendJson({"setControls": json.dumps(dictControls), "save": save}, expectedResponse="ack")
+        self.wsSendJson({"setControls": json.dumps(dictControls), "save": saveToFlash}, expectedResponse="ack")
 
     # --- PATTERNS tab: SAVED PATTERNS section: convenience functions
     """The Pixelblaze API has functions to 'set' individual property values, 
@@ -1259,17 +1259,17 @@ class Pixelblaze:
         """
         return self.getFile('/pixelmap.dat')
 
-    def setMapData(self, mapData:bytes, save:bool=True):
+    def setMapData(self, mapData:bytes, *, saveToFlash:bool=True):
         """Sets the binary mapData used by the Pixelblaze.
 
         Args:
             mapData (bytes): a blob of binary mapData as generated by the Mapper tab of the Pixelblaze webUI.
-            save (bool, optional): A boolean indicating whether the mapData should be saved to Flash. Defaults to True.
+            saveToFlash (bool, optional): A boolean indicating whether the mapData should be saved to Flash. Defaults to True.
         """
         # Send the mapData...
         self.wsSendBinary(self.messageTypes.putPixelMap, mapData, expectedResponse="ack")
         # ...and make it permanent (same as pressing "Save" in the map editor).
-        if save: self.wsSendJson({"savePixelMap":True}, expectedResponse=None)
+        if saveToFlash: self.wsSendJson({"savePixelMap":True}, expectedResponse=None)
 
     # --- SETTINGS menu
 
@@ -1414,34 +1414,34 @@ class Pixelblaze:
             if not timezoneName in pytz.all_timezones: raise ValueError(f"setDiscovery: unrecognized timezone {timezoneName}")
         self.wsSendJson({"timezone": timezoneName}, expectedResponse=None)
 
-    def setAutoOffEnable(self, boolValue:bool, save:bool=False):
+    def setAutoOffEnable(self, boolValue:bool, *, saveToFlash:bool=False):
         """Enables or disables the Pixelblaze's auto-Off scheduler.
 
         Args:
             boolValue (bool): A boolean indicating whether the auto-Off scheduler should be used.
-            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+            saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
-        self.wsSendJson({"autoOffEnable": boolValue, "save": save}, expectedResponse=None)
+        self.wsSendJson({"autoOffEnable": boolValue, "save": saveToFlash}, expectedResponse=None)
 
-    def setAutoOffStart(self, timeValue:str, save=False):
+    def setAutoOffStart(self, timeValue:str, saveToFlash:bool=False):
         """Sets the time at which the Pixelblaze will turn off the pattern.
 
         Args:
             timeValue (str): A Unix time string in "HH:MM" format.
-            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+            saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         #if type(timeValue) is time: timeValue = timeValue.strftime('%H:%M')
-        self.wsSendJson({"autoOffStart": timeValue, "save": save}, expectedResponse=None)
+        self.wsSendJson({"autoOffStart": timeValue, "save": saveToFlash}, expectedResponse=None)
 
-    def setAutoOffEnd(self, timeValue:str, save=False):
+    def setAutoOffEnd(self, timeValue:str, saveToFlash:bool=False):
         """Sets the time at which the Pixelblaze will turn on the pattern.
 
         Args:
             timeValue (str): A Unix time string in "HH:MM" format.
-            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+            saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         #if type(timeValue) is time: timeValue = timeValue.strftime('%H:%M')
-        self.wsSendJson({"autoOffEnd": timeValue, "save": save}, expectedResponse=None)
+        self.wsSendJson({"autoOffEnd": timeValue, "save": saveToFlash}, expectedResponse=None)
 
     # --- SETTINGS menu: CONTROLLER section: NAME settings: helper functions:
     """The Pixelblaze API has functions to 'set' individual property values, 
@@ -1524,14 +1524,14 @@ class Pixelblaze:
 
     # --- SETTINGS menu: CONTROLLER section: LED settings
 
-    def setBrightnessLimit(self, maxBrightness:int, save:bool=False):
+    def setBrightnessLimit(self, maxBrightness:int, *, saveToFlash:bool=False):
         """Sets the Pixelblaze's global brightness limit.
 
         Args:
             maxBrightness (int): The maximum brightness, expressed as a percent value between 0 and 100 (yes, it's inconsistent with the 'brightness' settings).
-            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+            saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
-        self.wsSendJson({"maxBrightness": self._clamp(maxBrightness, 0, 100), "save": save}, expectedResponse=None)
+        self.wsSendJson({"maxBrightness": self._clamp(maxBrightness, 0, 100), "save": saveToFlash}, expectedResponse=None)
 
     class ledTypes(IntEnum):
         noLeds = 0
@@ -1550,13 +1550,13 @@ class Pixelblaze:
         bufferedNeoPixel = 4        #v2 synonym for bufferedWS2812
         OutputExpander = 5
 
-    def setLedType(self, ledType:ledTypes, dataSpeed:int=None, save:bool=False):
+    def setLedType(self, ledType:ledTypes, *, dataSpeed:int=None, saveToFlash:bool=False):
         """Defines the type of LEDs connected to the Pixelblaze.
 
         Args:
             ledType (ledTypes): The type of LEDs connected to the Pixelblaze.
             dataSpeed (int, optional): If provided, sets a custom data speed for communication with the LEDs; otherwise the defaults from the webUI are used. Defaults to None.
-            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+            saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         assert type(ledType) is self.ledTypes
         # If no dataSpeed was specified, default to what the v3 UI sends.
@@ -1568,21 +1568,21 @@ class Pixelblaze:
             if ledType == self.ledTypes.bufferedWS2812: dataSpeed = 3500000
             if ledType == self.ledTypes.OutputExpander: dataSpeed = 2000000
 
-        self.wsSendJson({"ledType": ledType, "dataSpeed": dataSpeed, "save": save}, expectedResponse=None)
+        self.wsSendJson({"ledType": ledType, "dataSpeed": dataSpeed, "save": saveToFlash}, expectedResponse=None)
 
-    def setPixelCount(self, nPixels:int, save:bool=False):
+    def setPixelCount(self, nPixels:int, *, saveToFlash:bool=False):
         """Sets the number of LEDs attached to the Pixelblaze. 
         
         Note that changing the number of pixels does not recalculate the pixelMap.
 
         Args:
             nPixels (int): The number of pixels.
-            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+            saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         # TBD: The Pixelblaze UI also re-evaluates the map function and resends the map data...Should we do the same?
-        self.wsSendJson({"pixelCount": nPixels, "save": save}, expectedResponse=None)
+        self.wsSendJson({"pixelCount": nPixels, "save": saveToFlash}, expectedResponse=None)
 
-    def setDataSpeed(self, speed:int, save:bool=False):
+    def setDataSpeed(self, speed:int, *, saveToFlash:bool=False):
         """Sets custom data rate for communicating with the LEDs.
 
         CAUTION: For advanced users only.  If you don't know exactly why you want to do this, DON'T DO IT.
@@ -1590,9 +1590,9 @@ class Pixelblaze:
 
         Args:
             speed (int): The data rate for communicating with the LEDs.
-            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+            saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
-        self.wsSendJson({"dataSpeed": speed, "save": save}, expectedResponse=None)
+        self.wsSendJson({"dataSpeed": speed, "save": saveToFlash}, expectedResponse=None)
 
     class colorOrders(Enum):
         RGB = 'RGB'
@@ -1606,15 +1606,15 @@ class Pixelblaze:
         RGB_W = 'RGB-W'
         GRB_W = 'GRB-W'
 
-    def setColorOrder(self, colorOrder:colorOrders, save:bool=False):
+    def setColorOrder(self, colorOrder:colorOrders, *, saveToFlash:bool=False):
         """Sets the color order for the LEDs connected to the Pixelblaze.
 
         Args:
             colorOrder (colorOrders): The ordering for the color data sent to the LEDs.
-            save (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
+            saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         assert type(colorOrder) is self.colorOrders
-        self.wsSendJson({"colorOrder": colorOrder.value, "save": save}, expectedResponse=None)
+        self.wsSendJson({"colorOrder": colorOrder.value, "save": saveToFlash}, expectedResponse=None)
 
     # --- SETTINGS menu: CONTROLLER section: LED settings: helper functions:
     """The Pixelblaze API has functions to 'set' individual property values, 
@@ -1955,51 +1955,54 @@ class Pixelblaze:
     # for home automation integrations. When deprecating or eliminating, make sure there's an
     # easy-to-use replacement in the current API.  
 
-    def pauseRenderer(self, doPause):
+    def pauseRenderer(self, doPause:bool):
+        """Pause rendering. Lasts until unpause() is called or the Pixelblaze is reset.
+
+        CAUTION: For advanced users only.  Only used to stop the render engine before
+        sending new bytecode.  
+        
+        If you don't know exactly why you want to do this, DON'T DO IT.
+
+        Args:
+            doPause (bool): If True, pause the render engine; if False, resume it.
         """
-        Pause rendering. Lasts until unpause() is called or the Pixelblaze is reset.
-        CAUTION: For advanced users only.  If you don't know exactly why you want to do this, DON'T DO IT.
-        """
-        assert type(doPause) is bool
         self.wsSendJson({"pause": doPause}, expectedResponse="ack")
 
-    def _id_from_name(self, patterns, name):
-        """Utility Method: Given the list of patterns and text name of a pattern, returns that pattern's ID"""
-        for key, value in patterns.items():
-            if name == value:
-                return key
-        return None
+    def setActivePatternByName(self, patternName:str, *, saveToFlash:bool=False):
+        """Sets the currently running pattern using a text name.
 
-    def _get_pattern_id(self, pid):
-        """Utility Method: Returns a pattern ID if passed either a valid ID or a text name"""
-        patterns = self.getPatternList()
-        if patterns.get(pid) is None:
-            pid = self._id_from_name(patterns, pid)
-        return pid
-
-    def setActivePatternByName(self, patternName, save=False):
-        """Sets the currently running pattern using a text name"""
-        self.setActivePattern(self._get_pattern_id(patternName), save)
-
-    def controlExists(self, ctl_name, pattern=None):
+        Args:
+            patternName (str): The name of the pattern.
+            saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
-        Returns True if the specified control exists, False otherwise.
-        The pattern argument takes the name or ID of the pattern to check.
-        If pattern argument is not specified, checks the currently running pattern.
-        Note that getActivePattern() can return None on a freshly started
+        patternId = dict((value, key) for key, value in self.getPatternList().items()).get(patternName)
+        self.setActivePattern(self._get_pattern_id(patternName), saveToFlash)
+
+    def controlExists(self, controlName:str, patternId:str=None) -> bool:
+        """Tests whether the named control exists in the specified pattern.
+        If no pattern is specified, the currently active pattern is assumed.
+
+        Note that the active pattern can be undefined on a freshly started
         Pixelblaze until the pattern has been explicitly set.  This function
         also will return False if the active pattern is not available.
-        """
-        result = self.getControls(pattern)
-        return True if ctl_name in result else False
 
-    def getColorControlNames(self, pattern=None):
+        Args:
+            controlName (str): The name of the control.
+            patternId (str, optional): The pattern in which to test for the presence of the control. Defaults to None.
+
+        Returns:
+            bool: True if the specified control exists, False otherwise.
+        """
+        result = self.getControls(patternId)
+        return True if controlName in result else False
+
+    def getColorControlNames(self, patternId:str=None) -> list:
         """
         Returns a list of names of the specified pattern's rgbPicker or
         hsvPicker controls if any exist, None otherwise.  If the pattern
         argument is not specified, check the currently running pattern
         """
-        controls = self.getControls(pattern)
+        controls = self.getControls(patternId)
         if controls is None:
             return None
 
@@ -2013,41 +2016,45 @@ class Pixelblaze:
 
         return ctl_list if (len(ctl_list) > 0) else None
 
-    def getColorControlName(self, pattern=None):
+    def getColorControlName(self, patternId:str=None) -> str:
+        """Returns the name of the specified pattern's first rgbPicker or
+        hsvPicker control if one exists, or None otherwise.
+
+        Args:
+            patternId (str, optional): The pattern to search for color controls; or the currently active pattern if not specified. Defaults to None.
+
+        Returns:
+            str: The name of the specified pattern's first rgbPicker or hsvPicker control if one exists, or None otherwise.
         """
-        Returns the name of the specified pattern's first rgbPicker or
-        hsvPicker control if one exists, None otherwise.  If the pattern
-        argument is not specified, checks in the currently running pattern
-        """
-        result = self.getColorControlNames(pattern)
+        result = self.getColorControlNames(patternId)
         if result is None:
             return result
         else:
             return result[0]
             
-    def setColorControl(self, ctl_name, color, save=False):
-        """
-        Sets the 3-element color of the specified HSV or RGB color picker.
-        The color argument should contain an RGB or HSV color with all values
-        in the range 0-1. To reduce wear on Pixelblaze's flash memory, the save parameter
-        is ignored by default.  See documentation for _enable_flash_save() for
-        more information.
+    def setColorControl(self, controlName:str, color:dict, saveToFlash:bool=False):
+        """Sets the 3-element color of the specified HSV or RGB color picker.
+
+        Args:
+            controlName (str): The name of the color control to change.
+            color (dict): A dictionary of RGB or HSV colors, with all values in the range 0-1. 
+            saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         # based on testing w/Pixelblaze, no run-time length or range validation is performed
         # on color. Pixelblaze ignores extra elements, sets unspecified elements to zero,
         # takes only the fractional part of elements outside the range 0-1, and
         # does something (1-(n % 1)) for negative elements.
-        val = {ctl_name: color}
-        self.setActiveControls(val, save)            
+        self.setActiveControls({controlName: color, "save": saveToFlash})
             
-    def setCacheRefreshTime(self, seconds):
-        """
-        Set the interval, in seconds, at which the pattern cache is cleared and
-        a new pattern list is loaded from the Pixelblaze.  Default is 600 (10 minutes)
-        """
-        # a million seconds is about 277 hours or about 11.5 days.  Probably long enough.
-        self.cacheRefreshInterval = 1000 * self._clamp(seconds, 0, 1000000)
+    def setCacheRefreshTime(self, seconds:int):
+        """Set the interval, in seconds, after which calls to `getPatternList()` clear the pattern cache and fetch a new pattern list from the Pixelblaze.  
+        
+        The Default is 600 seconds (10 minutes); the maximum allowable value is clamped to a million seconds (about 277 hours, or 11.5 days). Anything else would be excessive.
 
+        Args:
+            seconds (int): The maximum age of the pattern cache.
+        """
+        self.cacheRefreshInterval = 1000 * self._clamp(seconds, 0, 1000000)
 
 # ----------------------------------------------------------------------------
 
@@ -2106,7 +2113,7 @@ class PBB:
         return PBB(pathlib.Path(fileName).stem, pathlib.Path(fileName).read_text())
 
     @staticmethod
-    def fromIpAddress(ipAddress:str, proxyUrl:str=None, verbose:bool=False) -> 'PBB': # 'Quoted' to defer resolution of forward reference; or could use 'from __future__ import annotations'
+    def fromIpAddress(ipAddress:str, *, proxyUrl:str=None, verbose:bool=False) -> 'PBB': # 'Quoted' to defer resolution of forward reference; or could use 'from __future__ import annotations'
         """Creates and returns a new Pixelblaze Binary Backup whose contents are loaded from a Pixelblaze specified by IP address.
 
         Args:
@@ -2122,7 +2129,7 @@ class PBB:
             return PBB.fromPixelblaze(pb, verbose=verbose)
 
     @staticmethod
-    def fromPixelblaze(pb:Pixelblaze, verbose:bool=False) -> 'PBB': # 'Quoted' to defer resolution of forward reference; or could use 'from __future__ import annotations'
+    def fromPixelblaze(pb:Pixelblaze, *, verbose:bool=False) -> 'PBB': # 'Quoted' to defer resolution of forward reference; or could use 'from __future__ import annotations'
         """Creates and returns a new Pixelblaze Binary Backup whose contents are loaded from an existing Pixelblaze object.
 
         Args:
@@ -2293,7 +2300,7 @@ class PBB:
                 # And everything else (should just be the Icons) goes in the root directory...
                 path.joinpath(fileName[1:]).write_bytes(self.getFile(fileName))
 
-    def toIpAddress(self, ipAddress:str, proxyUrl:str=None, verbose:bool=False):
+    def toIpAddress(self, ipAddress:str, *, proxyUrl:str=None, verbose:bool=False):
         """Restores the contents of this PixelBlazeBackup to a Pixelblaze identified by IP Address.
 
         Args:
@@ -2302,10 +2309,10 @@ class PBB:
             verbose (bool, optional): A boolean specifying whether to print detailed progress statements. Defaults to False.
         """
         # Make a connection to the Pixelblaze.
-        with Pixelblaze(ipAddress, proxyUrl) as pb:
-            self.toPixelblaze(pb, verbose)
+        with Pixelblaze(ipAddress, proxyUrl=proxyUrl) as pb:
+            self.toPixelblaze(pb, verbose=verbose)
 
-    def toPixelblaze(self, pb:Pixelblaze, verbose:bool=False):
+    def toPixelblaze(self, pb:Pixelblaze, *, verbose:bool=False):
         """Uploads the contents of this PixelBlazeBackup to the destination Pixelblaze.
 
         Args:
@@ -2404,7 +2411,7 @@ class PBP:
         return PBP.fromBytes(pathlib.Path(fileName).stem, pathlib.Path(fileName).read_bytes())
 
     @staticmethod
-    def fromIpAddress(ipAddress:str, patternId:str, proxyUrl:str=None) -> 'PBP': # 'Quoted' to defer resolution of forward reference; or could use 'from __future__ import annotations'
+    def fromIpAddress(ipAddress:str, patternId:str, *, proxyUrl:str=None) -> 'PBP': # 'Quoted' to defer resolution of forward reference; or could use 'from __future__ import annotations'
         """Creates and returns a new pattern Pixelblaze Binary Pattern (PBP) whose contents are downloaded from a URL.
 
         Args:
@@ -2498,7 +2505,7 @@ class PBP:
         with open(fileName, "wb") as file:
             file.write(self.__binaryData)
 
-    def toIpAddress(self, ipAddress:str, proxyUrl:str=None):
+    def toIpAddress(self, ipAddress:str, *, proxyUrl:str=None):
         """Uploads this Pixelblaze Binary Pattern (PBP) to a Pixelblaze identified by its IP address.
 
         Args:
