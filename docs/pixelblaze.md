@@ -176,8 +176,8 @@ Initializes an object for communicating with and controlling a Pixelblaze.
 ```python
 EnumerateAddresses(
     timeout: int = 1500,
-    hostIP: str = '0.0.0.0',
-    proxyUrl: str = None
+    proxyUrl: str = None,
+    hostIP: str = '0.0.0.0'
 ) → LightweightEnumerator
 ```
 
@@ -206,8 +206,8 @@ Returns an enumerator that will iterate through all the Pixelblazes on the local
 ```python
 EnumerateDevices(
     timeout: int = 1500,
-    hostIP: str = '0.0.0.0',
-    proxyUrl: str = None
+    proxyUrl: str = None,
+    hostIP: str = '0.0.0.0'
 ) → LightweightEnumerator
 ```
 
