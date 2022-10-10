@@ -30,12 +30,13 @@ if __name__ == "__main__":
     pixelCount = pb.getPixelCount(config)
 
     # The above determine the maximum power draw, which is subject to local settings.
-    print(f"Theoretical max power for {pixelCount} pixels is {cpu + (pixelCount * (powR + powG + powB))}A.")
+    theoreticalMax = cpu + (pixelCount * (powR + powG + powB))
+    print(f"Theoretical max power for {pixelCount} pixels is {theoreticalMax}A.")
 
     # Get the local scaling factors.
     max = pb.getBrightnessLimit(config) / 100
     scale = pb.getBrightnessSlider(config)
-    print(f"Max power is {int(100 * max)}%; UI slider is {int(100 * scale)}%.")
+    print(f"Max power is {int(100 * max)}% and UI slider is {int(100 * scale)}%, so the scaled max power draw should be {theoreticalMax * max * scale}A.")
 
     # Loop until the heat death of the universe, or until the user hits Ctrl-C.
     try:

@@ -23,7 +23,7 @@ This module contains the following classes:
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L68"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L82"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Pixelblaze`
 The Pixelblaze class presents a simple synchronous interface to a single Pixelblaze's websocket API.  
@@ -147,7 +147,7 @@ The objective is to provide 99% coverage of the functionality of the Pixelblaze 
 - [`getStorageSize`](#method-getStorageSize) 
 - [`getStorageUsed`](#method-getStorageUsed) 
 
-<a href="../pixelblaze/pixelblaze.py#L200"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -165,17 +165,11 @@ Initializes an object for communicating with and controlling a Pixelblaze.
  - <b>`proxyUrl`</b> (str, optional):  The url of a proxy, if required, in the format "protocol://ipAddress:port" (for example, "http://192.168.0.1:8888"). Defaults to None. 
 
 
----
-
-#### <kbd>property</kbd> ipAddr
-
-Deprecated. 
-
 
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L320"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L335"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `EnumerateAddresses`
 
@@ -205,7 +199,7 @@ Returns an enumerator that will iterate through all the Pixelblazes on the local
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L334"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L349"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `EnumerateDevices`
 
@@ -235,7 +229,7 @@ Returns an enumerator that will iterate through all the Pixelblazes on the local
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L975"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1022"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `addToSequencerPlaylist`
 
@@ -265,7 +259,7 @@ Appends a new entry to the specified playlist.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1932"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1984"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `controlExists`
 
@@ -277,7 +271,7 @@ Returns True if the specified control exists, False otherwise. The pattern argum
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L707"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L754"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `deleteFile`
 
@@ -301,7 +295,7 @@ Deletes a file from this Pixelblaze using the HTTP API.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1048"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1095"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `deletePattern`
 
@@ -319,7 +313,7 @@ Delete a pattern saved on the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1159"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getActiveControls`
 
@@ -345,7 +339,7 @@ If there are no controls or no pattern has been set, returns an empty dictionary
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1100"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1147"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getActivePattern`
 
@@ -369,7 +363,7 @@ Returns the ID of the pattern currently running on the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1067"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1114"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getActiveVariables`
 
@@ -387,7 +381,7 @@ Gets the names and values of all variables exported by the current pattern.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1442"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1489"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getAutoOffEnable`
 
@@ -411,7 +405,7 @@ Returns whether the auto-Off timer is enabled.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1466"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1513"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getAutoOffEnd`
 
@@ -435,7 +429,7 @@ Returns the time, if any, at which the Pixelblaze will turn on the pattern when 
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1454"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1501"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getAutoOffStart`
 
@@ -459,7 +453,7 @@ Returns the time, if any, at which the Pixelblaze will turn off the pattern when
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1831"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1878"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getBrandName`
 
@@ -483,7 +477,7 @@ Returns the brand name, if any, of this Pixelblaze (blank unless rebadged by a r
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1578"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1625"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getBrightnessLimit`
 
@@ -507,7 +501,7 @@ Returns the maximum brightness for the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L829"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L876"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getBrightnessSlider`
 
@@ -531,7 +525,7 @@ Get the value of the UI brightness slider.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1964"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2016"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getColorControlName`
 
@@ -543,7 +537,7 @@ Returns the name of the specified pattern's first rgbPicker or hsvPicker control
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1944"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1996"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getColorControlNames`
 
@@ -555,7 +549,7 @@ Returns a list of names of the specified pattern's rgbPicker or hsvPicker contro
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1619"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1666"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getColorOrder`
 
@@ -579,7 +573,7 @@ Returns the color order of the LEDs connected to the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1272"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1319"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getConfigExpander`
 
@@ -597,7 +591,7 @@ Retrieves the OutputExpander configuration.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1260"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1307"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getConfigSequencer`
 
@@ -615,7 +609,7 @@ Retrieves the Sequencer state.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1229"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1276"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getConfigSettings`
 
@@ -633,19 +627,7 @@ Returns the configuration as defined on the Settings tab of the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2125"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `getControls`
-
-```python
-getControls(pattern=None)
-```
-
-Deprecated. 
-
----
-
-<a href="../pixelblaze/pixelblaze.py#L1667"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1714"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getCpuSpeed`
 
@@ -669,7 +651,7 @@ Returns the CPU speed of the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1607"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1654"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getDataSpeed`
 
@@ -693,7 +675,7 @@ Returns the data speed of the LEDs connected to the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1405"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1452"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getDeviceName`
 
@@ -717,7 +699,7 @@ Returns the user-friendly name of the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1417"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1464"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getDiscovery`
 
@@ -741,7 +723,7 @@ Returns a boolean signifying whether the Pixelblaze announces itself to the Elec
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L764"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L811"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getFPS`
 
@@ -765,7 +747,7 @@ Return the speed (in Frames per Second) of the pattern rendering.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L675"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L722"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getFile`
 
@@ -789,7 +771,7 @@ Downloads a file from the Pixelblaze using the HTTP API.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L610"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L657"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getFileList`
 
@@ -815,19 +797,7 @@ For Pixelblazes running firmware versions lower than 2.29/3.24 (the point at whi
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2095"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `getHardwareConfig`
-
-```python
-getHardwareConfig()
-```
-
-Deprecated. 
-
----
-
-<a href="../pixelblaze/pixelblaze.py#L1855"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1902"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getLearningUiMode`
 
@@ -851,7 +821,7 @@ Returns whether "Learning UI Mode" is enabled.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1590"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1637"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getLedType`
 
@@ -863,7 +833,7 @@ Returns the type of LEDs connected to the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1254"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getMapData`
 
@@ -881,7 +851,7 @@ Gets the binary representation of the pixelMap entered on the 'Mapper' tab.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1183"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1230"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getMapFunction`
 
@@ -899,7 +869,7 @@ Returns the mapFunction text used to populate the Mapper tab in the Pixelblaze U
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1680"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1727"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getNetworkPowerSave`
 
@@ -923,7 +893,7 @@ Returns whether the "Network Power Saving" mode is enabled (and WiFi is disabled
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1030"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1077"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getPatternAsEpe`
 
@@ -947,7 +917,7 @@ Convert a stored pattern into an exportable, portable JSON format (which then ne
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1175"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getPatternControls`
 
@@ -971,7 +941,7 @@ Returns the name and value of any UI controls exported by the specified pattern.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L991"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1038"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getPatternList`
 
@@ -997,7 +967,7 @@ Normally reads from the cached pattern list, which is refreshed every 10 minutes
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1188"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getPatternSourceCode`
 
@@ -1021,7 +991,7 @@ Gets the sourceCode of a saved pattern from the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L578"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L625"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getPeers`
 
@@ -1039,7 +1009,7 @@ A new command, added to the API but not yet implemented as of v2.29/v3.24, that 
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1595"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1642"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getPixelCount`
 
@@ -1063,7 +1033,7 @@ Returns the number of LEDs connected to the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L746"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L793"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getPreviewFrame`
 
@@ -1081,7 +1051,7 @@ Grab one of the preview frames that Pixelblaze sends after every render cycle.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1056"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getPreviewImage`
 
@@ -1105,7 +1075,7 @@ Gets the preview image (a JPEG with 150 iterations of the pattern) saved within 
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L872"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L919"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getSequencerMode`
 
@@ -1129,7 +1099,7 @@ Gets the current sequencer mode.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L954"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1001"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getSequencerPlaylist`
 
@@ -1153,7 +1123,7 @@ Fetches the specified playlist.  At the moment, only the default playlist is sup
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L940"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L987"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getSequencerShuffleTime`
 
@@ -1177,7 +1147,7 @@ Gets the time the Pixelblaze's sequencer will run each pattern before switching 
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L884"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L931"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getSequencerState`
 
@@ -1201,7 +1171,7 @@ Gets the current sequencer run state.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1843"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1890"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getSimpleUiMode`
 
@@ -1225,7 +1195,7 @@ Returns whether "Simple UI Mode" is enabled.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L724"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L771"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getStatistics`
 
@@ -1243,7 +1213,7 @@ Grab one of the statistical packets that Pixelblaze sends every second.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L800"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L847"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getStorageSize`
 
@@ -1267,7 +1237,7 @@ Return the available Flash storage on the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L788"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L835"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getStorageUsed`
 
@@ -1291,7 +1261,7 @@ Return the amount of Flash storage used on the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1430"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1477"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getTimezone`
 
@@ -1315,7 +1285,7 @@ Returns the timezone, if any, for the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1704"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1751"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getUpdateState`
 
@@ -1333,7 +1303,7 @@ Returns the updateState of the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L776"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L823"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getUptime`
 
@@ -1357,7 +1327,7 @@ Return the uptime (in seconds) of the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L589"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L636"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getUrl`
 
@@ -1381,19 +1351,7 @@ Build the URL to communicate with the Pixelblaze using an HTTP endpoint.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `getVars`
-
-```python
-getVars()
-```
-
-Deprecated. 
-
----
-
-<a href="../pixelblaze/pixelblaze.py#L1745"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1792"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getVersion`
 
@@ -1411,7 +1369,7 @@ Returns the firmware version of the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1755"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1802"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getVersionMajor`
 
@@ -1429,7 +1387,7 @@ Returns the major version number.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1763"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1810"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getVersionMinor`
 
@@ -1447,19 +1405,7 @@ Returns the minor version number.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `get_timeout`
-
-```python
-get_timeout()
-```
-
-Deprecated. 
-
----
-
-<a href="../pixelblaze/pixelblaze.py#L1724"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1771"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `installUpdate`
 
@@ -1477,7 +1423,7 @@ Installs new Pixelblaze firmware, if the current updateState indicates that an u
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L917"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L964"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `nextSequencer`
 
@@ -1495,19 +1441,7 @@ Mimics the 'Next' button in the UI.  If the sequencerMode is ShuffleAll or Playl
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2025"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `pause`
-
-```python
-pause()
-```
-
-Deprecated. 
-
----
-
-<a href="../pixelblaze/pixelblaze.py#L1906"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1958"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `pauseRenderer`
 
@@ -1519,7 +1453,7 @@ Pause rendering. Lasts until unpause() is called or the Pixelblaze is reset. CAU
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L907"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L954"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `pauseSequencer`
 
@@ -1537,7 +1471,7 @@ Mimics the 'Pause' button in the UI.  Pauses the pattern sequencer,  without cha
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L898"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L945"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `playSequencer`
 
@@ -1555,7 +1489,7 @@ Mimics the 'Play' button in the UI. Starts the pattern sequencer, the consequenc
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L690"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L737"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `putFile`
 
@@ -1580,7 +1514,7 @@ Uploads a file to the Pixelblaze using the HTTP API.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1790"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1837"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `reboot`
 
@@ -1594,7 +1528,7 @@ This is occasionally necessary, eg. to force the Pixelblaze to recognize changes
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1782"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1829"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `restoreFromBackup`
 
@@ -1612,7 +1546,7 @@ Restores the contents of this Pixelblaze from a Pixelblaze Binary Backup file.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1774"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1821"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `saveBackup`
 
@@ -1630,7 +1564,7 @@ Saves the contents of this Pixelblaze into a Pixelblaze Binary Backup file.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1167"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `savePattern`
 
@@ -1652,7 +1586,7 @@ If you don't know how to generate the previewImage and byteCode components, you 
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1154"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1201"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `sendPatternToRenderer`
 
@@ -1671,7 +1605,7 @@ Sends a blob of bytecode and a JSON dictionary of UI controls to the Renderer. M
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L472"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L495"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `sendPing`
 
@@ -1689,7 +1623,7 @@ Send a Ping message to the Pixelblaze and wait for the Acknowledgement response.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1085"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1132"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setActiveControls`
 
@@ -1708,7 +1642,7 @@ Sets the value of one or more UI controls exported from the active pattern.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1019"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1066"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setActivePattern`
 
@@ -1727,7 +1661,7 @@ Sets the active pattern.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1928"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1980"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setActivePatternByName`
 
@@ -1739,7 +1673,7 @@ Sets the currently running pattern using a text name
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1075"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1122"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setActiveVariables`
 
@@ -1759,7 +1693,7 @@ Variables not present in the current pattern are ignored.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1370"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1417"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setAutoOffEnable`
 
@@ -1778,7 +1712,7 @@ Enables or disables the Pixelblaze's auto-Off scheduler.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1389"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1436"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setAutoOffEnd`
 
@@ -1797,7 +1731,7 @@ Sets the time at which the Pixelblaze will turn on the pattern.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1426"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setAutoOffStart`
 
@@ -1816,7 +1750,7 @@ Sets the time at which the Pixelblaze will turn off the pattern.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1801"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1848"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setBrandName`
 
@@ -1834,19 +1768,7 @@ Sets the brand name of the Pixelblaze (used by VARs to change the brand name tha
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2090"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `setBrightness`
-
-```python
-setBrightness(n, save=False)
-```
-
-Deprecated. 
-
----
-
-<a href="../pixelblaze/pixelblaze.py#L1480"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1527"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setBrightnessLimit`
 
@@ -1865,7 +1787,7 @@ Sets the Pixelblaze's global brightness limit.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L814"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L861"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setBrightnessSlider`
 
@@ -1884,7 +1806,7 @@ Set the value of the UI brightness slider.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1976"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2043"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setCacheRefreshTime`
 
@@ -1896,7 +1818,7 @@ Set the interval, in seconds, at which the pattern cache is cleared and a new pa
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2177"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2028"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setColorControl`
 
@@ -1904,11 +1826,11 @@ Set the interval, in seconds, at which the pattern cache is cleared and a new pa
 setColorControl(ctl_name, color, save=False)
 ```
 
-Deprecated. 
+Sets the 3-element color of the specified HSV or RGB color picker. The color argument should contain an RGB or HSV color with all values in the range 0-1. To reduce wear on Pixelblaze's flash memory, the save parameter is ignored by default.  See documentation for _enable_flash_save() for more information. 
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1562"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1609"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setColorOrder`
 
@@ -1927,31 +1849,7 @@ Sets the color order for the LEDs connected to the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2165"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `setControl`
-
-```python
-setControl(ctl_name, value, save=False)
-```
-
-Deprecated. 
-
----
-
-<a href="../pixelblaze/pixelblaze.py#L2131"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `setControls`
-
-```python
-setControls(json_ctl, save=False)
-```
-
-Deprecated. 
-
----
-
-<a href="../pixelblaze/pixelblaze.py#L1638"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1685"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setCpuSpeed`
 
@@ -1971,7 +1869,7 @@ Note that this setting will not take effect until the Pixelblaze is rebooted (wh
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1538"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1585"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setDataSpeed`
 
@@ -1992,7 +1890,7 @@ CAUTION: For advanced users only.  If you don't know exactly why you want to do 
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1335"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1382"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setDeviceName`
 
@@ -2010,7 +1908,7 @@ Sets the device name of the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1343"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1390"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setDiscovery`
 
@@ -2029,7 +1927,7 @@ Sets whether this Pixelblaze announces its presence to (and gets a clocktime ref
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1817"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1864"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setLearningUiMode`
 
@@ -2047,7 +1945,7 @@ Enables or disables "Learning UI Mode" which has additional UI help for new user
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1506"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1553"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setLedType`
 
@@ -2067,7 +1965,7 @@ Defines the type of LEDs connected to the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1262"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setMapData`
 
@@ -2086,7 +1984,7 @@ Sets the binary mapData used by the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1191"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1238"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setMapFunction`
 
@@ -2112,7 +2010,7 @@ Note that this is does not change the mapData used by the Pixelblaze; the Mapper
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1651"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1698"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setNetworkPowerSave`
 
@@ -2132,7 +2030,7 @@ Note that this setting will not take effect until the Pixelblaze is rebooted (wh
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1526"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1573"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setPixelCount`
 
@@ -2153,7 +2051,7 @@ Note that changing the number of pixels does not recalculate the pixelMap.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L735"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L782"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setSendPreviewFrames`
 
@@ -2171,19 +2069,7 @@ Set whether or not the Pixelblaze sends pattern preview frames.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1992"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `setSequenceTimer`
-
-```python
-setSequenceTimer(n)
-```
-
-Deprecated. 
-
----
-
-<a href="../pixelblaze/pixelblaze.py#L848"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L895"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setSequencerMode`
 
@@ -2202,7 +2088,7 @@ Sets the sequencer mode to one of the available sequencerModes (Off, ShuffleAll,
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L965"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1012"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setSequencerPlaylist`
 
@@ -2224,7 +2110,7 @@ Replaces the entire contents of the specified playlist.  At the moment, only the
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L925"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L972"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setSequencerShuffleTime`
 
@@ -2243,7 +2129,7 @@ Sets the time the Pixelblaze's sequencer will run each pattern before switching 
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L857"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L904"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setSequencerState`
 
@@ -2262,7 +2148,7 @@ Set the run state of the sequencer.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1809"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1856"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setSimpleUiMode`
 
@@ -2280,7 +2166,7 @@ Enables or disables "Simple UI Mode" which makes the UI more suitable for non-te
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1357"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L1404"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setTimezone`
 
@@ -2300,103 +2186,7 @@ To clear the timezone, pass an empty string.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2151"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `setVariable`
-
-```python
-setVariable(var_name, value)
-```
-
-Deprecated. 
-
----
-
-<a href="../pixelblaze/pixelblaze.py#L2146"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `setVars`
-
-```python
-setVars(json_vars)
-```
-
-Deprecated. 
-
----
-
-<a href="../pixelblaze/pixelblaze.py#L2100"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `set_timeout`
-
-```python
-set_timeout(timeout)
-```
-
-Deprecated. 
-
----
-
-<a href="../pixelblaze/pixelblaze.py#L2194"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `startSequencer`
-
-```python
-startSequencer(mode=<sequencerModes.ShuffleAll: 1>)
-```
-
-Deprecated. 
-
----
-
-<a href="../pixelblaze/pixelblaze.py#L2203"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `stopSequencer`
-
-```python
-stopSequencer()
-```
-
-Deprecated. 
-
----
-
-<a href="../pixelblaze/pixelblaze.py#L2030"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `unpause`
-
-```python
-unpause()
-```
-
-Deprecated. 
-
----
-
-<a href="../pixelblaze/pixelblaze.py#L2156"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `variableExists`
-
-```python
-variableExists(var_name)
-```
-
-Deprecated. 
-
----
-
-<a href="../pixelblaze/pixelblaze.py#L2062"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `waitForEmptyQueue`
-
-```python
-waitForEmptyQueue(timeout_ms=1000)
-```
-
-Deprecated. 
-
----
-
-<a href="../pixelblaze/pixelblaze.py#L407"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L422"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `wsReceive`
 
@@ -2420,7 +2210,7 @@ Wait for a message of a particular type from the Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L520"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L555"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `wsSendBinary`
 
@@ -2450,7 +2240,7 @@ Send a binary command to the Pixelblaze, and optionally wait for a suitable resp
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L480"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L503"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `wsSendJson`
 
@@ -2473,34 +2263,10 @@ Send a JSON-formatted command to the Pixelblaze, and optionally wait for a suita
  
  - <b>`Union[str, bytes, None]`</b>:  The message received from the Pixelblaze (of type bytes for binaryMessageTypes, otherwise of type str), or None if a timeout occurred. 
 
----
-
-<a href="../pixelblaze/pixelblaze.py#L2035"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `ws_flush`
-
-```python
-ws_flush()
-```
-
-Deprecated. 
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L1997"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `ws_recv`
-
-```python
-ws_recv(wantBinary=False, packetType=7)
-```
-
-Deprecated. 
-
-
----
-
-<a href="../pixelblaze/pixelblaze.py#L2213"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2054"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PBB`
 This class provides methods for importing, exporting, and manipulating the contents of a Pixelblaze Binary Backup, as created from the Settings menu on a Pixelblaze. 
@@ -2528,7 +2294,7 @@ This class provides methods for importing, exporting, and manipulating the conte
 
 > The constructor is not intended to be called directly; objects are created and returned from the object creation methods described above. 
 
-<a href="../pixelblaze/pixelblaze.py#L2241"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2082"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -2568,7 +2334,7 @@ Gets the user-friendly name of the device from which this PixelBlazeBackup was m
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2394"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2235"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `deleteFile`
 
@@ -2586,7 +2352,7 @@ Removes a particular file from this PixelBlazeBackup.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2255"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2096"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fromFile`
 
@@ -2610,7 +2376,7 @@ Creates and returns a new Pixelblaze Binary Backup whose contents are loaded fro
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2267"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2108"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fromIpAddress`
 
@@ -2636,7 +2402,7 @@ Creates and returns a new Pixelblaze Binary Backup whose contents are loaded fro
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2283"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2124"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fromPixelblaze`
 
@@ -2661,7 +2427,7 @@ Creates and returns a new Pixelblaze Binary Backup whose contents are loaded fro
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2372"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2213"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getFile`
 
@@ -2685,7 +2451,7 @@ Returns the contents of a particular file contained in this PixelBlazeBackup.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2166"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getFileList`
 
@@ -2709,7 +2475,7 @@ Returns a sorted list of the files contained in this PixelBlazeBackup.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2383"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2224"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `putFile`
 
@@ -2728,7 +2494,7 @@ Inserts or replaces the contents of a particular file into this PixelBlazeBackup
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2405"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2246"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `toFile`
 
@@ -2747,7 +2513,7 @@ Writes this Pixelblaze Binary Backup to a file on disk.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2455"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2296"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `toIpAddress`
 
@@ -2767,7 +2533,7 @@ Restores the contents of this PixelBlazeBackup to a Pixelblaze identified by IP 
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2467"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2308"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `toPixelblaze`
 
@@ -2787,7 +2553,7 @@ Uploads the contents of this PixelBlazeBackup to the destination Pixelblaze.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2488"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2329"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PBP`
 This class represents a Pixelblaze Binary Pattern, as stored on the Pixelblaze filesystem or contained in a Pixelblaze Binary Backup. 
@@ -2820,7 +2586,7 @@ This class represents a Pixelblaze Binary Pattern, as stored on the Pixelblaze f
 
 > The constructor is not intended to be called directly; objects are created and returned from the object creation methods described above. 
 
-<a href="../pixelblaze/pixelblaze.py#L2526"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2367"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -2908,7 +2674,7 @@ Returns the source code of the pattern in this Pixelblaze Binary Pattern (PBP).
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2693"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2534"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `explode`
 
@@ -2926,7 +2692,7 @@ Exports all the components of this Pixelblaze Binary Pattern (PBP) as separate f
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2540"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2381"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fromBytes`
 
@@ -2951,7 +2717,7 @@ Creates and returns a new Pixelblaze Binary Pattern (PBP) whose contents are ini
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2553"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2394"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fromFile`
 
@@ -2975,7 +2741,7 @@ Creates and returns a new Pixelblaze Binary Pattern (PBP) whose contents are loa
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2565"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2406"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fromIpAddress`
 
@@ -3001,7 +2767,7 @@ Creates and returns a new pattern Pixelblaze Binary Pattern (PBP) whose contents
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2581"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2422"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fromPixelblaze`
 
@@ -3026,7 +2792,7 @@ Creates and returns a new pattern Pixelblaze Binary Pattern (PBP) whose contents
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2679"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2520"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `toEPE`
 
@@ -3044,7 +2810,7 @@ Creates a new Electromage Pattern Export (EPE) and initializes it from the conte
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2649"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2490"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `toFile`
 
@@ -3062,7 +2828,7 @@ Saves this Pixelblaze Binary Pattern (PBP) to a file on disk.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2660"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2501"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `toIpAddress`
 
@@ -3081,7 +2847,7 @@ Uploads this Pixelblaze Binary Pattern (PBP) to a Pixelblaze identified by its I
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2671"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2512"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `toPixelblaze`
 
@@ -3100,7 +2866,7 @@ Uploads this Pixelblaze Binary Pattern (PBP) to an active Pixelblaze object.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2724"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2565"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `EPE`
 This class provides methods for importing, exporting, and manipulating the contents of an Electromage Pattern Export (EPE), as exported from the Patterns list on a Pixelblaze. 
@@ -3125,7 +2891,7 @@ This class provides methods for importing, exporting, and manipulating the conte
 
 > The constructor is not intended to be called directly; objects are created and returned from the object creation methods described above. 
 
-<a href="../pixelblaze/pixelblaze.py#L2748"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2589"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -3200,7 +2966,7 @@ Returns the source code of the pattern contained in this Electromage Pattern Exp
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2835"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2676"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `explode`
 
@@ -3218,7 +2984,7 @@ Exports the components of this Electromage Pattern Export (EPE) to separate file
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2760"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2601"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fromBytes`
 
@@ -3242,7 +3008,7 @@ Creates and returns a new Electromage Pattern Export (EPE) whose contents are lo
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2772"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2613"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fromFile`
 
@@ -3266,7 +3032,7 @@ Creates and returns a new portable pattern EPE whose contents are loaded from a 
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L2824"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L2665"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `toFile`
 
@@ -3285,12 +3051,12 @@ Saves this Electromage Pattern Export (EPE) to a file on disk.
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L3199"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L3040"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PixelblazeEnumerator`
 Listens on a network to detect available Pixelblazes, which the user can then list or open as Pixelblaze objects.  Also provides time synchronization services for running synchronized patterns on a network of Pixelblazes. 
 
-<a href="../pixelblaze/pixelblaze.py#L3219"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L3060"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -3305,7 +3071,7 @@ Create an object that listens continuously for Pixelblaze beacon packets, mainta
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L3279"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L3120"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `disableTimesync`
 
@@ -3317,7 +3083,7 @@ Turns off the time synchronization -- the PixelblazeEnumerator will not automati
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L3271"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L3112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `enableTimesync`
 
@@ -3329,7 +3095,7 @@ Instructs the PixelblazeEnumerator object to automatically synchronize time on a
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L3371"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L3212"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `getPixelblazeList`
 
@@ -3343,7 +3109,7 @@ getPixelblazeList()
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L3262"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L3103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `setDeviceTimeout`
 
@@ -3357,7 +3123,7 @@ The default timeout is 30000 (30 seconds).
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L3286"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L3127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `start`
 
@@ -3369,7 +3135,7 @@ Open socket for listening to Pixelblaze datagram traffic, set appropriate option
 
 ---
 
-<a href="../pixelblaze/pixelblaze.py#L3308"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../pixelblaze/pixelblaze.py#L3149"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `stop`
 
