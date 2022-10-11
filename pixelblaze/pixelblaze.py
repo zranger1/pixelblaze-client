@@ -1211,7 +1211,7 @@ class Pixelblaze:
         self.wsSendJson({"setControls": controls}, expectedResponse="ack")
         self.wsSendJson({"pause":False}, expectedResponse="ack")
 
-    def savePattern(self, previewImage:bytes, sourceCode:str, byteCode:bytes):
+    def savePattern(self, *, previewImage:bytes, sourceCode:str, byteCode:bytes):
         """Saves a new pattern to the Pixelblaze filesystem.  Mimics the effects of the 'Save' button.  
         
         If you don't know how to generate the previewImage and byteCode components, you don't want to do this.
