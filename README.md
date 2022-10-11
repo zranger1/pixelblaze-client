@@ -1,7 +1,6 @@
 # pixelblaze-client
 A Python library that presents a simple, synchronous interface for communicating with and
-controlling one or more Pixelblaze LED controllers. Requires Python 3 and the websocket-client
-module.
+controlling one or more Pixelblaze LED controllers. 
 
 ## Requirements
 - Python 3.9-3.10
