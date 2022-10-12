@@ -1,0 +1,1060 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.5.3">
+    
+    
+      
+        <title>The Pixelblaze protocol - pixelblaze-client documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.7a952b86.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.cbb835fc.min.css">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="//use.fontawesome.com/releases/v5.8.1/css/all.css">
+    
+      <link rel="stylesheet" href="//use.fontawesome.com/releases/v5.8.1/css/v4-shims.css">
+    
+      <link rel="stylesheet" href="../css/mkapi-common.css">
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="none" data-md-color-accent="none">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#the-pixelblaze-protocol" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="pixelblaze-client documentation" class="md-header__button md-logo" aria-label="pixelblaze-client documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            pixelblaze-client documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              The Pixelblaze protocol
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href=".." class="md-tabs__link">
+      pixelblaze-client
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../how-to-guides/" class="md-tabs__link">
+      How-To Guides
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../pixelblaze/" class="md-tabs__link">
+      Pixelblaze
+    </a>
+  </li>
+
+      
+        
+  
+  
+    
+  
+
+
+  <li class="md-tabs__item">
+    <a href="./" class="md-tabs__link md-tabs__link--active">
+      The Pixelblaze protocol
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../tutorials/" class="md-tabs__link">
+      Tutorials
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href=".." class="md-tabs__link">
+      API
+    </a>
+  </li>
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="pixelblaze-client documentation" class="md-nav__button md-logo" aria-label="pixelblaze-client documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    pixelblaze-client documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        pixelblaze-client
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../how-to-guides/" class="md-nav__link">
+        How-To Guides
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pixelblaze/" class="md-nav__link">
+        Pixelblaze
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        The Pixelblaze protocol
+      </a>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/" class="md-nav__link">
+        Tutorials
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        API
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="the-pixelblaze-protocol">The Pixelblaze protocol<a class="headerlink" href="#the-pixelblaze-protocol" title="Permanent link">&para;</a></h1>
+<p><strong><em>being an unofficial and apocryphal exegesis of the websocket and HTTP traffic between a Pixelblaze and its webUI</em></strong></p>
+<h1 id="disclaimer">Disclaimer<a class="headerlink" href="#disclaimer" title="Permanent link">&para;</a></h1>
+<p>This document was produced for informational purposes only; it is neither sanctioned nor recommended by @wizard.  Used incorrectly, some of these commands could cause data loss, brick/shorten the lifespan of a Pixelblaze, or cause excessive power consumption which may damage any connected LEDs or in extreme cases create a fire hazard. </p>
+<p><em>However</em>...the insights described below were gained from observation of the conversation  taking place between a correctly-configured Pixelblaze and its user interface webpage, and within that context the risk of repeating commands already known to be valid is minimal.</p>
+<p>There is no guarantee that this information has been, is, or will remain correct for your particular configuration.  Any use is solely at the user's own risk.</p>
+<h1 id="general-observations">General observations<a class="headerlink" href="#general-observations" title="Permanent link">&para;</a></h1>
+<h3 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p>The Pixelblaze runs both a webserver (listening on :80) and a websocket server (listening on port 81).  When a client webbrowser connects to the Pixelblaze webUI on port 80, the webserver  returns the file <code>index.html.gz</code> which contains the webUI application. The webbrowser unpacks and executes the webUI application (written in javascript), and <em>most</em> of the subsequent interactions take place over the websocket (the exceptions are structured as REST-ish commands to <code>GET</code>, <code>POST</code> or <code>DELETE</code> information using HTTP).</p>
+</li>
+<li>
+<p>In general, the websocket protocol is client-server with the webUI making a request and, in most cases, the Pixelblaze sending a response. HOWEVER, the Pixelblaze also sends four packets out-of-band which can interrupt the request/response flow:</p>
+</li>
+<li>After each render cycle, a preview frame representing the pixels of the currently executing pattern are sent as a binary packet of type 05 (<em>previewFrame</em>) whose format is described below;</li>
+<li>Whenever the current pattern is changed by the sequencer, the Pixelblaze sends the new  state of the sequencer: <code>{"activeProgram":{"activeProgramId":patternId,"controls":{}},"sequencerMode":sequencerMode,"runSequencer":true,"playlist":{"position":0,"id":"\_defaultplaylist\_","ms":sequencerTime,"remainingMs":countdown}}</code>; </li>
+<li>Once every second, the Pixelblaze sends a message with diagnostics and statistics: <code>{"fps":41.95804,"vmerr":0,"vmerrpc":-1,"mem":2111,"exp":0,"renderType":2,"uptime":48156306,"storageUsed":795419,"storageSize":2949250}</code>; and</li>
+<li>
+<p>The response to the <code>{"getConfig":true}</code> request consists of three separate messages (detailed below) that can come out of sequence.</p>
+</li>
+<li>
+<p>Most websocket messages are JSON strings, but a few messages are sent as binary packets containing a <em>messageType</em> byte, a <em>continuationFlags</em> byte, and <em>dataBlock</em>s of varying lengths.</p>
+</li>
+<li>
+<p><em>messageTypes</em> are:</p>
+<ul>
+<li>01 = <em>putSourceCode</em> (from webUI to Pixeblaze)</li>
+<li>03 = <em>putByteCode</em> (from webUI to Pixelblaze)</li>
+<li>04 = <em>previewImage</em> (from webUI to Pixelblaze)</li>
+<li>05 = <em>previewFrame</em> (from Pixelblaze to webUI) – <strong>this message type does not have continuation flags</strong></li>
+<li>06 = <em>getSourceCode</em> (from Pixelblaze to webUI)</li>
+<li>07 = <em>getProgramList</em> (from webUI to Pixelblaze)</li>
+<li>08 = <em>putPixelMap</em> (from webUI to Pixelblaze)</li>
+<li>09 = <em>expanderConfig</em> (from webUI to Pixelblaze AND from Pixelblaze to webUI)</li>
+</ul>
+</li>
+<li>
+<p><em>continuationFlags</em> are bitwise OR'ed together (a message that fits in a single websocket frame will have _continuationFlags* <code>frameFirst | frameLast</code>, otherwise the message is assembled by concatenating packets until <code>frameLast</code> is seen):</p>
+<ul>
+<li>01 = <em>frameFirst</em></li>
+<li>02 = <em>frameMiddle</em></li>
+<li>04 = <em>frameLast</em></li>
+</ul>
+</li>
+<li>
+<p>Upon loading, the webUI requests the current configuration of the Pixelblaze with: <code>{"sendUpdates":false,"getConfig":true,"listPrograms":true,"getUpgradeState":true}</code>.</p>
+</li>
+<li>
+<p>The response to <code>getConfig</code> is three packets containing:</p>
+<ul>
+<li>the <em>settingsConfig</em>: </li>
+</ul>
+<p><code>{"name":name,"brandName":brandName,"pixelCount":pixelCount,"brightness":uiBrightness,"maxBrightness":maxBrightness,"colorOrder":"GRB","dataSpeed":3500000,"ledType":2,"sequenceTimer":15,"sequencerMode":0,"runSequencer":false,"simpleUiMode":false,"learningUiMode":false,"discoveryEnable":true,"timezone":tzString,"autoOffEnable":false,"autoOffStart":"00:00","autoOffEnd":"00:00","cpuSpeed":240,"networkPowerSave":false,"mapperFit":1,"exp":0,"ver":"3.24"}</code>;</p>
+<ul>
+<li>the <em>sequencerConfig</em>: </li>
+</ul>
+<p><code>{"activeProgram":{"name":"Editor","activeProgramId":null,"controls":{}},"sequencerMode":0,"runSequencer":false}</code>; and</p>
+<ul>
+<li>the _ExpanderConfig:</li>
+</ul>
+<p>(a binary message with messageType <em>expanderConfig (09)</em>, whose contents are described below).</p>
+</li>
+<li>
+<p>The response to <code>listPrograms</code> is detailed under the Patterns tab.</p>
+</li>
+<li>
+<p>The response to <code>getUpgradeState</code> is <code>{"upgradeState":{"code":upgradeState}}</code>, where upgradeState can be:</p>
+<ul>
+<li>0 (<em>unknown</em>), </li>
+<li>1 (<em>checking</em>), </li>
+<li>2 (<em>inProgress</em>), </li>
+<li>3 (<em>updateError</em>), </li>
+<li>4 (<em>upToDate</em>), </li>
+<li>5 (<em>updateAvailable</em>), or </li>
+<li>6 (<em>updateComplete</em>). </li>
+</ul>
+<p>If the <em>upgradeState</em> is 5 (<em>updateAvailable</em>), clicking the "Update" button sends <code>{"upgradeVersion":"update"}</code> and then polls with <code>getUpgradeState</code> until the returned <em>upgradeState</em> is 2, 3, or 4.</p>
+</li>
+<li>
+<p>Two sections are present at the top of the screen on all tabs:</p>
+</li>
+<li>The "Brightness" slider, when changed, sends <code>{"brightness":0..100}</code>.</li>
+<li>UI controls (if any) for the active pattern, when changed, send the new values as:
+<code>{"setVar":{varName:varValue}}</code>.</li>
+</ul>
+<h1 id="patterns-tab">Patterns tab<a class="headerlink" href="#patterns-tab" title="Permanent link">&para;</a></h1>
+<p><img alt="Patterns tab" src="../images/image001.png" /></p>
+<h3 id="notes_1">Notes<a class="headerlink" href="#notes_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p>The Patterns tab (which is the default page when the webUI is loaded) requests the pattern list with: <code>{"getProgramList":true}</code>; the response is one or more binary packets of type 07 (<em>getProgramList</em>). For each pattern in the list, the webUI then requests its preview image with <code>{"getPreviewImg":patternId}</code>; the response is a JPG embedded in one or more packets of type 04 (<em>previewImage</em>).</p>
+</li>
+<li>
+<p>Clicking on a pattern name sends: <code>{"setActivePattern":patternId}</code>. After about 30 seconds, the webUI resends the command with a further parameter to save the pattern selection to flash: <code>{"setActivePattern":patternId, "save":true}</code>.</p>
+</li>
+<li>
+<p>Sequencer mode can be:</p>
+</li>
+<li>
+<p>"Off": (shown above) where the "Off" button sends <code>{"sequencerMode":0}</code> with no response.</p>
+</li>
+<li>
+<p>"Shuffle All":</p>
+<p><img alt="Shuffle mode" src="../images/image002.png" /></p>
+<ul>
+<li>"Shuffle All" button sends <code>{"sequencerMode":1}</code> which also starts the sequencer.</li>
+<li>Changing the "seconds per pattern" field sends <code>{"sequenceTimer":30}</code></li>
+<li>"Pause" button sends <code>{"runSequencer":false}</code>.</li>
+<li>"Play" button sends <code>{"runSequencer":true}</code>.</li>
+<li>"Next" button sends <code>{"nextProgram":true}</code> which also starts the sequencer.</li>
+<li>The response to all shuffle commands is the current state of the sequencer (the same message that arrives out-of-band).</li>
+</ul>
+</li>
+<li>
+<p>"Playlist":
+ <img alt="Playlist mode" src="../images/image003.png" /></p>
+<ul>
+<li>"Playlist" button sends <code>{"sequencerMode":2}</code> which also starts the sequencer.</li>
+<li>"Pause", "Play" and "Next" buttons work the same as above.</li>
+<li>"Restart" button sends <code>{"playlist":{"position":0}}</code>.</li>
+<li>"Previous" button sends <code>{"playlist":{"position":currentNumber - 1}}</code> where currentNumber came from the most recently announced state of the sequencer.</li>
+<li>"Add" button on pattern sends <code>{"playlist":{"id":"\_defaultplaylist\_","items":[{"id":patternId,"ms":durationInMs=30000}]},"save":true}</code>.</li>
+<li>Adding a pattern, changing the duration, changing the order, or deleting a playlist pattern resends the whole list: <code>{"playlist":{"id":"\_defaultplaylist\_","items":[{"id":patternId1,"ms":durationInMs=30000}, {"id":patternId2,"ms":durationInMs=30000}, …]},"save":true}</code>.</li>
+<li>The response to all playlist commands is the current state of the sequencer (the same message that arrives out-of-band).</li>
+</ul>
+</li>
+</ul>
+<h1 id="edit-tab">Edit tab<a class="headerlink" href="#edit-tab" title="Permanent link">&para;</a></h1>
+<p><img alt="Edit tab" src="../images/image004.png" /></p>
+<h3 id="notes_2">Notes<a class="headerlink" href="#notes_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Any changes within the code pane cause the pattern code to be compiled, and if successful, the bytecode is sent to the Pixelblaze with messageType 03 (<em>putBytecode</em>) and it begins executing immediately.</li>
+<li>The pattern preview window at the top (which appears on all tabs) is updated every time the Pixelblaze sends a new binary packet of type 05 (<em>previewFrame</em>), which can arrive at any time.</li>
+<li>"Save" button sends three binary messages of type 04 (<em>PreviewImage</em>), 01 (<em>putSourceCode</em>), and 03 (<em>putByteCode</em>); if successful, the response is <code>{"ack":1,"saveProgramSourceFile":true}</code>.</li>
+<li>Brightness slider sends <code>{"brightness":0..100}</code>.</li>
+<li>"Vars Watch" button sends <code>{"getVars":true|false}</code>.</li>
+</ul>
+<h1 id="mapper-tab">Mapper tab<a class="headerlink" href="#mapper-tab" title="Permanent link">&para;</a></h1>
+<p><img alt="Mapper tab" src="../images/image005.png" /></p>
+<h3 id="notes_3">Notes<a class="headerlink" href="#notes_3" title="Permanent link">&para;</a></h3>
+<ul>
+<li>When the tab is loaded, the webUI fetches the <em>mapFunction</em> from the Pixelblaze with a HTTP <code>GET</code> to the <code>/pixelmap.txt</code> endpoint.</li>
+<li>Any changes to the <em>mapFunction</em> in the code pane are immediately compiled into <em>mapData</em> and, if successful, cause a binary message of type 08 (<em>putPixelMap</em>) to be sent to the Pixelblaze where it is immediately available to the render engine.</li>
+<li>The "save" button sends <code>{"saveMap":true}</code> which tells the Pixelblaze to save the most-recently-uploaded <em>mapData</em> to flash as <code>/pixelmap.dat</code>; it also saves the <em>mapFunction</em> to flash as <code>/pixelmap.txt</code> by doing a a HTTP <code>POST</code> to the <code>/edit</code> endpoint with headers <code>Content-Type: application/x-www-form-urlencoded; charset=UTF-8</code> and the text of the mapper function as the body.</li>
+</ul>
+<h1 id="settings-tab-v2">Settings tab (v2)<a class="headerlink" href="#settings-tab-v2" title="Permanent link">&para;</a></h1>
+<p><img alt="Settings tab v2" src="../images/image006.png" /></p>
+<h3 id="notes_4">Notes<a class="headerlink" href="#notes_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Setting the LED type to "Output Expander" reveals another panel:</li>
+</ul>
+<p><img alt="Expander configuration" src="../images/image007.png" /></p>
+<p>Whenever any field is changed (including the "Add Board" and "Remove" buttons), the webUI recompiles the table into a binary <em>expanderData</em> blob (details of which are below) and resends it to the Pixelblaze as a binary message of type 08 (<em>ExpanderSettings</em>).</p>
+<h1 id="settings-tab-v3">Settings tab (v3)<a class="headerlink" href="#settings-tab-v3" title="Permanent link">&para;</a></h1>
+<p><img alt="Settings tab v3" src="../images/image008.png" /></p>
+<h3 id="notes_5">Notes<a class="headerlink" href="#notes_5" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Essentially the same as v2, with the addition of the "Cpu Speed" field (which sends <code>{"cpuSpeed":"80|160|240"}</code>) and the "disableWifi" field (which sends <code>{"networkPowerSave":true|false}</code>).</li>
+</ul>
+<h1 id="wifi-tab-v3-only">Wifi tab (v3 only)<a class="headerlink" href="#wifi-tab-v3-only" title="Permanent link">&para;</a></h1>
+<p><img alt="Wifi tab" src="../images/image009.png" /></p>
+<p>Notes:</p>
+<ul>
+<li>
+<p>Page load does a HTTP <code>GET</code> to the <code>/wifistatus</code> endpoint to populate the status field.</p>
+</li>
+<li>
+<p>"Scan" button does a HTTP <code>GET</code> to the <code>/wifiscan</code> endpoint to populate the access point list.</p>
+</li>
+<li>
+<p>"Submit" button does a HTTP <code>POST</code> to the <code>/wifisave</code> endpoint to save the Wifi configuration.</p>
+</li>
+<li>
+<p>These endpoints are described in further detail below.</p>
+</li>
+</ul>
+<h1 id="advanced-settings-tab">Advanced Settings tab<a class="headerlink" href="#advanced-settings-tab" title="Permanent link">&para;</a></h1>
+<p><img alt="Advanced Settings tab" src="../images/image010.png" /></p>
+<h3 id="notes_6">Notes<a class="headerlink" href="#notes_6" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p>The "Advanced Settings" tab is only visible when the webUI is loaded with the "/?setup" URL.</p>
+</li>
+<li>
+<p>The "Brand Name" field sends <code>{"brandName":newName}</code>.</p>
+</li>
+<li>
+<p>The "Simple UI" checkbox sends <code>{"simpleUiMode":true|false}</code>.</p>
+</li>
+<li>
+<p>The "Learning UI mode" checkbox sends <code>{"learningUiMode":true|false}</code>.</p>
+</li>
+</ul>
+<h1 id="binary-formats">Binary formats<a class="headerlink" href="#binary-formats" title="Permanent link">&para;</a></h1>
+<h2 id="previewframe-message">previewFrame message<a class="headerlink" href="#previewframe-message" title="Permanent link">&para;</a></h2>
+<p>Taking into account the packet framing described above (of which the <code>previewFrame</code> is unique in that it does not have a <code>continuationFlags</code> byte), the body of the <code>previewFrame</code> message consists of groupings of three bytes (corresponding to the <em>Red</em>, <em>Green</em> and <em>Blue</em> values) for each of the <code>pixelCount</code> pixels configured; for example the previewFrame for a 64-pixel setup would contain 1 (header) + 3 (RGB) * 64 (pixels) = 193 bytes.</p>
+<table>
+<thead>
+<tr>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>...</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[&nbsp;red_pixel0,</td>
+<td>green_pixel0,</td>
+<td>blue_pixel0&nbsp;]</td>
+<td>[&nbsp;red_pixel1,</td>
+<td>green_pixel1,</td>
+<td>blue_pixel2&nbsp;]</td>
+<td>...</td>
+</tr>
+</tbody>
+</table>
+<h2 id="mapdata-message">mapData message<a class="headerlink" href="#mapdata-message" title="Permanent link">&para;</a></h2>
+<p>Taking into account the packet framing described above, the body of the <code>mapData</code> message consists of a header containing three 32-bit longwords in little-endian format, representing the <em>formatVersion</em> (1 or 2), the number of dimensions a/k/a <em>numDimensions</em> (1, 2 or 3), and the <em>dataSize</em> in bytes (which is calculated as <code>formatVersion * numDimensions * numElements</code>).  The remainder of the message body contains <em>numElements</em> tuples of <em>numDimensions</em> values, which are either 8-bit (<em>formatVersion</em>=1) or 16-bit integers in little-endian format (<em>formatVersion</em>=2), representing the location of each particular pixel on that particular axis (X, Y or Z).  Each of these integers then needs to be divided by the respective <code>maxInt</code> for the <em>formatVersion</em> (255 for <em>formatVersion</em>=1, 65535 for <em>formatVersion</em>=2) to obtain a floating-point world coordinate between 0 and 1.</p>
+<p>For example, a 3-dimensional map with <em>formatVersion</em>=1 and 40 pixels would look like:</p>
+<table>
+<thead>
+<tr>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+<th>7</th>
+<th>8</th>
+<th>9</th>
+<th>10</th>
+<th>11</th>
+<th>12</th>
+<th>13</th>
+<th>14</th>
+<th>15</th>
+<th>16</th>
+<th>17</th>
+<th>...</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[&nbsp;1</td>
+<td>0</td>
+<td>0</td>
+<td>0&nbsp;]</td>
+<td>[&nbsp;3</td>
+<td>0</td>
+<td>0</td>
+<td>0&nbsp;]</td>
+<td>[&nbsp;40</td>
+<td>0</td>
+<td>0</td>
+<td>0&nbsp;]</td>
+<td>[&nbsp;X_0,</td>
+<td>Y_0,</td>
+<td>Z_0&nbsp;]</td>
+<td>[&nbsp;X_1,</td>
+<td>Y_1,</td>
+<td>Z_1&nbsp;]</td>
+<td>...</td>
+</tr>
+</tbody>
+</table>
+<p>And a 2-dimensional map with <em>formatVersion</em>=2 and 24 pixels would look like:</p>
+<table>
+<thead>
+<tr>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+<th>7</th>
+<th>8</th>
+<th>9</th>
+<th>10</th>
+<th>11</th>
+<th>12</th>
+<th>13</th>
+<th>14</th>
+<th>15</th>
+<th>...</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[&nbsp;2</td>
+<td>0</td>
+<td>0</td>
+<td>0&nbsp;]</td>
+<td>[&nbsp;2</td>
+<td>0</td>
+<td>0</td>
+<td>0&nbsp;]</td>
+<td>[&nbsp;24</td>
+<td>0</td>
+<td>0</td>
+<td>0&nbsp;]</td>
+<td>[&nbsp;lsbX_0</td>
+<td>msbX_0,</td>
+<td>lsbY_0</td>
+<td>msbY_0&nbsp;]</td>
+<td>...</td>
+</tr>
+</tbody>
+</table>
+<h2 id="expanderconfig-message">expanderConfig message<a class="headerlink" href="#expanderconfig-message" title="Permanent link">&para;</a></h2>
+<p>Taking into account the packet framing described above, the body of the <code>expanderConfig</code> message consists of a <em>versionNumber</em> byte of 05, followed by one or more 96-byte tables corresponding to each output expander (8 channels * 12 bytes/channel).</p>
+<p>For example, defining two expanders like this:</p>
+<p><img alt="Expander config" src="../images/image011.png" /></p>
+<p>produces a table like this, which (according to the data structures found in the <a href="https://github.com/simap/pixelblaze_output_expander/blob/master/firmware/Core/Src/app.c">outputExpander source code</a>) can be decoded as follows:</p>
+<p><img alt="Expander fields" src="../images/image013.png" /></p>
+<p>Where:</p>
+<ul>
+<li>
+<p><code>addx|chan</code> is a packed byte (<code>addx:5|chan:3</code>) combining the expander address and the channel index;</p>
+</li>
+<li>
+<p><code>ledType</code> is an enumeration with: </p>
+</li>
+<li>0=<em>‘notUsed’</em>, </li>
+<li>1=<em>‘WS2812B’</em>, </li>
+<li>2=<em>‘drawAll’</em>, </li>
+<li>3=<em>‘APA102 Data’</em>, </li>
+<li>
+<p>4=<em>‘APA102 Clock’</em>;</p>
+</li>
+<li>
+<p><code>numColors</code> is either 3 (for R/G/B) or 4 (for R/G/B/W);</p>
+</li>
+<li>
+<p><code>colorOrder</code> is a packed byte (<code>R:2|G:2|B:2|W:2</code>) containing four 2-bit numbers indicating the order in which the colors appear (0=first, 3=last). The possible permutations are: </p>
+</li>
+<li><code>0x24</code>=<em>‘RGB’</em>, </li>
+<li><code>0x18</code>=<em>‘RBG’</em>, </li>
+<li><code>0x09</code>=<em>‘BRG’</em>, </li>
+<li><code>0x06</code>=<em>‘BGR’</em>, </li>
+<li><code>0x21</code>=<em>‘GRB’</em>, </li>
+<li><code>0x12</code>=<em>‘GBR’</em>, </li>
+<li><code>0xE4</code>=<em>‘RGBW’</em>, and </li>
+<li>
+<p><code>0xE1</code>=<em>‘GRBW’</em>;</p>
+</li>
+<li>
+<p><code>pixelCount</code> is the number of pixels on this channel;</p>
+</li>
+<li>
+<p><code>startIndex</code> is the first address in the range to be directed to this channel; and</p>
+</li>
+<li>
+<p>the four bytes marked as <em>‘notUsed’</em> represent the <code>clockSpeed</code> for the channel, which is not currently supported in either the UI or the outputExpander driver but may be used in a future version.</p>
+</li>
+</ul>
+<h2 id="easy-pattern-export-epe-files">Easy Pattern Export (EPE) files<a class="headerlink" href="#easy-pattern-export-epe-files" title="Permanent link">&para;</a></h2>
+<p>EPE files are a portable way of moving patterns between Pixelblazes, even if they have different versions and architectures.  EPE files can be exported from the Pixelblaze to the local computer from the "Patterns" tab, and imported from the local computer to another Pixelblaze on the "Edit" tab (from which it needs to be saved onto the new Pixelblaze).  </p>
+<p><em>Note: The Pixelblaze pattern language has evolved over time; patterns cannot be successfully imported onto a Pixelblaze whose firmware version does not support the language constructs (eg. array initializers, coordinate translations) they use.</em></p>
+<p>The file contents consist of a JSON dictionary containing:</p>
+<ul>
+<li>
+<p>the user-assigned <code>name</code> of the pattern;</p>
+</li>
+<li>
+<p>an immutable <code>id</code> for the pattern generated on the Pixelblaze where it was first saved;</p>
+</li>
+<li>
+<p>a JSON dictionary of <code>sources</code> for the pattern, of which there is only one, named <code>main</code>, which contains the javascript-like source code of the pattern; and</p>
+</li>
+<li>
+<p>a base64-encoded JPEG <code>preview</code> image of the pattern, where each vertical row represents the state of the pixels for a single render cycle.</p>
+</li>
+</ul>
+<p>When opened in a text editor, an EPE looks something like this:</p>
+<div class="highlight"><pre><span></span><code>{
+  &quot;name&quot;: &quot;Default New Pattern&quot;,
+  &quot;id&quot;: &quot;keSLmg6tCWGPMvb85&quot;,
+  &quot;sources&quot;: { &quot;main&quot;: &quot;export function render(index) {\n  hsv(time(.1) + index/pixelCount, 1, 1)\n}&quot;
+},
+  &quot;preview&quot;: &quot;/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQo...AAAAB//2Q==&quot;
+}
+</code></pre></div>
+<p>EPE files <em>do not</em> contain the current values of the UI controls, which would have been nice.  Those can be exported and imported from the Pixelblaze filesystem separately using the REST-ish HTTP API.</p>
+<h2 id="pixelblaze-binary-pattern-pbp-files">Pixelblaze Binary Pattern (PBP) files<a class="headerlink" href="#pixelblaze-binary-pattern-pbp-files" title="Permanent link">&para;</a></h2>
+<p>Pixelblaze saves patterns to the flash filesystem as a binary blob with the filename <code>/{patternId}</code>. These blobs can be exported and imported from the Pixelblaze filesystem using the REST-ish HTTP API, which is the mechanism used by the <strong>Firestorm</strong> <code>clone</code> command and the Pixelblaze <code>backup</code>/<code>restore</code> buttons.</p>
+<p>A PBP blob begins with a header consisting of nine 32-bit longwords representing:</p>
+<ul>
+<li>
+<p>The format <code>versionNumber</code>;</p>
+</li>
+<li>
+<p>the <code>offset</code> to and <code>length</code> of the pattern's <em>Name</em>;</p>
+</li>
+<li>
+<p>the <code>offset</code> to and <code>length</code> of the pattern's <em>previewImage</em>;</p>
+</li>
+<li>
+<p>the <code>offset</code> to and <code>length</code> of the pattern's <em>byteCode</em>; and</p>
+</li>
+<li>
+<p>the <code>offset</code> to and <code>length</code> of the pattern's <em>sourceCode</em>.</p>
+</li>
+</ul>
+<p>These components occupy the remainder of the blob.</p>
+<h2 id="pixelblaze-binary-backup-pbb-files">Pixelblaze Binary Backup (PBB) files<a class="headerlink" href="#pixelblaze-binary-backup-pbb-files" title="Permanent link">&para;</a></h2>
+<p>Pixelblaze can also, from firmware versions 2.29/3.24 onwards, import and export the entire contents of the flash filesystem -- patterns, playlists and configuration, but not the webUI file itself -- to a local computer as a Pixelblaze Binary Backup.  This can be useful for archiving the state of a Pixelblaze, restoring its contents after an experiment gone wrong, or even provisioning multiple Pixelblazes with identical setups (though it would be a good idea afterwards to give them all different names).</p>
+<p>The file contents consist of a JSON dictionary containing a single element, <code>files</code>, which is another JSON dictionary containing a <em>key/value</em> tuple (where the <em>key</em> is the filename and the <em>value</em> is the file contents, encoded in base64) for each file stored in this Pixelblaze Binary Backup.</p>
+<p>For example, a Pixelblaze Binary Backup for a Pixelblaze containing 11 patterns might look like this:</p>
+<div class="highlight"><pre><span></span><code>{
+  &quot;files&quot;: {
+    &quot;/apple-touch-icon.png&quot;: &quot;iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAMAAAAKE/YAAAADAFBMVEUA...&quot;,
+    &quot;/config.json&quot;: &quot;eyJuYW1lIjoiUGl4ZWxibGF6ZV84eDhtYXRyaXgiLCJicmFuZE5hbWUiOiIiLCJwa...&quot;,
+    &quot;/favicon.ico&quot;: &quot;AAABAAMAMDAAAAEAIACoJQAANgAAACAgAAABACAAqBAAAN4lAAAQEAAAAQAgAGgEA...&quot;,
+    &quot;/l/_defaultplaylist_&quot;: &quot;eyJpdGVtcyI6W119&quot;,
+    &quot;/p/4ANH2jwPKj8nasXeD&quot;: &quot;AgAAACQAAAASAAAANgAAAK8DAADlAwAARwkAACwNAABuCwAAMUQgQXVyb...&quot;,
+    &quot;/p/4ANH2jwPKj8nasXeD.c&quot;: &quot;eyJzbGlkZXJTcGVlZCI6MC44NTg0LCJzbGlkZXJXaWR0aCI6MC43NzU...&quot;,
+    &quot;/p/4u26f8x7GRsBjQeBn&quot;: &quot;AgAAACQAAAAMAAAAMAAAAJUTAADFEwAAKAIAAO0VAAA6BAAAZ2xpdGNoI...&quot;,
+    &quot;/p/5aWMwDm9ALfJniBXi&quot;: &quot;AgAAACQAAAATAAAANwAAALEMAADoDAAAIAEAAAgOAADQAAAAMUQgbWFyY...&quot;,
+    &quot;/p/7eeGvKegHGmCD5QAd&quot;: &quot;AgAAACQAAAAIAAAALAAAAGAJAACMCQAAnQEAACkLAACYBwAAcHVsc2UgM...&quot;,
+    &quot;/p/7rkpwJrEQBffHPsye&quot;: &quot;AgAAACQAAAAQAAAANAAAAIAPAAC0DwAALAEAAOAQAAC8AgAAY29sb3IgZ...&quot;,
+    &quot;/p/8EX6T2cpfA8WxLEEF&quot;: &quot;AgAAACQAAAAMAAAAMAAAAEoPAAB6DwAADAEAAIYQAADMAQAAcmFpbmJvd...&quot;,
+    &quot;/p/HuAhJN9zTJKZEinMH&quot;: &quot;AgAAACQAAAAEAAAAKAAAAK8DAADXAwAAXwAAADYEAABmAQAAIU9mZv/Y/...&quot;,
+    &quot;/p/gvM2bmyhQFm6bXd93&quot;: &quot;AgAAACQAAAAVAAAAOQAAABkIAABSCAAAxgYAABgPAAB0BwAAQW5pbWF0Z...&quot;,
+    &quot;/p/gvM2bmyhQFm6bXd93.c&quot;: &quot;eyJzbGlkZXJOdW1MaW5lcyI6MC4wNTg0LCJzbGlkZXJMaW5lV2lkdGg...&quot;,
+    &quot;/p/mvkAmMHcyPsNbPxyt&quot;: &quot;AgAAACQAAAAUAAAAOAAAAAcUAAA/FAAAKAEAAGcVAADkAwAAY29sb3Igd...&quot;,
+    &quot;/p/vSFkZsKmhKSGpmf6E&quot;: &quot;AgAAACQAAAAKAAAALgAAAK0KAADbCgAA6AAAAMMLAACyAAAAZmFzdCBwd...&quot;,
+    &quot;/p/zemcitFWMB3y3f9o2&quot;: &quot;AgAAACQAAAAJAAAALQAAAHEVAACeFQAANAEAANIWAADaAQAAbWlsbGlwZ...&quot;
+  }
+}
+</code></pre></div>
+<h1 id="http-endpoints">HTTP endpoints<a class="headerlink" href="#http-endpoints" title="Permanent link">&para;</a></h1>
+<h3 id="notes_7">Notes<a class="headerlink" href="#notes_7" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p>The normal way of accessing the Pixelblaze webUI is by using a webbrowser to <code>GET</code> the root endpoint, eg. <code>http://{pixelblazeIpAddress}/</code>.</p>
+</li>
+<li>
+<p>Adding a queryString of <code>?min</code> to the above URL will reduce websocket traffic by stopping the webUI from requesting <code>previewFrame</code> images for the pattern list and by stopping the Pixelblaze from sending <code>previewFrame</code> messages for the currently executing pattern.  However, because  pattern files contain a <code>previewImage</code> it is necessary in this mode to re-enable <code>previewFrame</code> messages (by clicking on the pattern preview row at the top of the webUI) before attempting to edit and save a pattern.</p>
+</li>
+<li>
+<p>Adding a queryString of <code>?setup</code> to the above URL will show an additional 'Advanced Settings' tab in the webUI which allows setting the <code>brandName</code> which appears in the top left corner of the webUI or enabling <code>simpleUI</code> and <code>learningUI</code> modes.</p>
+</li>
+<li>
+<p>WiFi configuration at initial setup is performed using the following endpoints:</p>
+</li>
+<li>
+<p><code>GET</code> to the <code>/wifistatus</code> endpoint returns the current WiFi configuration; the response is <code>{"status":wifiStatus,"ip":"x.x.x.x","ssid":"{ssid}","mac":"m:a:c"}</code> where <em>wifiStatus</em> can be 255 (<em>modeSetup</em>), 6 (<em>modeAccessPoint</em>), or 3 (<em>modeClient</em>).</p>
+</li>
+<li>
+<p><code>GET</code> to the <code>/wifiscan</code> endpoint starts scanning for access points; the response is: <code>{"scanning":1}</code> until the scan completes, at which point it returns a list of the Wifi access points found: </p>
+<p><code>[{"rssi":-42,"ssid":"AccessPoint1","bssid":"xx:xx:xx:xx:xx:xx","channel":1,"secure":false},{"rssi":-53,"ssid":"AccessPoint2","bssid":"xx:xx:xx:xx:xx:xx","channel":2,"secure":true},{"rssi":-71,"ssid":"AccessPoint3","bssid":"xx:xx:xx:xx:xx:xx","channel":6,"secure":true}]</code>.</p>
+</li>
+<li>
+<p><code>POST</code> to the <code>/wifisave</code> endpoint with headers <code>Content-Type: application/x-www-form-urlencoded; charset=UTF-8</code> and body <code>mode={CLIENT|AP|SETUP}&amp;ssid={SSID}&amp;passphrase={PASSWORD}&amp;discover=true</code> sets the WiFi mode and credentials; the response should be <code>{"ack":1}</code>.</p>
+</li>
+<li>
+<p>The Pixelblaze webserver has a REST-ish API which is used for manipulating files stored on the flash filesystem. This is used by the webUI to:</p>
+</li>
+<li>
+<p><code>GET</code> files from the root endpoint eg. <code>http://{pixelblazeIpAddress}/{fileName}</code>;</p>
+</li>
+<li>
+<p><code>POST</code> new or changed files to the <code>/edit</code> endpoint with <em>headers</em> <code>Content-Type: multipart/form-data</code> and <em>formFields</em> <code>filename={fileName}</code> and <code>data={fileData}</code>; and</p>
+</li>
+<li>
+<p><code>DELETE</code> files by doing a <code>GET</code> to the <code>/delete?path={fileName}</code></p>
+</li>
+</ul>
+<p>where <code>{filename}</code> includes the folder prefix, eg. <code>/p/</code> for patterns, <code>/l/</code> for playlists, etc.</p>
+<ul>
+<li>
+<p>Firmware updates delivered as <code>.stfu</code> archives can be uploaded and applied by doing a <code>POST</code> to the <code>/update</code> endpoint with headers <code>Content-Type: multipart/form-data</code> and formFields <code>update={stfuBytes}</code>.</p>
+</li>
+<li>
+<p>A <code>POST</code> to the <code>/reboot</code> endpoint will, unsurprisingly, cause the Pixelblaze to reboot.  This can be useful because it is the only way to force Pixelblaze to take notice of changes made to the configuration files through the REST-ish API (configuration files are only read from flash on boot).</p>
+</li>
+</ul>
+<h1 id="network-discovery">Network Discovery<a class="headerlink" href="#network-discovery" title="Permanent link">&para;</a></h1>
+<p>Around once per second, the Pixelblaze announces its presence with a <code>beacon</code> packet broadcast over UDP on port 1889. This packet is used by the <strong>Firestorm</strong> utility to detect and synchronize Pixelblazes on the local network; Firestorm replies to each Pixelblaze broadcast with a <code>timeSync</code> packet and the receiving Pixelblaze adjusts its clock according to the time difference calculated from the packet.</p>
+<h2 id="beacon-packet">Beacon packet<a class="headerlink" href="#beacon-packet" title="Permanent link">&para;</a></h2>
+<p>The <code>beacon</code> packet contains three longwords in little-endian format, representing a 32-bit <em>packetType</em> of 42, the 32-bit IPv4 <em>ipAddress</em> of the Pixelblaze and <em>currentTime</em> according to that Pixelblaze (the lowest 32 bits of the Unix <code>timestamp</code> format, with millisecond resolution).  For example, a Pixelblaze at 192.168.4.1 would send the following packet on February 2, 2022 at 02:02:02.02 (timestamp <code>\x00018321D28F98</code>): </p>
+<table>
+<thead>
+<tr>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+<th>7</th>
+<th>8</th>
+<th>9</th>
+<th>10</th>
+<th>11</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[&nbsp;42</td>
+<td>0</td>
+<td>0</td>
+<td>0&nbsp;]</td>
+<td>[&nbsp;192.</td>
+<td>168.</td>
+<td>4.</td>
+<td>1&nbsp;]</td>
+<td>[&nbsp;\x98</td>
+<td>\x8F</td>
+<td>\xD2</td>
+<td>\x21&nbsp;]</td>
+</tr>
+</tbody>
+</table>
+<h2 id="timesync-packet">TimeSync packet<a class="headerlink" href="#timesync-packet" title="Permanent link">&para;</a></h2>
+<p>The <code>timeSync</code> packet contains five longwords in little-endian format, representing a 32-bit <em>packetType</em> of 43 (<em>timesync</em>), a 32-bit <em>senderId</em> (which seems to allow any value), the authoritative <em>currentTime</em> (the lowest 32 bits of the Unix <code>timestamp</code> format, with millisecond resolution), and a recap of the <em>pixelblazeIpAddress</em> and <em>pixelblazeCurrentTime</em> from the <code>beacon</code> packet to which it is responding. For example, a Firestorm with senderId 65535 running on January 1, 1970 at 00:00:00.00 (timestamp <code>\x0000000000000000</code>) would reply to the Pixelblaze beacon above with:</p>
+<table>
+<thead>
+<tr>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+<th>7</th>
+<th>8</th>
+<th>9</th>
+<th>10</th>
+<th>11</th>
+<th>12</th>
+<th>13</th>
+<th>14</th>
+<th>15</th>
+<th>16</th>
+<th>17</th>
+<th>18</th>
+<th>19</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[&nbsp;43</td>
+<td>0</td>
+<td>0</td>
+<td>0]</td>
+<td>[\xFF</td>
+<td>\xFF</td>
+<td>0</td>
+<td>0]</td>
+<td>[0</td>
+<td>0</td>
+<td>0</td>
+<td>0]</td>
+<td>[192.</td>
+<td>168.</td>
+<td>4.</td>
+<td>1]</td>
+<td>[\x98</td>
+<td>\x8F</td>
+<td>\xD2</td>
+<td>\x21]</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../pixelblaze/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Pixelblaze" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Pixelblaze
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../tutorials/" class="md-footer__link md-footer__link--next" aria-label="Next: Tutorials" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Tutorials
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.indexes"], "search": "../assets/javascripts/workers/search.5bf1dace.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.37e9125f.min.js"></script>
+      
+        <script src="../js/mkapi.js"></script>
+      
+    
+  </body>
+</html>
