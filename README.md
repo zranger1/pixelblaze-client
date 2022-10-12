@@ -26,27 +26,35 @@ Sample code illustrating usage is provided in the [examples directory](https://g
 
 ### Current Version [**v1.0.0**] - 2022-10-01
 
-This is a major refactoring and enhancement of the **pixelblaze-client** library with many significant changes. The API surface is completely new, but compatibility stubs have been provided for most existing methods to assist in transitioning to the new API.
+This is a major refactoring and enhancement of the **pixelblaze-client** library with many significant changes. 
+
+The API surface is completely new, so users of previous versions are urged to review the [API documentation](https://github.com/zranger1/pixelblaze-client/blob/main/docs/index.md).
 
 #### Added
 
 * new PBB class for reading, writing and manipulating Pixelblaze Binary Backups for backup/restore of Pixelblaze configurations and patterns.
+
 * new PBP class for reading, writing and manipulating Pixelblaze Binary Patterns as stored within Pixelblaze Binary Backups.
+
 * new EPE class for reading, writing and manipulating Encapsulated Pattern Expressions as imported/exported from the Pixelblaze pattern editor.
-* new methods to provide access to all of the features exposed by the Pixelblaze webUI. See the API documentation for more details.
+
+* new methods to provide access to all of the features exposed by the Pixelblaze webUI. See the [API documentation](https://github.com/zranger1/pixelblaze-client/blob/main/docs/index.md) for more details.
+
 * new example programs to demonstrate the new API.
 
 #### Changed
 
-* Many existing methods renamed to give common names to related functions.  See the API documentation for more details.
+* Many existing methods renamed to give common names to related functions.  See the [API documentation](https://github.com/zranger1/pixelblaze-client/blob/main/docs/index.md) for more details.
 
 #### Deprecated
 
-* Some existing methods deprecated.  Compatibility stubs have been provided to maintain functionality; warning messages are emitted to encourage movement to the new API.
+* Some existing methods deprecated.  See the [API documentation](https://github.com/zranger1/pixelblaze-client/blob/main/docs/index.md) for more details.
 
 #### Removed
 
-* Some internal methods (names beginning with "_") were removed where no longer required.
+* Some existing methods removed.  
+
+* Internal methods (names beginning with "_") were removed where no longer required.
 
 ### Previous Versions
 
