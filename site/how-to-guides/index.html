@@ -1,0 +1,714 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.5.3">
+    
+    
+      
+        <title>How-To Guides - pixelblaze-client documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.7a952b86.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.cbb835fc.min.css">
+        
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="//use.fontawesome.com/releases/v5.8.1/css/all.css">
+    
+      <link rel="stylesheet" href="//use.fontawesome.com/releases/v5.8.1/css/v4-shims.css">
+    
+      <link rel="stylesheet" href="../css/mkapi-common.css">
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="none" data-md-color-accent="none">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#how-to-guides" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="pixelblaze-client documentation" class="md-header__button md-logo" aria-label="pixelblaze-client documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            pixelblaze-client documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              How-To Guides
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href=".." class="md-tabs__link">
+      pixelblaze-client
+    </a>
+  </li>
+
+      
+        
+  
+  
+    
+  
+
+
+  <li class="md-tabs__item">
+    <a href="./" class="md-tabs__link md-tabs__link--active">
+      How-To Guides
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../pixelblaze/" class="md-tabs__link">
+      Pixelblaze
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../pixelblazeProtocol/" class="md-tabs__link">
+      The Pixelblaze protocol
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../tutorials/" class="md-tabs__link">
+      Tutorials
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href=".." class="md-tabs__link">
+      API
+    </a>
+  </li>
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="pixelblaze-client documentation" class="md-nav__button md-logo" aria-label="pixelblaze-client documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    pixelblaze-client documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        pixelblaze-client
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          How-To Guides
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        How-To Guides
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-get-started" class="md-nav__link">
+    How to get started?
+  </a>
+  
+    <nav class="md-nav" aria-label="How to get started?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#alternative-installation-method" class="md-nav__link">
+    Alternative installation method
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-find-your-pixelblazes" class="md-nav__link">
+    How to find your Pixelblazes?
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-connect-to-a-pixelblaze" class="md-nav__link">
+    How to connect to a Pixelblaze?
+  </a>
+  
+    <nav class="md-nav" aria-label="How to connect to a Pixelblaze?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#advanced-topic-lifecycle-management" class="md-nav__link">
+    Advanced topic: lifecycle management
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-set-which-pattern-is-playing" class="md-nav__link">
+    How to set which pattern is playing?
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-change-the-parameters-of-the-pattern-that-is-currently-playing" class="md-nav__link">
+    How to change the parameters of the pattern that is currently playing?
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pixelblaze/" class="md-nav__link">
+        Pixelblaze
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pixelblazeProtocol/" class="md-nav__link">
+        The Pixelblaze protocol
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/" class="md-nav__link">
+        Tutorials
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        API
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-get-started" class="md-nav__link">
+    How to get started?
+  </a>
+  
+    <nav class="md-nav" aria-label="How to get started?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#alternative-installation-method" class="md-nav__link">
+    Alternative installation method
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-find-your-pixelblazes" class="md-nav__link">
+    How to find your Pixelblazes?
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-connect-to-a-pixelblaze" class="md-nav__link">
+    How to connect to a Pixelblaze?
+  </a>
+  
+    <nav class="md-nav" aria-label="How to connect to a Pixelblaze?">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#advanced-topic-lifecycle-management" class="md-nav__link">
+    Advanced topic: lifecycle management
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-set-which-pattern-is-playing" class="md-nav__link">
+    How to set which pattern is playing?
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-change-the-parameters-of-the-pattern-that-is-currently-playing" class="md-nav__link">
+    How to change the parameters of the pattern that is currently playing?
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="how-to-guides">How-To Guides<a class="headerlink" href="#how-to-guides" title="Permanent link">&para;</a></h1>
+<p>This part of the project documentation focuses on a <strong>problem-oriented</strong> approach. You'll tackle common
+tasks that you might have, with the help of the code provided in this project.</p>
+<h2 id="how-to-get-started">How to get started?<a class="headerlink" href="#how-to-get-started" title="Permanent link">&para;</a></h2>
+<p>The easiest way to use this library is to install it from PyPi:</p>
+<p><code>pip install pixelblaze-client</code></p>
+<p>and within your script import the classes from the <code>pixelblaze</code> module:</p>
+<div class="highlight"><pre><span></span><code>    # your_script.py
+    from pixelblaze import *
+</code></pre></div>
+<p>After you've imported the class, you can follow along with any of the recipes below.</p>
+<h3 id="alternative-installation-method">Alternative installation method<a class="headerlink" href="#alternative-installation-method" title="Permanent link">&para;</a></h3>
+<p>If for some reason you can't use PyPi, you can download the code from this GitHub repository and place the <code>pixeblaze-client/</code> folder in the same directory as your Python script:</p>
+<pre><code>your_project/
+│
+├── pixelblaze-client/
+│   ├── __init__.py
+│   └── pixelblaze.py
+│
+└── your_script.py
+</code></pre>
+<p>Inside of <code>your_script.py</code> you can now import the classes from the <code>pixelblaze</code> module:</p>
+<div class="highlight"><pre><span></span><code>    # your_script.py
+    from pixelblaze import *
+</code></pre></div>
+<p>After you've imported the class, you can follow along with any of the recipes below.</p>
+<h2 id="how-to-find-your-pixelblazes">How to find your Pixelblazes?<a class="headerlink" href="#how-to-find-your-pixelblazes" title="Permanent link">&para;</a></h2>
+<p>The <code>EnumerateAddresses</code> or <code>EnumerateDevices</code> iterators can help you here.</p>
+<p>The <code>EnumerateAddresses</code> iterator returns the IP address of each Pixelblaze it finds, which gives the quickest response because it detects the Pixelblazes but does not actually communicate with them.</p>
+<div class="highlight"><pre><span></span><code>    print(&quot;Finding Pixelblazes...&quot;)
+    for ipAddress in Pixelblaze.EnumerateAddresses(timeout=1500):
+        print(f&quot;  found a Pixelblaze at {ipAddress}&quot;)
+</code></pre></div>
+<p>The <code>EnumerateDevices</code> iterator detects Pixelblazes and returns an initialized Pixelblaze object for each one:</p>
+<div class="highlight"><pre><span></span><code>    print(&quot;Finding Pixelblazes...&quot;)
+    for pixelblaze in Pixelblaze.EnumerateDevices(timeout=1500):
+            print(f&quot;  at {pixelblaze.ipAddress} found &#39;{pixelblaze.getDeviceName()}&#39;&quot;)
+</code></pre></div>
+<p>If you are looking for a specific Pixelblaze, use the <code>EnumerateAddresses</code> iterator; if you want to do something with <em>all</em> Pixelblazes, the <code>EnumerateDevices</code> iterator saves a few lines of code.</p>
+<h2 id="how-to-connect-to-a-pixelblaze">How to connect to a Pixelblaze?<a class="headerlink" href="#how-to-connect-to-a-pixelblaze" title="Permanent link">&para;</a></h2>
+<p>The <code>Pixelblaze</code> class is used to communicate with and control a Pixelblaze.  To create a Pixelblaze object, create an instance of the class specifying its IP address as a string in the usual dotted-quad notation, i.e. "192.168.4.1".  </p>
+<div class="highlight"><pre><span></span><code>    pb = Pixelblaze(&quot;192.168.4.1&quot;)
+</code></pre></div>
+<p>If you need or want to use a proxy server (for debugging it can be very useful to observe the protocol traffic by routing it through the <a href="https://www.telerik.com/fiddler/">Fiddler Web Debugger</a>), you can specify the proxy type ("socks" or "http") and address using the <code>proxyUrl</code> argument:</p>
+<div class="highlight"><pre><span></span><code>    pb = Pixelblaze(&quot;192.168.4.1&quot;, proxyUrl=&quot;http://192.168.8.8:8888&quot;)
+</code></pre></div>
+<h3 id="advanced-topic-lifecycle-management">Advanced topic: lifecycle management<a class="headerlink" href="#advanced-topic-lifecycle-management" title="Permanent link">&para;</a></h3>
+<p>The <code>Pixelblaze</code> class can be used in a <code>with</code> statement, which will automatically close the connection and dispose of the object when the <code>with</code> statement completes:</p>
+<div class="highlight"><pre><span></span><code>    with Pixelblaze(&quot;192.168.4.1&quot;) as pb:
+        # Do something with the pb object.
+        # Do something else with the pb object.
+        pass
+
+    # At this point, the pb object will be deleted.
+</code></pre></div>
+<p>Otherwise the connection will remain open until the Pixelblaze object goes out of scope and is garbage-collected.</p>
+<h2 id="how-to-set-which-pattern-is-playing">How to set which pattern is playing?<a class="headerlink" href="#how-to-set-which-pattern-is-playing" title="Permanent link">&para;</a></h2>
+<p>Pixelblaze refers to its patterns using an alphanumeric ID code which remains constant for the lifetime of a pattern.  Patterns also have a human-readable name which is displayed in the webUI pattern list and pattern editor, but this can be changed by the user so it is not supported by the Pixelblaze API.</p>
+<p>To find the ID of the patterns on the Pixelblaze, use the <code>getPatternList()</code> method which returns a dictionary where the key is the patternId and the value is the patternName:</p>
+<div class="highlight"><pre><span></span><code>    # Get the pattern list.
+    patterns = pb.getPatternList()
+
+    # Select first element of the first tuple in the list.
+    patternId = patterns[0].key
+
+    # Or search for a pattern by name.
+    patternId = dict((value, key) for key, value in patterns.items()).get(&quot;patternName&quot;)
+</code></pre></div>
+<p>And finally, pass the patternId to the <code>setActivePattern()</code> method:
+<div class="highlight"><pre><span></span><code>    # Ask the Pixelblaze to display this pattern.
+    pb.setActivePattern(patternId)
+</code></pre></div></p>
+<h2 id="how-to-change-the-parameters-of-the-pattern-that-is-currently-playing">How to change the parameters of the pattern that is currently playing?<a class="headerlink" href="#how-to-change-the-parameters-of-the-pattern-that-is-currently-playing" title="Permanent link">&para;</a></h2>
+<p>Pixelblaze patterns can, if so designed, be modified at runtime in two ways.</p>
+<p>Patterns can contain user interface elements such as sliders, color pickers or input numbers that allow a user of the Pixelblaze webUI to adjust the pattern.  The values of the UI controls for the pattern currently playing can be read with the <code>getActiveControls()</code> method (which returns a dictionary containing all the controls); then new values for one or all of the controls can be modified and sent back to the Pixelblaze with the <code>setActiveControls()</code> method.</p>
+<p>Patterns can also export variables that can be accessed and modified by external clients. The values of the variables for the pattern currently playing can be read with the <code>getActiveVariables()</code> method (which returns a dictionary containing all the variables); then new values for one or all of the variables can be modified and sent back to the Pixelblaze with the <code>setActiveVariables()</code> method.</p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href=".." class="md-footer__link md-footer__link--prev" aria-label="Previous: pixelblaze-client" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              pixelblaze-client
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../pixelblaze/" class="md-footer__link md-footer__link--next" aria-label="Next: Pixelblaze" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Pixelblaze
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.indexes"], "search": "../assets/javascripts/workers/search.5bf1dace.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.37e9125f.min.js"></script>
+      
+        <script src="../js/mkapi.js"></script>
+      
+    
+  </body>
+</html>
