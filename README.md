@@ -4,23 +4,23 @@ controlling one or more Pixelblaze LED controllers.
 
 ## Requirements
 - Python 3.9-3.10
-- websocket-client (installable via pip, or from https://github.com/websocket-client/websocket-client)
-- requests (installable via pip, or from https://github.com/psf/requests)
+- websocket-client (installable via `pip install websocket-client`, or from https://github.com/websocket-client/websocket-client)
+- requests (installable via `pip install requests`, or from https://github.com/psf/requests)
 
 ## Installation
 Install with pip:
 
 ```pip install pixelblaze-client```
 
-Or, if you prefer, drop a copy of [pixelblaze.py](https://github.com/zranger1/pixelblaze-client/blob/main/pixelblaze-client/pixelblaze.py) into your project directory and reference it within your project:
+Or, if you prefer, drop a copy of [pixelblaze.py](pixelblaze-client/pixelblaze.py) into your project directory and reference it within your project:
 
 ```from pixelblaze import *```
 
-## Documentation
+## <a name="documentation"></a>Documentation
 
-API and other documention is available [here](https://github.com/zranger1/pixelblaze-client/blob/main/docs/index.md).
+API and other documention is available in [Markdown](docs/index.md) and [HTML](https://zranger1.github.io/pixelblaze-client/).
 
-Sample code illustrating usage is provided in the [examples directory](https://github.com/zranger1/pixelblaze-client/blob/main/pixelblaze-client/examples).
+Sample code illustrating usage is provided in the [examples directory](examples/).
 
 ## Version history
 
@@ -28,7 +28,7 @@ Sample code illustrating usage is provided in the [examples directory](https://g
 
 This is a major refactoring and enhancement of the **pixelblaze-client** library with many significant changes. 
 
-The API surface is completely new, so users of previous versions are urged to review the [API documentation](https://github.com/zranger1/pixelblaze-client/blob/main/docs/index.md).
+The API surface is completely new, so users of previous versions are urged to review the [API documentation](#documentation).
 
 #### Added
 
@@ -38,17 +38,17 @@ The API surface is completely new, so users of previous versions are urged to re
 
 * new EPE class for reading, writing and manipulating Encapsulated Pattern Expressions as imported/exported from the Pixelblaze pattern editor.
 
-* new methods to provide access to all of the features exposed by the Pixelblaze webUI. See the [API documentation](https://github.com/zranger1/pixelblaze-client/blob/main/docs/index.md) for more details.
+* new methods to provide access to all of the features exposed by the Pixelblaze webUI. See the [API documentation](#documentation) for more details.
 
 * new example programs to demonstrate the new API.
 
 #### Changed
 
-* Many existing methods renamed to give common names to related functions.  See the [API documentation](https://github.com/zranger1/pixelblaze-client/blob/main/docs/index.md) for more details.
+* Many existing methods renamed to give common names to related functions.  See the [API documentation](#documentation) for more details.
 
 #### Deprecated
 
-* Some existing methods deprecated.  See the [API documentation](https://github.com/zranger1/pixelblaze-client/blob/main/docs/index.md) for more details.
+* Some existing methods deprecated.  See the [API documentation](#documentation) for more details.
 
 #### Removed
 
@@ -58,7 +58,7 @@ The API surface is completely new, so users of previous versions are urged to re
 
 ### Previous Versions
 
-See [changelog.md](https://github.com/zranger1/pixelblaze-client/blob/main/changelog.md) for details on previous versions.
+See [CHANGELOG.md](CHANGELOG.md) for details on previous versions.
 
 ## Known Issues
-- None at the moment; if you find something, [let us know](https://github.com/zranger1/pixelblaze-client/issues/new/choose)!
+- None at the moment; if you find something, [let us know](/../../issues/new/choose)!
