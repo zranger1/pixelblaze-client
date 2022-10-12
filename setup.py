@@ -13,10 +13,10 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url = 'https://github.com/zranger1/pixelblaze-client',
-    author = 'pixxxie & ZRanger1'
+    author = 'pixxxie & ZRanger1',
     license='MIT',
     classifiers=[
-      "Development Status :: 4 - Beta",    
+      "Development Status :: 5 - Production/Stable",    
       "License :: OSI Approved :: MIT License",
       "Programming Language :: Python :: 3",
       "Operating System :: OS Independent",
@@ -25,7 +25,11 @@ setuptools.setup(
       "Intended Audience :: Developers",
     ],
     keywords = 'pixelblaze',
-    install_requires=["websocket-client"],
+    install_requires=[
+      "websocket-client",
+      "requests",
+      "pytz"
+    ],
     packages=["pixelblaze"],    
-    python_requires='>=3.6',    
+    python_requires='>=3.9',    
 )
