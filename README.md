@@ -12,7 +12,7 @@ Install with pip:
 
 ```pip install pixelblaze-client```
 
-Or, if you prefer, drop a copy of [pixelblaze.py](pixelblaze-client/pixelblaze.py) into your project directory and reference it within your project:
+Or, if you prefer, drop a copy of [pixelblaze.py](pixelblaze/pixelblaze.py) into your project directory and reference it within your project:
 
 ```from pixelblaze import *```
 
