@@ -6,9 +6,10 @@ controlling one or more Pixelblaze LED controllers.
 - Python 3.9-3.10
 - websocket-client (installable via `pip install websocket-client`, or from https://github.com/websocket-client/websocket-client)
 - requests (installable via `pip install requests`, or from https://github.com/psf/requests)
+- pytz installable via `pip install pytz`, or from https://github.com/stub42/pytz)
 
 ## Installation
-Install with pip:
+Install pixelblaze-client with all required packages using pip:
 
 ```pip install pixelblaze-client```
 
