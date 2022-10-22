@@ -1117,7 +1117,7 @@ class Pixelblaze:
         Returns:
             dict: A dictionary containing all the variables exported by the active pattern, with variableName as the key and variableValue as the value.
         """
-        return json.loads(self.wsSendJson({"getVars": True}, expectedResponse="vars"))
+        return json.loads(self.wsSendJson({"getVars": True}, expectedResponse="vars")).get('vars')
 
     def setActiveVariables(self, dictVariables:dict):
         """Sets the values of one or more variables exported by the current pattern.
