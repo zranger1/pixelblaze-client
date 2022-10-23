@@ -14,6 +14,15 @@ Changes are categorized into the following types:
 
 ---
 
+## [**v1.0.1**] - 2022-TBD
+
+Minor bugfix release.
+
+### Fixed
+
+- Modified return value of getActiveVariables() to remove protocol wrapper.
+
+
 ## [**v1.0.0**] - 2022-10-01
 
 This is a major refactoring and enhancement of the **pixelblaze-client** library with many significant changes. The API surface is completely new, but compatibility stubs have been provided for most existing methods to assist in transitioning to the new API.
