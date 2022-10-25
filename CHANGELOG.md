@@ -18,6 +18,10 @@ Changes are categorized into the following types:
 
 Minor bugfix release.
 
+### Added
+
+* new methods getMapCoordinates() and getMapOffsets() for retrieving spatial location of pixels.
+
 ### Fixed
 
 - Modified return value of getActiveVariables() to remove protocol wrapper.

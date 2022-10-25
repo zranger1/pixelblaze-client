@@ -1271,6 +1271,87 @@ class Pixelblaze:
         # ...and make it permanent (same as pressing "Save" in the map editor).
         if saveToFlash: self.wsSendJson({"savePixelMap":True}, expectedResponse=None)
 
+    def getMapCoordinates(self, mapData:bytes=None) -> list:
+        """Gets a unit-normalized representation of the pixelMap as an array (1D/2D/3D) of arrays.
+        
+        Args:
+            mapData (bytes, optional): A blob of mapData as returned from getMapData(); if omitted, the mapData will be fetched from the Pixelblaze anew.
+
+        Returns:
+            list: A list containing one to three lists of floats, representing the X, Y and Z world coordinates (range 0..1) for each pixel.
+        """
+        # Get the pixelCount because we'll need it for one thing or another.
+        pixelCount = self.getPixelCount()
+
+        # If no mapData was provided, fetch it from the Pixelblaze.
+        if mapData is None: mapData = self.getMapData()
+
+        # If no map has been defined, generate and return a 1D map with the pixels spaced at regular intervals.
+        if mapData is None:
+            return [ list((pixel / (pixelCount - 1)) for pixel in range(pixelCount)) ]
+
+        # Parse the mapData to build the worldMap.
+        headerSize = 3 * 4 # first 3 longwords are the header.
+        offsets = struct.unpack('<3I', mapData[:headerSize])
+        fileVersion = offsets[0]
+        numDimensions = offsets[1]
+        dataSize = offsets[2]
+        wordSize = fileVersion * 1  # v1 uses uint8, v2 uses uint16
+        numElements = dataSize // wordSize // numDimensions
+        # If the number of elements in the worldMap doesn't match the pixelCount, it's stale and needs to be refreshed.
+        if (numElements != pixelCount):
+            raise ValueError("Map does not match pixelCount; re-save map and try again.")
+
+        # Read in the list of 8- or 16-bit coordinates
+        worldMap = []
+        exponent = pow(2, 8 * wordSize)
+        format = f"<{numDimensions}{'BH'[wordSize - 1]}"
+        for tuple in struct.iter_unpack(format, mapData[headerSize:]):
+            for dimension in range(numDimensions):
+                value = tuple[dimension] / (exponent - 1)
+                if len(worldMap) < dimension + 1: worldMap.append([])
+                worldMap[dimension].append(value)
+
+        # Return the resulting worldMap.
+        return worldMap
+
+    def getMapOffsets(self, mapCoordinates:list=None) -> list:
+        """Gets an integer-based representation of the pixelMap as an array (1D/2D/3D) of arrays.
+
+        Args:
+            mapCoordinates (list, optional): A list of mapCoordinates as returned from getMapCoordinates(); if omitted, the mapCoordinates will be fetched from the Pixelblaze anew.
+
+        Returns:
+            list: A list containing one to three lists of integers, representing the X, Y and Z indices (range 0..pixelCount) for each pixel.
+        """
+        # Get the worldMap.
+        if mapCoordinates is None: mapCoordinates = self.getMapCoordinates()
+        numElements = len(mapCoordinates[0])
+
+        # Analyze the sparseness of the points in the worldMap.
+        minValue = []
+        maxValue = []
+        minDelta = []
+        for dimension in range(len(mapCoordinates)):
+            sortedMap = sorted(mapCoordinates[dimension])
+            minValue.append(min(sortedMap))
+            maxValue.append(max(sortedMap))
+            minDelta.append(1.0)
+            for element in range(len(mapCoordinates[dimension])):
+                delta = abs(sortedMap[element] - sortedMap[(element + 1) % numElements])
+                if delta > 0: minDelta[dimension] = min(minDelta[dimension], delta)
+
+        # Rescale the elements in this dimension appropriately.
+        offsetMap = []
+        for dimension in range(len(mapCoordinates)):
+            offsetMap.append([])
+            for element in range(len(mapCoordinates[dimension])): 
+                offsetMap[dimension].append(round((mapCoordinates[dimension][element] - minValue[dimension]) / minDelta[dimension]))
+
+        # Return the resulting map.
+        return offsetMap
+
+
     # --- SETTINGS menu
 
     def getConfigSettings(self) -> dict:
