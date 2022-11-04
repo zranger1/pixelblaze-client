@@ -7,7 +7,7 @@
  controlling Pixelblaze LED controllers.  Requires Python 3 and the websocket-client
  module.
 
- Copyright 2020-2022 JEM (ZRanger1)
+ Copyright 2020-2022 by the pixelblaze-client team
 
  Permission is hereby granted, free of charge, to any person obtaining a copy of this
  software and associated documentation files (the "Software"), to deal in the Software
