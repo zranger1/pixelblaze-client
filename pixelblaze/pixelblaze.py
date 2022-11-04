@@ -2057,7 +2057,7 @@ class Pixelblaze:
             saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         patternId = dict((value, key) for key, value in self.getPatternList().items()).get(patternName)
-        self.setActivePattern(self._get_pattern_id(patternName), saveToFlash)
+        self.setActivePattern(patternId, saveToFlash)
 
     def controlExists(self, controlName:str, patternId:str=None) -> bool:
         """Tests whether the named control exists in the specified pattern.
