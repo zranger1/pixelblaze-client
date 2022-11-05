@@ -25,6 +25,34 @@ Minor bug fixes and various adjustments to the compatibility & helper functions
 instead of a nested dictionary under the single key "vars"
 * **setActivePatternByName** works again
 
+## [**v1.0.2**] - 2022-11-06
+
+Minor fixes and new utility functions.
+
+### Added
+
+* new methods getMapCoordinates() and getMapOffsets() for retrieving spatial location of pixels.
+
+### Fixed
+
+* Fixed websocket parser state machine to better handle unsolicited packets.
+
+
+## [**v1.0.1**] - 2022-11-04
+
+Minor bug fixes and various adjustments to the compatibility & helper functions.
+
+### Added
+
+* new example **simple.py** (in the /examples folder) shows basic Pixelblaze control features: how to set a pattern, change color and change brightness.
+
+
+### Fixed
+
+* Modified return value of getActiveVariables() to remove protocol wrapper.
+* **setActivePatternByName** works again
+
+
 ## [**v1.0.0**] - 2022-10-01
 
 This is a major refactoring and enhancement of the **pixelblaze-client** library with many significant changes. The API surface is completely new, but compatibility stubs have been provided for most existing methods to assist in transitioning to the new API.

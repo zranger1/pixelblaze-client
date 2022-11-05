@@ -37,11 +37,12 @@ This module contains the following classes:
 
 # ----------------------------------------------------------------------------
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 #| Version | Date       | Author        | Comment                                 |
 #|---------|------------|---------------|-----------------------------------------|
-#|  v1.0.1 | 11/04/2022 | ZRanger1      | Bug fixes, revisions to compatibility functions |
+#|  v1.0.2 | 06/11/2022 | @pixie        | Bug fixes, added new map functions |
+#|  v1.0.1 | 04/11/2022 | ZRanger1      | Bug fixes, revisions to compatibility functions |
 #|  v1.0.0 | 10/10/2022 | @pixie        | large-scale refactoring to add new features; minor loss of compatibility |
 #|  v0.9.6 | 07/17/2022 | @pixie        | Tweak getPatternList() to handle slower Pixelblazes |
 #|  v0.9.5 | 07/16/2022 | @pixie        | Update ws_recv to receive long preview packets |
@@ -412,6 +413,9 @@ class Pixelblaze:
         getProgramList = 7      # from client to PB
         putPixelMap = 8         # from client to PB
         ExpanderConfig = 9      # from client to PB *and* PB to client
+        # SPECIAL MESSAGE TYPES: These aren't part of the Pixelblaze protocol; they're flags for the state machine.
+        specialConfig = -1
+        specialStats = -2
 
     class frameTypes(Flag):
         """Continuation flags for messages sent and received by a Pixelblaze.  The second byte of a binary frame tells whether this packet is part of a set."""
@@ -440,8 +444,10 @@ class Pixelblaze:
                     # just save the most recent one and retrieve it later when we want it.
                     if frame.startswith('{"fps":'):
                         self.latestStats = frame
+                        if binaryMessageType is self.messageTypes.specialStats: return frame
                     elif frame.startswith('{"activeProgram":'):
                         self.latestSequencer = frame
+                        if binaryMessageType is self.messageTypes.specialConfig: return frame
                     # We wanted a text frame, we got a text frame.
                     elif binaryMessageType is None: 
                         return frame
@@ -465,6 +471,7 @@ class Pixelblaze:
                         # out of order so we'll save them and retrieve them separately.
                         if frameType == self.messageTypes.ExpanderConfig:
                             self.latestExpander = self.__decodeExpanderData(frame[2:])
+                            if binaryMessageType is self.messageTypes.specialConfig: return None
                             continue
                         if frameType != binaryMessageType:
                             print(f"got unwanted binary frame type {frameType} (wanted {binaryMessageType})")
@@ -526,7 +533,8 @@ class Pixelblaze:
                 while True:
                     # Loop until we get the right text response.
                     if type(expectedResponse) is str:
-                        response = self.wsReceive(binaryMessageType=None)
+                        if expectedResponse == "activeProgram": response = self.wsReceive(binaryMessageType=self.messageTypes.specialConfig)
+                        else: response = self.wsReceive(binaryMessageType=None)
                         if response is None: break
                         if response.startswith(f'{{"{expectedResponse}":'): break
                     # Or the right binary response.
@@ -778,7 +786,7 @@ class Pixelblaze:
         self.setSendPreviewFrames(True) # Make sure the Pixelblaze will send something.
         while True:
             if not self.latestStats is None: return json.loads(self.latestStats)
-            ignored = self.wsReceive(binaryMessageType=None)
+            ignored = self.wsReceive(binaryMessageType=self.messageTypes.specialStats)
 
     def setSendPreviewFrames(self, doUpdates:bool):
         """Set whether or not the Pixelblaze sends pattern preview frames.
@@ -1272,6 +1280,87 @@ class Pixelblaze:
         # ...and make it permanent (same as pressing "Save" in the map editor).
         if saveToFlash: self.wsSendJson({"savePixelMap":True}, expectedResponse=None)
 
+    def getMapCoordinates(self, mapData:bytes=None) -> list:
+        """Gets a unit-normalized representation of the pixelMap as an array (1D/2D/3D) of arrays.
+        
+        Args:
+            mapData (bytes, optional): A blob of mapData as returned from getMapData(); if omitted, the mapData will be fetched from the Pixelblaze anew.
+
+        Returns:
+            list: A list containing one to three lists of floats, representing the X, Y and Z world coordinates (range 0..1) for each pixel.
+        """
+        # Get the pixelCount because we'll need it for one thing or another.
+        pixelCount = self.getPixelCount()
+
+        # If no mapData was provided, fetch it from the Pixelblaze.
+        if mapData is None: mapData = self.getMapData()
+
+        # If no map has been defined, generate and return a 1D map with the pixels spaced at regular intervals.
+        if mapData is None:
+            return [ list((pixel / (pixelCount - 1)) for pixel in range(pixelCount)) ]
+
+        # Parse the mapData to build the worldMap.
+        headerSize = 3 * 4 # first 3 longwords are the header.
+        offsets = struct.unpack('<3I', mapData[:headerSize])
+        fileVersion = offsets[0]
+        numDimensions = offsets[1]
+        dataSize = offsets[2]
+        wordSize = fileVersion * 1  # v1 uses uint8, v2 uses uint16
+        numElements = dataSize // wordSize // numDimensions
+        # If the number of elements in the worldMap doesn't match the pixelCount, it's stale and needs to be refreshed.
+        if (numElements != pixelCount):
+            raise ValueError("Map does not match pixelCount; re-save map and try again.")
+
+        # Read in the list of 8- or 16-bit coordinates
+        worldMap = []
+        exponent = pow(2, 8 * wordSize)
+        format = f"<{numDimensions}{'BH'[wordSize - 1]}"
+        for tuple in struct.iter_unpack(format, mapData[headerSize:]):
+            for dimension in range(numDimensions):
+                value = tuple[dimension] / (exponent - 1)
+                if len(worldMap) < dimension + 1: worldMap.append([])
+                worldMap[dimension].append(value)
+
+        # Return the resulting worldMap.
+        return worldMap
+
+    def getMapOffsets(self, mapCoordinates:list=None) -> list:
+        """Gets an integer-based representation of the pixelMap as an array (1D/2D/3D) of arrays.
+
+        Args:
+            mapCoordinates (list, optional): A list of mapCoordinates as returned from getMapCoordinates(); if omitted, the mapCoordinates will be fetched from the Pixelblaze anew.
+
+        Returns:
+            list: A list containing one to three lists of integers, representing the X, Y and Z indices (range 0..pixelCount) for each pixel.
+        """
+        # Get the worldMap.
+        if mapCoordinates is None: mapCoordinates = self.getMapCoordinates()
+        numElements = len(mapCoordinates[0])
+
+        # Analyze the sparseness of the points in the worldMap.
+        minValue = []
+        maxValue = []
+        minDelta = []
+        for dimension in range(len(mapCoordinates)):
+            sortedMap = sorted(mapCoordinates[dimension])
+            minValue.append(min(sortedMap))
+            maxValue.append(max(sortedMap))
+            minDelta.append(1.0)
+            for element in range(len(mapCoordinates[dimension])):
+                delta = abs(sortedMap[element] - sortedMap[(element + 1) % numElements])
+                if delta > 0: minDelta[dimension] = min(minDelta[dimension], delta)
+
+        # Rescale the elements in this dimension appropriately.
+        offsetMap = []
+        for dimension in range(len(mapCoordinates)):
+            offsetMap.append([])
+            for element in range(len(mapCoordinates[dimension])): 
+                offsetMap[dimension].append(round((mapCoordinates[dimension][element] - minValue[dimension]) / minDelta[dimension]))
+
+        # Return the resulting map.
+        return offsetMap
+
+
     # --- SETTINGS menu
 
     def getConfigSettings(self) -> dict:
@@ -1299,7 +1388,7 @@ class Pixelblaze:
         # Now the others, in any order.
         while True:
             if (self.latestSequencer is None) or (self.latestExpander is None):
-                ignored = self.wsReceive(binaryMessageType=None)
+                ignored = self.wsReceive(binaryMessageType=self.messageTypes.specialConfig)
                 break
 
         # Now that we've got them all, return the settings.
@@ -1977,9 +2066,10 @@ class Pixelblaze:
             saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         patternId = dict((value, key) for key, value in self.getPatternList().items()).get(patternName)
+
         if (patternId != None) :
           self.setActivePattern(patternId, saveToFlash=saveToFlash)
-
+          
     def controlExists(self, controlName:str, patternId:str=None) -> bool:
         """Tests whether the named control exists in the specified pattern.
         If no pattern is specified, the currently active pattern is assumed.
@@ -2039,14 +2129,15 @@ class Pixelblaze:
 
         Args:
             controlName (str): The name of the color control to change.
-            color : RGB or HSV colors, with all values in the range 0-1. 
+            color: RGB or HSV colors, with all values in the range 0-1. 
             saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         # based on testing w/Pixelblaze, no run-time length or range validation is performed
         # on color. Pixelblaze ignores extra elements, sets unspecified elements to zero,
         # takes only the fractional part of elements outside the range 0-1, and
         # does something (1-(n % 1)) for negative elements.
-        self.setActiveControls({controlName: color},saveToFlash=saveToFlash)
+
+        self.setActiveControls({controlName: color}, saveToFlash=saveToFlash)
             
     def setCacheRefreshTime(self, seconds:int):
         """Set the interval, in seconds, after which calls to `getPatternList()` clear the pattern cache and fetch a new pattern list from the Pixelblaze.  
