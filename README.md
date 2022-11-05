@@ -23,51 +23,19 @@ API and other documention is available in [Markdown](docs/index.md) and [HTML](h
 
 Sample code illustrating usage is provided in the [examples directory](examples/).
 
-## Version history
+**Please note that version 1.0.0 was a major refactoring and enhancement of the library, with many new features and significant changes.** The API surface is completely new. See the the [API documentation](#documentation) for details.  
 
-## Current Version [**v1.0.1**] - 2022-11-04
+## Current Version [**v1.0.2**] - 2022-11-06
 
-Minor bug fixes and various adjustments to the compatibility & helper functions
+Minor fixes and new utility functions.
 
 ### Added
-* **simple.py** example (in the /examples folder) shows basic Pixelblaze control features: how to set a pattern, change color and change brightness.
+
+* new methods getMapCoordinates() and getMapOffsets() for retrieving spatial location of pixels.
 
 ### Fixed
-* **getActiveVariables** now (correctly) returns a dictionary of variables and values 
-instead of a nested dictionary under the single key "vars"
-* **setActivePatternByName** works again
 
-### Previous Version [**v1.0.0**] - 2022-10-01
-
-A major refactoring and enhancement of the **pixelblaze-client** library with many significant changes. 
-
-The API surface is completely new, so users of previous versions are urged to review the [API documentation](#documentation).
-
-#### Added
-
-* new PBB class for reading, writing and manipulating Pixelblaze Binary Backups for backup/restore of Pixelblaze configurations and patterns.
-
-* new PBP class for reading, writing and manipulating Pixelblaze Binary Patterns as stored within Pixelblaze Binary Backups.
-
-* new EPE class for reading, writing and manipulating Encapsulated Pattern Expressions as imported/exported from the Pixelblaze pattern editor.
-
-* new methods to provide access to all of the features exposed by the Pixelblaze webUI. See the [API documentation](#documentation) for more details.
-
-* new example programs to demonstrate the new API.
-
-#### Changed
-
-* Many existing methods renamed to give common names to related functions.  See the [API documentation](#documentation) for more details.
-
-#### Deprecated
-
-* Some existing methods deprecated.  See the [API documentation](#documentation) for more details.
-
-#### Removed
-
-* Some existing methods removed.  
-
-* Internal methods (names beginning with "_") were removed where no longer required.
+* Fixed websocket parser state machine to better handle unsolicited packets.
 
 ### Older Versions
 
