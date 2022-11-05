@@ -41,7 +41,7 @@ __version__ = "1.0.2"
 
 #| Version | Date       | Author        | Comment                                 |
 #|---------|------------|---------------|-----------------------------------------|
-#|  v1.0.2 | 05/11/2022 | @pixie        | Bug fixes, added new map functions |
+#|  v1.0.2 | 06/11/2022 | @pixie        | Bug fixes, added new map functions |
 #|  v1.0.1 | 04/11/2022 | ZRanger1      | Bug fixes, revisions to compatibility functions |
 #|  v1.0.0 | 10/10/2022 | @pixie        | large-scale refactoring to add new features; minor loss of compatibility |
 #|  v0.9.6 | 07/17/2022 | @pixie        | Tweak getPatternList() to handle slower Pixelblazes |

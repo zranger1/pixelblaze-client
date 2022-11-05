@@ -14,7 +14,7 @@ Changes are categorized into the following types:
 
 ---
 
-## [**v1.0.2**] - 2022-11-xx
+## [**v1.0.2**] - 2022-11-06
 
 Minor fixes and new utility functions.
 
