@@ -13,17 +13,6 @@ Changes are categorized into the following types:
 - **Security** -- in case of vulnerabilities.
 
 ---
-## [**v1.0.1**] - 2022-11-04
-
-Minor bug fixes and various adjustments to the compatibility & helper functions
-
-### Added
-* **simple.py** example (in the /examples folder) shows basic Pixelblaze control features: how to set a pattern, change color and change brightness.
-
-### Fixed
-* **getActiveVariables** now (correctly) returns a dictionary of variables and values 
-instead of a nested dictionary under the single key "vars"
-* **setActivePatternByName** works again
 
 ## [**v1.0.2**] - 2022-11-06
 
@@ -40,16 +29,16 @@ Minor fixes and new utility functions.
 
 ## [**v1.0.1**] - 2022-11-04
 
-Minor bug fixes and various adjustments to the compatibility & helper functions.
+Minor bug fixes and various adjustments to the compatibility & helper functions
 
 ### Added
 
-* new example **simple.py** (in the /examples folder) shows basic Pixelblaze control features: how to set a pattern, change color and change brightness.
-
+* **simple.py** example (in the /examples folder) shows basic Pixelblaze control features: how to set a pattern, change color and change brightness.
 
 ### Fixed
 
-* Modified return value of getActiveVariables() to remove protocol wrapper.
+* **getActiveVariables** now (correctly) returns a dictionary of variables and values instead of a nested dictionary under the single key "vars"
+
 * **setActivePatternByName** works again
 
 
