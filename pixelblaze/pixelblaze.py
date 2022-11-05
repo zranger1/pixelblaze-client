@@ -471,7 +471,7 @@ class Pixelblaze:
                         # out of order so we'll save them and retrieve them separately.
                         if frameType == self.messageTypes.ExpanderConfig:
                             self.latestExpander = self.__decodeExpanderData(frame[2:])
-                            if binaryMessageType is self.messageTypes.specialConfig: return None
+                            if binaryMessageType == self.messageTypes.specialConfig: return message
                             continue
                         if frameType != binaryMessageType:
                             print(f"got unwanted binary frame type {frameType} (wanted {binaryMessageType})")
@@ -1387,9 +1387,8 @@ class Pixelblaze:
 
         # Now the others, in any order.
         while True:
-            if (self.latestSequencer is None) or (self.latestExpander is None):
-                ignored = self.wsReceive(binaryMessageType=self.messageTypes.specialConfig)
-                break
+            if (not self.latestSequencer is None) and (not self.latestExpander is None): break
+            ignored = self.wsReceive(binaryMessageType=self.messageTypes.specialConfig)
 
         # Now that we've got them all, return the settings.
         return settings
@@ -2136,7 +2135,6 @@ class Pixelblaze:
         # on color. Pixelblaze ignores extra elements, sets unspecified elements to zero,
         # takes only the fractional part of elements outside the range 0-1, and
         # does something (1-(n % 1)) for negative elements.
-
         self.setActiveControls({controlName: color}, saveToFlash=saveToFlash)
             
     def setCacheRefreshTime(self, seconds:int):
