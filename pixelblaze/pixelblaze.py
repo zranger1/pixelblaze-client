@@ -2127,7 +2127,7 @@ class Pixelblaze:
 
         Args:
             controlName (str): The name of the color control to change.
-            color : RGB or HSV colors, with all values in the range 0-1. 
+            color: RGB or HSV colors, with all values in the range 0-1. 
             saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         # based on testing w/Pixelblaze, no run-time length or range validation is performed
