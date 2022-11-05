@@ -25,9 +25,21 @@ Sample code illustrating usage is provided in the [examples directory](examples/
 
 ## Version history
 
-### Current Version [**v1.0.0**] - 2022-10-01
+## Current Version [**v1.0.1**] - 2022-11-04
 
-This is a major refactoring and enhancement of the **pixelblaze-client** library with many significant changes. 
+Minor bug fixes and various adjustments to the compatibility & helper functions
+
+### Added
+* **simple.py** example (in the /examples folder) shows basic Pixelblaze control features: how to set a pattern, change color and change brightness.
+
+### Fixed
+* **getActiveVariables** now (correctly) returns a dictionary of variables and values 
+instead of a nested dictionary under the single key "vars"
+* **setActivePatternByName** works again
+
+### Previous Version [**v1.0.0**] - 2022-10-01
+
+A major refactoring and enhancement of the **pixelblaze-client** library with many significant changes. 
 
 The API surface is completely new, so users of previous versions are urged to review the [API documentation](#documentation).
 
@@ -57,9 +69,9 @@ The API surface is completely new, so users of previous versions are urged to re
 
 * Internal methods (names beginning with "_") were removed where no longer required.
 
-### Previous Versions
+### Older Versions
 
-See [CHANGELOG.md](CHANGELOG.md) for details on previous versions.
+See [CHANGELOG.md](CHANGELOG.md) for complete version history.
 
 ## Known Issues
 - None at the moment; if you find something, [let us know](/../../issues/new/choose)!

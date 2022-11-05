@@ -37,11 +37,13 @@ This module contains the following classes:
 
 # ----------------------------------------------------------------------------
 
-__version__ = "1.0.0"
+__version__ = "1.0.2"
 
 #| Version | Date       | Author        | Comment                                 |
 #|---------|------------|---------------|-----------------------------------------|
-#|  v1.0.0 | 01/10/2022 | @pixie        | large-scale refactoring to add new features; minor loss of compatibility |
+#|  v1.0.2 | 0x/11/2022 | @pixie        | Bug fixes, added new map functions |
+#|  v1.0.1 | 04/11/2022 | ZRanger1      | Bug fixes, revisions to compatibility functions |
+#|  v1.0.0 | 10/10/2022 | @pixie        | large-scale refactoring to add new features; minor loss of compatibility |
 #|  v0.9.6 | 07/17/2022 | @pixie        | Tweak getPatternList() to handle slower Pixelblazes |
 #|  v0.9.5 | 07/16/2022 | @pixie        | Update ws_recv to receive long preview packets |
 #|  v0.9.4 | 02/04/2022 | "             | Added setPixelcount(), pause(), unpause(), pattern cache |
@@ -50,7 +52,7 @@ __version__ = "1.0.0"
 #|  v0.9.1 | 12/16/2020 | "             | Support for pypi upload |
 #|  v0.9.0 | 12/06/2020 | "             | Added PixelblazeEnumerator class |
 #|  v0.0.2 | 12/01/2020 | "             | Name change + color control methods |
-#|  v0.0.1 | 11/20/2020 | ZRanger1      |  Created |
+#|  v0.0.1 | 11/20/2020 | ZRanger1      | Created |
 
 # ----------------------------------------------------------------------------
 
@@ -268,7 +270,7 @@ class Pixelblaze:
         # private constructor:
         def __init__(self, enumeratorType:EnumeratorTypes, *, timeout:int=1500, proxyUrl:str=None, hostIP:str="0.0.0.0"):
             """    
-            Create an interable object that listens for Pixelblaze beacon packets, returning a Pixelblaze object for each unique beacon seen during the timeout period.
+            Create an iterable object that listens for Pixelblaze beacon packets, returning a Pixelblaze object for each unique beacon seen during the timeout period.
 
             Args:
                 enumeratorType (EnumeratorTypes): Which of the available enumerator types to create.
@@ -1143,7 +1145,7 @@ class Pixelblaze:
             dictControls (dict): A dictionary containing the values to be set, with controlName as the key and controlValue as the value.
             saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
-        self.wsSendJson({"setControls": json.dumps(dictControls), "save": saveToFlash}, expectedResponse="ack")
+        self.wsSendJson({"setControls": dictControls, "save": saveToFlash}, expectedResponse="ack")
 
     # --- PATTERNS tab: SAVED PATTERNS section: convenience functions
     """The Pixelblaze API has functions to 'set' individual property values, 
@@ -2064,7 +2066,7 @@ class Pixelblaze:
             saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         patternId = dict((value, key) for key, value in self.getPatternList().items()).get(patternName)
-        self.setActivePattern(patternId, saveToFlash)
+        self.setActivePattern(patternId, saveToFlash=saveToFlash)
 
     def controlExists(self, controlName:str, patternId:str=None) -> bool:
         """Tests whether the named control exists in the specified pattern.
@@ -2090,7 +2092,7 @@ class Pixelblaze:
         hsvPicker controls if any exist, None otherwise.  If the pattern
         argument is not specified, check the currently running pattern
         """
-        controls = self.getControls(patternId)
+        controls = self.getActiveControls()
         if controls is None:
             return None
 
@@ -2120,19 +2122,19 @@ class Pixelblaze:
         else:
             return result[0]
             
-    def setColorControl(self, controlName:str, color:dict, saveToFlash:bool=False):
+    def setColorControl(self, controlName:str, color, saveToFlash:bool=False):
         """Sets the 3-element color of the specified HSV or RGB color picker.
 
         Args:
             controlName (str): The name of the color control to change.
-            color (dict): A dictionary of RGB or HSV colors, with all values in the range 0-1. 
+            color : RGB or HSV colors, with all values in the range 0-1. 
             saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         # based on testing w/Pixelblaze, no run-time length or range validation is performed
         # on color. Pixelblaze ignores extra elements, sets unspecified elements to zero,
         # takes only the fractional part of elements outside the range 0-1, and
         # does something (1-(n % 1)) for negative elements.
-        self.setActiveControls({controlName: color, "save": saveToFlash})
+        self.setActiveControls({controlName: color}, saveToFlash=saveToFlash)
             
     def setCacheRefreshTime(self, seconds:int):
         """Set the interval, in seconds, after which calls to `getPatternList()` clear the pattern cache and fetch a new pattern list from the Pixelblaze.  

@@ -14,9 +14,9 @@ Changes are categorized into the following types:
 
 ---
 
-## [**v1.0.1**] - 2022-TBD
+## [**v1.0.2**] - 2022-11-xx
 
-Minor bugfix release.
+Minor fixes and new utility functions.
 
 ### Added
 
@@ -24,7 +24,22 @@ Minor bugfix release.
 
 ### Fixed
 
-- Modified return value of getActiveVariables() to remove protocol wrapper.
+* Fixed websocket parser to better handle unsolicited packets.
+
+
+## [**v1.0.1**] - 2022-11-04
+
+Minor bug fixes and various adjustments to the compatibility & helper functions.
+
+### Added
+
+* new example **simple.py** (in the /examples folder) shows basic Pixelblaze control features: how to set a pattern, change color and change brightness.
+
+
+### Fixed
+
+* Modified return value of getActiveVariables() to remove protocol wrapper.
+* **setActivePatternByName** works again
 
 
 ## [**v1.0.0**] - 2022-10-01
