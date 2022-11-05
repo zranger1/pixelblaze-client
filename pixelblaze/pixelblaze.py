@@ -1387,9 +1387,10 @@ class Pixelblaze:
 
         # Now the others, in any order.
         while True:
-            if (not self.latestSequencer is None) and (not self.latestExpander is None): break
             ignored = self.wsReceive(binaryMessageType=self.messageTypes.specialConfig)
-            # Devices only return an OutputExpanderConfig if one has been defined previously. If we're still waiting, give up.
+            # If we've got both packets, exit the loop.
+            if (not self.latestSequencer is None) and (not self.latestExpander is None): break
+            # If we timed out waiting for an expanderConfig, there mustn't be one configured so give up.
             if self.latestSequencer is not None and ignored is None: break
 
         # Now that we've got them all, return the settings.
