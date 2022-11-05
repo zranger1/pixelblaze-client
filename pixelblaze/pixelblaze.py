@@ -411,6 +411,9 @@ class Pixelblaze:
         getProgramList = 7      # from client to PB
         putPixelMap = 8         # from client to PB
         ExpanderConfig = 9      # from client to PB *and* PB to client
+        # SPECIAL MESSAGE TYPES: These aren't part of the Pixelblaze protocol; they're flags for the state machine.
+        specialConfig = -1
+        specialStats = -2
 
     class frameTypes(Flag):
         """Continuation flags for messages sent and received by a Pixelblaze.  The second byte of a binary frame tells whether this packet is part of a set."""
@@ -439,8 +442,10 @@ class Pixelblaze:
                     # just save the most recent one and retrieve it later when we want it.
                     if frame.startswith('{"fps":'):
                         self.latestStats = frame
+                        if binaryMessageType is self.messageTypes.specialStats: return frame
                     elif frame.startswith('{"activeProgram":'):
                         self.latestSequencer = frame
+                        if binaryMessageType is self.messageTypes.specialConfig: return frame
                     # We wanted a text frame, we got a text frame.
                     elif binaryMessageType is None: 
                         return frame
@@ -464,6 +469,7 @@ class Pixelblaze:
                         # out of order so we'll save them and retrieve them separately.
                         if frameType == self.messageTypes.ExpanderConfig:
                             self.latestExpander = self.__decodeExpanderData(frame[2:])
+                            if binaryMessageType is self.messageTypes.specialConfig: return None
                             continue
                         if frameType != binaryMessageType:
                             print(f"got unwanted binary frame type {frameType} (wanted {binaryMessageType})")
@@ -525,7 +531,8 @@ class Pixelblaze:
                 while True:
                     # Loop until we get the right text response.
                     if type(expectedResponse) is str:
-                        response = self.wsReceive(binaryMessageType=None)
+                        if expectedResponse == "activeProgram": response = self.wsReceive(binaryMessageType=self.messageTypes.specialConfig)
+                        else: response = self.wsReceive(binaryMessageType=None)
                         if response is None: break
                         if response.startswith(f'{{"{expectedResponse}":'): break
                     # Or the right binary response.
@@ -777,7 +784,7 @@ class Pixelblaze:
         self.setSendPreviewFrames(True) # Make sure the Pixelblaze will send something.
         while True:
             if not self.latestStats is None: return json.loads(self.latestStats)
-            ignored = self.wsReceive(binaryMessageType=None)
+            ignored = self.wsReceive(binaryMessageType=self.messageTypes.specialStats)
 
     def setSendPreviewFrames(self, doUpdates:bool):
         """Set whether or not the Pixelblaze sends pattern preview frames.
@@ -1379,7 +1386,7 @@ class Pixelblaze:
         # Now the others, in any order.
         while True:
             if (self.latestSequencer is None) or (self.latestExpander is None):
-                ignored = self.wsReceive(binaryMessageType=None)
+                ignored = self.wsReceive(binaryMessageType=self.messageTypes.specialConfig)
                 break
 
         # Now that we've got them all, return the settings.
