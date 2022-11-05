@@ -2066,8 +2066,10 @@ class Pixelblaze:
             saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         patternId = dict((value, key) for key, value in self.getPatternList().items()).get(patternName)
-        self.setActivePattern(patternId, saveToFlash=saveToFlash)
 
+        if (patternId != None) :
+          self.setActivePattern(patternId, saveToFlash=saveToFlash)
+          
     def controlExists(self, controlName:str, patternId:str=None) -> bool:
         """Tests whether the named control exists in the specified pattern.
         If no pattern is specified, the currently active pattern is assumed.
@@ -2134,6 +2136,7 @@ class Pixelblaze:
         # on color. Pixelblaze ignores extra elements, sets unspecified elements to zero,
         # takes only the fractional part of elements outside the range 0-1, and
         # does something (1-(n % 1)) for negative elements.
+
         self.setActiveControls({controlName: color}, saveToFlash=saveToFlash)
             
     def setCacheRefreshTime(self, seconds:int):
