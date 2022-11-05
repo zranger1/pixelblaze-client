@@ -24,7 +24,7 @@ Minor fixes and new utility functions.
 
 ### Fixed
 
-* Fixed websocket parser to better handle unsolicited packets.
+* Fixed websocket parser state machine to better handle unsolicited packets.
 
 
 ## [**v1.0.1**] - 2022-11-04
