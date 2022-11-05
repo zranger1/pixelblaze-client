@@ -1389,6 +1389,8 @@ class Pixelblaze:
         while True:
             if (not self.latestSequencer is None) and (not self.latestExpander is None): break
             ignored = self.wsReceive(binaryMessageType=self.messageTypes.specialConfig)
+            # Devices only return an OutputExpanderConfig if one has been defined previously. If we're still waiting, give up.
+            if self.latestSequencer is not None and ignored is None: break
 
         # Now that we've got them all, return the settings.
         return settings
@@ -2065,10 +2067,8 @@ class Pixelblaze:
             saveToFlash (bool, optional): If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False.
         """
         patternId = dict((value, key) for key, value in self.getPatternList().items()).get(patternName)
+        self.setActivePattern(patternId, saveToFlash=saveToFlash)
 
-        if (patternId != None) :
-          self.setActivePattern(patternId, saveToFlash=saveToFlash)
-          
     def controlExists(self, controlName:str, patternId:str=None) -> bool:
         """Tests whether the named control exists in the specified pattern.
         If no pattern is specified, the currently active pattern is assumed.
