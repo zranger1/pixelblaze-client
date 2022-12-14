@@ -14,6 +14,16 @@ Changes are categorized into the following types:
 
 ---
 
+## [**v1.0.3**] - 2022-12-25
+
+New utility functions.
+
+### Added
+
+* new methods setMapFunction() and compilePattern() for compiling pixelmaps and patterns.
+
+
+
 ## [**v1.0.2**] - 2022-11-06
 
 Minor fixes and new utility functions.
@@ -29,7 +39,7 @@ Minor fixes and new utility functions.
 
 ## [**v1.0.1**] - 2022-11-04
 
-Minor bug fixes and various adjustments to the compatibility & helper functions
+Minor bug fixes and various adjustments to the compatibility & helper functions.
 
 ### Added
 

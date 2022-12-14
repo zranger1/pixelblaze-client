@@ -25,17 +25,14 @@ Sample code illustrating usage is provided in the [examples directory](examples/
 
 **Please note that version 1.0.0 was a major refactoring and enhancement of the library, with many new features and significant changes.** The API surface is completely new. See the the [API documentation](#documentation) for details.  
 
-## Current Version [**v1.0.2**] - 2022-11-06
+## Current Version [**v1.0.3**] - 2022-12-25
 
-Minor fixes and new utility functions.
+Added new utility functions.
 
 ### Added
 
-* new methods getMapCoordinates() and getMapOffsets() for retrieving spatial location of pixels.
+* new methods setMapFunction() and compilePattern() for compiling pixelmaps and patterns.
 
-### Fixed
-
-* Fixed websocket parser state machine to better handle unsolicited packets.
 
 ### Older Versions
 
