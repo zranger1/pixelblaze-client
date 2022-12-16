@@ -1233,34 +1233,73 @@ class Pixelblaze:
         Returns:
             bytes: a compiled blob of bytecode, ready to send to the Pixelblaze using `sendPatternToRenderer()`.
         """
-        if not ((self.getVersionMajor() == 3) and (self.getVersionMinor() == 30)):
-            raise(ValueError("Sorry, I don't know how to work with this firmware version."))
-
-        # Download the webUI from the Pixelblaze.
-        webUI = gzip.decompress(self.getFile("/index.html.gz")).decode('utf-8-sig')
-
-        # Extract the model-dependent constants from the webUI. This only works for v3.30 at the moment...
+        # Firmware-dependent adapters.
         def getSubstring(text:str, startValue:str, endValue:str):
             start = text.index(startValue)
             finish = text.index(endValue, start)
             return text[start:finish]
-        hardwareVariant = getSubstring(webUI, "var hardwareVariant=", "$('")
-        extendedOperators = getSubstring(webUI, ",extendedOperators=", "var constants;")[1:]
-        constants = getSubstring(webUI, "var constants;", "var lastErrorMarkers=[],")
 
-        # Search through the script blocks to find the compiler module.
-        bFound = False
-        while len(webUI) > 0:
-            before, during, after = webUI.partition("<script>")
-            script, during, webUI = after.partition("</script>")
-            # Find the compiler.
-            if script.find("window.compile") != -1:
-                bFound = True
-                break
-        if not bFound: raise ValueError("compilePattern: could not find compiler!")
+        def extractCompiler(webUI:str):
+            # Search through the script blocks to find the compiler module.
+            while len(webUI) > 0:
+                before, during, after = webUI.partition("<script>")
+                script, during, webUI = after.partition("</script>")
+                # Find the compiler.
+                if script.find("window.compile") != -1:
+                    return script
+
+        def v2Adapter(webUI:str):
+            # Extract the model-dependent constants from the webUI.
+            components = {}
+            components["hardwareVariant"] = ""
+            components["extendedOperators"] = getSubstring(webUI, "extendedOperators={", ",constants=")
+            components["constants"] = getSubstring(webUI, "constants=", ",lastErrorMarkers=[],")
+            components["compiler"] = extractCompiler(webUI)
+            return components
+
+        def v3AdapterOlder(webUI:str):
+            # Extract the model-dependent constants from the webUI.
+            components = {}
+            components["hardwareVariant"] = getSubstring(webUI, "var hardwareVariant=", ",")
+            components["extendedOperators"] = getSubstring(webUI, "extendedOperators={", "var constants;")
+            components["constants"] = getSubstring(webUI, "var constants;", "var lastErrorMarkers=[],")
+            components["compiler"] = extractCompiler(webUI)
+            return components
+
+        def v3Adapter(webUI:str):
+            # Extract the model-dependent constants from the webUI.
+            components = {}
+            components["hardwareVariant"] = getSubstring(webUI, "var hardwareVariant=", "$('")
+            components["extendedOperators"] = getSubstring(webUI, "extendedOperators={", "var constants;")
+            components["constants"] = getSubstring(webUI, "var constants;", "var lastErrorMarkers=[],")
+            components["compiler"] = extractCompiler(webUI)
+            return components
+
+        # These are the only versions we know how to work with.
+        supportedVersions = {
+            "2.21": v2Adapter,
+            "2.23": v2Adapter,
+            "2.28": v2Adapter,
+            "2.29": v2Adapter,  
+            "3.18": v3AdapterOlder,
+            "3.20": v3AdapterOlder,
+            "3.24": v3Adapter,
+            "3.25": v3Adapter,
+            "3.30": v3Adapter,
+        }
+
+        # Check that we support this firmware.
+        version = self.getVersion()
+        if not version in supportedVersions:
+            raise(ValueError(f"Sorry, I don't know how to compile with firmware version {version}."))
+
+        # Download the webUI from the Pixelblaze and extract the pieces we need for compilation.
+        webUI = gzip.decompress(self.getFile("/index.html.gz")).decode('utf-8-sig')
+        components = supportedVersions[version](webUI)
 
         # Build up the compilation environment from bits and pieces.
-        compiler = 'window = {};\nvar predefinedGlobals = ["pixelCount"];\n' + hardwareVariant + '\n' + constants + '\n' + extendedOperators + '\n' + script + '\n' + """
+        compiler = 'window = {};\nvar predefinedGlobals = ["pixelCount"];\n' + components["hardwareVariant"] + '\n' + \
+            components["constants"] + '\n' + components["extendedOperators"] + '\n' + components["compiler"] + '\n' + """
             const compilePattern = (src) => {
                 try {
                     compilerOptions = { predefinedGlobals: predefinedGlobals, extendedOperators: extendedOperators, constants: constants }
