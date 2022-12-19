@@ -13,13 +13,9 @@ if __name__ == "__main__":
     # Parse the command line.
     args = parser.parse_args()
 
-    # Connect to the Pixelblaze and download the bytecode of a pattern 
-    # ("export var r, g, b; export function render() { rgb(r, g, b); }")
-    # that sets all the LEDs on the string to a single RGB color.
-    # The bytecode was extracted from a Pixelblaze Binary Pattern, 
-    # downloaded and exploded into its constituent parts using the PBP class.
-    patternBytecode = bytes(bytearray.fromhex('2C0000001D00000008000000170104002901000001000000090000000B0001000B0002000B0003007D03090029010000050000000100000072000200000067000300000062000400000072656E64657200'))
+    # Connect to the Pixelblaze and download a pattern that sets all the LEDs on the string to a single RGB color.
     with Pixelblaze(args.ipAddress) as pb:
+        patternBytecode = pb.compilePattern("export var r, g, b; export function render() { rgb(r, g, b); }")
         pb.sendPatternToRenderer(patternBytecode, {})
         # Set the pattern variables to the (R, G, B) values specified.
         pb.setActiveVariables({"r": args.r, "g": args.g, "b": args.b})
