@@ -7,6 +7,7 @@ controlling one or more Pixelblaze LED controllers.
 - websocket-client (installable via `pip install websocket-client`, or from https://github.com/websocket-client/websocket-client)
 - requests (installable via `pip install requests`, or from https://github.com/psf/requests)
 - pytz (installable via `pip install pytz`, or from https://github.com/stub42/pytz)
+- py-mini-racer (installable via `pip install py-mini-racer`, or from https://github.com/sqreen/PyMiniRacer)
 
 ## Installation
 Install pixelblaze-client with all required packages using pip:
