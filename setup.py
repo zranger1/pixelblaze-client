@@ -16,7 +16,7 @@ setuptools.setup(
     author = 'pixxxie & ZRanger1',
     license='MIT',
     classifiers=[
-      "Development Status :: 5 - Production/Stable",    
+      "Development Status :: 5 - Production/Stable",
       "License :: OSI Approved :: MIT License",
       "Programming Language :: Python :: 3",
       "Operating System :: OS Independent",
@@ -28,8 +28,9 @@ setuptools.setup(
     install_requires=[
       "websocket-client",
       "requests",
-      "pytz"
+      "pytz",
+      "py-mini-racer"
     ],
-    packages=["pixelblaze"],    
-    python_requires='>=3.9',    
+    packages=["pixelblaze"],
+    python_requires='>=3.9',
 )

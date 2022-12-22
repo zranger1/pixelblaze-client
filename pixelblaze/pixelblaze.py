@@ -41,8 +41,9 @@ __version__ = "1.0.2"
 
 #| Version | Date       | Author        | Comment                                 |
 #|---------|------------|---------------|-----------------------------------------|
-#|  v1.0.2 | 06/11/2022 | @pixie        | Bug fixes, added new map functions |
-#|  v1.0.1 | 04/11/2022 | ZRanger1      | Bug fixes, revisions to compatibility functions |
+#|  v1.0.3 | 12/25/2022 | @pixie        | Added pattern and map compilation functions |
+#|  v1.0.2 | 11/06/2022 | @pixie        | Bug fixes, added new map functions |
+#|  v1.0.1 | 11/04/2022 | ZRanger1      | Bug fixes, revisions to compatibility functions |
 #|  v1.0.0 | 10/10/2022 | @pixie        | large-scale refactoring to add new features; minor loss of compatibility |
 #|  v0.9.6 | 07/17/2022 | @pixie        | Tweak getPatternList() to handle slower Pixelblazes |
 #|  v0.9.5 | 07/16/2022 | @pixie        | Update ws_recv to receive long preview packets |
@@ -57,6 +58,7 @@ __version__ = "1.0.2"
 # ----------------------------------------------------------------------------
 
 #   Standard library imports.
+import sys
 import socket
 import errno
 import json
@@ -67,6 +69,8 @@ import base64
 import struct
 import pathlib
 import pytz
+import traceback
+import gzip
 from re import T
 from typing import Union
 from enum import Enum, Flag, IntEnum, IntFlag
@@ -75,12 +79,23 @@ from urllib.parse import urlparse, urljoin
 #   Related third party imports.
 import websocket
 import requests
+from py_mini_racer import MiniRacer
 
 #   Local application/library specific imports.
 #   -None-
 
 # ----------------------------------------------------------------------------
-
+#
+#   ██████╗ ██╗██╗  ██╗███████╗██╗     ██████╗ ██╗      █████╗ ███████╗███████╗
+#   ██╔══██╗██║╚██╗██╔╝██╔════╝██║     ██╔══██╗██║     ██╔══██╗╚══███╔╝██╔════╝
+#   ██████╔╝██║ ╚███╔╝ █████╗  ██║     ██████╔╝██║     ███████║  ███╔╝ █████╗  
+#   ██╔═══╝ ██║ ██╔██╗ ██╔══╝  ██║     ██╔══██╗██║     ██╔══██║ ███╔╝  ██╔══╝  
+#   ██║     ██║██╔╝ ██╗███████╗███████╗██████╔╝███████╗██║  ██║███████╗███████╗
+#   ╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝╚══════╝
+#   ╔╦╗┬ ┬┌─┐  ╔═╗┬─┐ ┬┌─┐┬  ┌┐ ┬  ┌─┐┌─┐┌─┐  ╦ ╦┌─┐┌┐ ┌─┐┌─┐┌─┐┬┌─┌─┐┌┬┐  ╔═╗╔═╗╦
+#    ║ ├─┤├┤   ╠═╝│┌┴┬┘├┤ │  ├┴┐│  ├─┤┌─┘├┤   ║║║├┤ ├┴┐└─┐│ ││  ├┴┐├┤  │   ╠═╣╠═╝║
+#    ╩ ┴ ┴└─┘  ╩  ┴┴ └─└─┘┴─┘└─┘┴─┘┴ ┴└─┘└─┘  ╚╩╝└─┘└─┘└─┘└─┘└─┘┴ ┴└─┘ ┴   ╩ ╩╩  ╩
+#
 class Pixelblaze:
     """
     The Pixelblaze class presents a simple synchronous interface to a single Pixelblaze's websocket API. 
@@ -475,6 +490,7 @@ class Pixelblaze:
                             continue
                         if frameType != binaryMessageType:
                             print(f"got unwanted binary frame type {frameType} (wanted {binaryMessageType})")
+                            traceback.print_stack()
                             continue # skip this unwanted binary frame (which shouldn't really happen anyway)
                         return message
 
@@ -497,6 +513,7 @@ class Pixelblaze:
 
             except Exception as e:
                 self.connectionBroken = True
+                traceback.print_stack()
                 print(f"wsReceive: unknown exception: {e}")
                 raise
 
@@ -577,7 +594,7 @@ class Pixelblaze:
             try:
                 # Break the frame into manageable chunks.
                 response = None
-                maxFrameSize = 8192
+                maxFrameSize = 8192     ### the webUI source code says limit for v2 is 1024 but this still works...
                 if binaryMessageType == self.messageTypes.putByteCode: maxFrameSize = 1280
                 for i in range(0, len(blob), maxFrameSize):
 
@@ -1207,6 +1224,142 @@ class Pixelblaze:
         if sources is not None: return _LZstring.decompress(sources)
         return None
 
+    def compilePattern(self, patternCode:str) -> bytes:
+        """Compiles pattern sourcecode into a bytecode blob.
+
+        Args:
+            patternCode (str): The PBscript sourcecode of the pattern.
+
+        Returns:
+            bytes: a compiled blob of bytecode, ready to send to the Pixelblaze using `sendPatternToRenderer()`.
+        """
+        # Firmware-dependent adapters.
+        def getSubstring(text:str, startValue:str, endValue:str):
+            start = text.index(startValue)
+            finish = text.index(endValue, start)
+            return text[start:finish]
+
+        def extractCompiler(webUI:str):
+            # Search through the script blocks to find the compiler module.
+            while len(webUI) > 0:
+                before, during, after = webUI.partition("<script>")
+                script, during, webUI = after.partition("</script>")
+                # Find the compiler.
+                if script.find("window.compile") != -1:
+                    return script
+
+        def v2Adapter(webUI:str):
+            # Extract the model-dependent constants from the webUI.
+            components = {}
+            components["hardwareVariant"] = ""
+            components["extendedOperators"] = getSubstring(webUI, "extendedOperators={", ",constants=")
+            components["constants"] = getSubstring(webUI, "constants=", ",lastErrorMarkers=[],")
+            components["compiler"] = extractCompiler(webUI)
+            return components
+
+        def v3AdapterOlder(webUI:str):
+            # Extract the model-dependent constants from the webUI.
+            components = {}
+            components["hardwareVariant"] = getSubstring(webUI, "var hardwareVariant=", ",")
+            components["extendedOperators"] = getSubstring(webUI, "extendedOperators={", "var constants;")
+            components["constants"] = getSubstring(webUI, "var constants;", "var lastErrorMarkers=[],")
+            components["compiler"] = extractCompiler(webUI)
+            return components
+
+        def v3Adapter(webUI:str):
+            # Extract the model-dependent constants from the webUI.
+            components = {}
+            components["hardwareVariant"] = getSubstring(webUI, "var hardwareVariant=", "$('")
+            components["extendedOperators"] = getSubstring(webUI, "extendedOperators={", "var constants;")
+            components["constants"] = getSubstring(webUI, "var constants;", "var lastErrorMarkers=[],")
+            components["compiler"] = extractCompiler(webUI)
+            return components
+
+        # These are the only versions we know how to work with.
+        supportedVersions = {
+            "2.21": v2Adapter,
+            "2.23": v2Adapter,
+            "2.28": v2Adapter,
+            "2.29": v2Adapter,  
+            "3.18": v3AdapterOlder,
+            "3.20": v3AdapterOlder,
+            "3.24": v3Adapter,
+            "3.25": v3Adapter,
+            "3.30": v3Adapter,
+        }
+
+        # Check that we support this firmware.
+        version = self.getVersion()
+        if not version in supportedVersions:
+            raise(ValueError(f"Sorry, I don't know how to compile with firmware version {version}."))
+
+        # Download the webUI from the Pixelblaze and extract the pieces we need for compilation.
+        webUI = gzip.decompress(self.getFile("/index.html.gz")).decode('utf-8-sig')
+        components = supportedVersions[version](webUI)
+
+        # Build up the compilation environment from bits and pieces.
+        compiler = 'window = {};\nvar predefinedGlobals = ["pixelCount"];\n' + components["hardwareVariant"] + '\n' + \
+            components["constants"] + '\n' + components["extendedOperators"] + '\n' + components["compiler"] + '\n' + """
+            const compilePattern = (src) => {
+                try {
+                    compilerOptions = { predefinedGlobals: predefinedGlobals, extendedOperators: extendedOperators, constants: constants }
+                    program = window.compile(src, compilerOptions);
+
+                    //  Get rid of a few recursive properties that inhibit serialization.
+                    delete program.parent; delete program.breaks; delete program.continues; delete program.placeholders; delete program.placeholder;
+                    program.blocks.forEach(function (v) { delete v.parent; delete v.breaks; delete v.continues; delete v.placeholders; delete v.placeholder; });
+                    program.sourceBits.forEach(function (v) { delete v.short; v.start = {}; v.end = {}; });
+                    program.sourceBits.forEach(function (v) { if (v.loc != null) for (const [key, value] of Object.entries(v.loc.start)) { v.start[key] = value; } });
+                    program.sourceBits.forEach(function (v) { if (v.loc != null) for (const [key, value] of Object.entries(v.loc.end)) { v.end[key] = value; } });
+                    program.sourceBits.forEach(function (v) { delete v.loc; });
+
+                    //  Rearrange a few properties for easier access from Python.
+                    function surfaceList(list) { temp = Object.keys(list).reduce(function (r, k) { return r.concat(list[k]); }, []); return temp; }
+                    program.exports = surfaceList(program.exports);
+                    program.identifiers = surfaceList(program.identifiers);
+                    program.blocks.forEach(function (v) { v.identifiers = surfaceList(v.identifiers); })
+
+                    return { "status": "OK", "program": program }
+                }
+                catch (ex) {
+                    return { "status": ex.description + " at line " + ex.lineNumber.toString() + " column " + ex.column.toString(), "program": {} }
+                }
+            }
+            """
+
+        # Load the compiler into the interpreter.
+        ctx = MiniRacer()
+        ctx.eval(compiler)
+
+        # Use the interpreter to run the compiler to convert the sourcecode into the bytecode.
+        result = ctx.call("compilePattern", patternCode)
+        if result["status"] != "OK": raise ValueError(f'compilation error: {result["status"]}')
+
+        # Build the results into a bytecode packet.
+        program = result["program"]
+
+        # We first need to build the EXPORTS table to determine its size.
+        exportSize = 0
+        for symbol in program["exports"]: exportSize += 4 + len(symbol["name"]) + 1
+
+        # First DWORD is the size in bytes of the OPCODES section.
+        bytecode = int.to_bytes(4 * len(program["compiled"]), 4, "little")
+
+        # Second DWORD is the size in bytes of the EXPORTS section.
+        bytecode += int.to_bytes(exportSize, 4, "little")
+
+        # Then come the OPCODES themselves...
+        for opcode in program["compiled"]:
+            bytecode += int.to_bytes(opcode, 4, "little", signed=True)
+
+        # ...And finally the EXPORTS.
+        for symbol in program["exports"]:
+            bytecode += int.to_bytes(symbol["address"], 4, "little")
+            bytecode += bytes(symbol["name"], "ascii") + int.to_bytes(0, 1, "little")
+
+        # Return the completed bytecode blob.
+        return bytecode
+
     def sendPatternToRenderer(self, bytecode:bytes, controls:dict={}):
         """Sends a blob of bytecode and a JSON dictionary of UI controls to the Renderer. Mimics the actions of the webUI code editor.
 
@@ -1214,7 +1367,6 @@ class Pixelblaze:
             bytecode (bytes): A valid blob of bytecode as generated by the Editor tab in the Pixelblaze webUI.
             controls (dict, optional): a dictionary of UI controls exported by the pattern, with controlName as the key and controlValue as the value. Defaults to {}.
         """
-        
         self.wsSendJson({"pause":True,"setCode":{ "size": len(bytecode)}}, expectedResponse="ack")
         self.wsSendBinary(self.messageTypes.putByteCode, bytecode, expectedResponse="ack")
         self.wsSendJson({"setControls": controls}, expectedResponse="ack")
@@ -1247,7 +1399,7 @@ class Pixelblaze:
     def setMapFunction(self, mapFunction:str) -> bool:
         """Sets the mapFunction text used to populate the Mapper tab in the Pixelblaze UI.
         
-        Note that this is does not change the mapData used by the Pixelblaze; the Mapper tab in the Pixelblaze UI compiles this text to produce binary mapData which is saved separately (see the `setMapData` function).
+        Note that setting the map function also compiles and updates the mapData used by the Pixelblaze.
 
         Args:
             mapFunction (str): The text of the mapFunction.
@@ -1255,10 +1407,34 @@ class Pixelblaze:
         Returns:
             bool: True if the function text was successfully saved; otherwise False.
         """
-        # TBD:  Using an embeddable Javscript intepreter like dukpy (https://github.com/amol-/dukpy) it would 
-        # be possible to execute the mapFunction text and generate the binary mapData, which is what the Pixelblaze 
-        # map editor does whenever the map function is changed.
-        return self.putFile('/pixelmap.txt', mapFunction)
+        # Call the mapping function and get the pixelmap.
+        mapCoordinates = MiniRacer().call(mapFunction, self.getPixelCount())
+        numPixels = len(mapCoordinates)
+        numDimensions = len(mapCoordinates[0])
+
+        # Normalize the pixelmap coordinates.
+        maxValue = [ sys.float_info.min, sys.float_info.min, sys.float_info.min ]
+        minValue = [ sys.float_info.max, sys.float_info.max, sys.float_info.max ]
+        for pixel in range(numPixels):
+            for dimension in range(numDimensions):
+                maxValue[dimension] = max(maxValue[dimension], mapCoordinates[pixel][dimension])
+                minValue[dimension] = min(minValue[dimension], mapCoordinates[pixel][dimension])
+
+        # Build a mapData structure for consumption by the Pixelblaze.
+        formatVersion = self.getVersionMajor() - 1  # v3 uses version 2; v2 uses version 1
+        maxInt = pow(2, 8 * formatVersion) - 1
+        mapData = int.to_bytes(formatVersion, 4, 'little') 
+        mapData += int.to_bytes(numDimensions, 4, 'little')
+        mapData += int.to_bytes(numPixels * numDimensions * formatVersion, 4, 'little') 
+        for pixel in range(numPixels):
+            for dimension in range(numDimensions):
+                # Rescale the elements appropriately.
+                value = int(maxInt * ((mapCoordinates[pixel][dimension] - minValue[dimension]) / (maxValue[dimension] - minValue[dimension])))
+                mapData += int.to_bytes(value, int(formatVersion), 'little', signed=False)
+
+        # Save the results to the Pixelblaze.
+        self.putFile('/pixelmap.txt', mapFunction)
+        return self.putFile('/pixelmap.dat', mapData)
 
     def getMapData(self) -> bytes:
         """Gets the binary representation of the pixelMap entered on the 'Mapper' tab.
@@ -2149,7 +2325,17 @@ class Pixelblaze:
         self.cacheRefreshInterval = 1000 * self._clamp(seconds, 0, 1000000)
 
 # ----------------------------------------------------------------------------
-
+#
+#   ██████╗ ██████╗ ██████╗ 
+#   ██╔══██╗██╔══██╗██╔══██╗
+#   ██████╔╝██████╔╝██████╔╝
+#   ██╔═══╝ ██╔══██╗██╔══██╗
+#   ██║     ██████╔╝██████╔╝
+#   ╚═╝     ╚═════╝ ╚═════╝ 
+#   ╔═╗┬─┐ ┬┌─┐┬  ┌┐ ┬  ┌─┐┌─┐┌─┐  ╔╗ ┬┌┐┌┌─┐┬─┐┬ ┬  ╔╗ ┌─┐┌─┐┬┌─┬ ┬┌─┐
+#   ╠═╝│┌┴┬┘├┤ │  ├┴┐│  ├─┤┌─┘├┤   ╠╩╗││││├─┤├┬┘└┬┘  ╠╩╗├─┤│  ├┴┐│ │├─┘
+#   ╩  ┴┴ └─└─┘┴─┘└─┘┴─┘┴ ┴└─┘└─┘  ╚═╝┴┘└┘┴ ┴┴└─ ┴   ╚═╝┴ ┴└─┘┴ ┴└─┘┴  
+#
 class PBB:
     """This class provides methods for importing, exporting, and manipulating the contents of a Pixelblaze Binary Backup, as created from the Settings menu on a Pixelblaze.
 
@@ -2424,7 +2610,17 @@ class PBB:
         pb.reboot()
 
 # ----------------------------------------------------------------------------
-
+#
+#   ██████╗ ██████╗ ██████╗ 
+#   ██╔══██╗██╔══██╗██╔══██╗
+#   ██████╔╝██████╔╝██████╔╝
+#   ██╔═══╝ ██╔══██╗██╔═══╝ 
+#   ██║     ██████╔╝██║     
+#   ╚═╝     ╚═════╝ ╚═╝     
+#   ╔═╗┬─┐ ┬┌─┐┬  ┌┐ ┬  ┌─┐┌─┐┌─┐  ╔╗ ┬┌┐┌┌─┐┬─┐┬ ┬  ╔═╗┌─┐┌┬┐┌┬┐┌─┐┬─┐┌┐┌
+#   ╠═╝│┌┴┬┘├┤ │  ├┴┐│  ├─┤┌─┘├┤   ╠╩╗││││├─┤├┬┘└┬┘  ╠═╝├─┤ │  │ ├┤ ├┬┘│││
+#   ╩  ┴┴ └─└─┘┴─┘└─┘┴─┘┴ ┴└─┘└─┘  ╚═╝┴┘└┘┴ ┴┴└─ ┴   ╩  ┴ ┴ ┴  ┴ └─┘┴└─┘└┘
+#
 class PBP:
     """This class represents a Pixelblaze Binary Pattern, as stored on the Pixelblaze filesystem or contained in a Pixelblaze Binary Backup.
     
@@ -2660,7 +2856,17 @@ class PBP:
         self.toEPE().toFile(patternPath.with_suffix('.epe'))
 
 # ----------------------------------------------------------------------------
-
+#
+#   ███████╗██████╗ ███████╗
+#   ██╔════╝██╔══██╗██╔════╝
+#   █████╗  ██████╔╝█████╗  
+#   ██╔══╝  ██╔═══╝ ██╔══╝  
+#   ███████╗██║     ███████╗
+#   ╚══════╝╚═╝     ╚══════╝
+#   ╔═╗┬  ┌─┐┌─┐┌┬┐┬─┐┌─┐┌┬┐┌─┐┌─┐┌─┐  ╔═╗┌─┐┌┬┐┌┬┐┌─┐┬─┐┌┐┌  ╔═╗─┐ ┬┌─┐┌─┐┬─┐┌┬┐
+#   ║╣ │  ├┤ │   │ ├┬┘│ ││││├─┤│ ┬├┤   ╠═╝├─┤ │  │ ├┤ ├┬┘│││  ║╣ ┌┴┬┘├─┘│ │├┬┘ │ 
+#   ╚═╝┴─┘└─┘└─┘ ┴ ┴└─└─┘┴ ┴┴ ┴└─┘└─┘  ╩  ┴ ┴ ┴  ┴ └─┘┴└─┘└┘  ╚═╝┴ └─┴  └─┘┴└─ ┴ 
+#
 class EPE:
     """This class provides methods for importing, exporting, and manipulating the contents of an Electromage Pattern Export (EPE), as exported from the Patterns list on a Pixelblaze.
 
@@ -3135,7 +3341,17 @@ class _LZstring:
         return "".join(context_data)
 
 # ----------------------------------------------------------------------------
-
+#
+#   ██████╗ ███████╗
+#   ██╔══██╗██╔════╝
+#   ██████╔╝█████╗  
+#   ██╔═══╝ ██╔══╝  
+#   ██║     ███████╗
+#   ╚═╝     ╚══════╝
+#   ╔═╗┬─┐ ┬┌─┐┬  ┌┐ ┬  ┌─┐┌─┐┌─┐  ╔═╗┌┐┌┬ ┬┌┬┐┌─┐┬─┐┌─┐┌┬┐┌─┐┬─┐
+#   ╠═╝│┌┴┬┘├┤ │  ├┴┐│  ├─┤┌─┘├┤   ║╣ ││││ ││││├┤ ├┬┘├─┤ │ │ │├┬┘
+#   ╩  ┴┴ └─└─┘┴─┘└─┘┴─┘┴ ┴└─┘└─┘  ╚═╝┘└┘└─┘┴ ┴└─┘┴└─┴ ┴ ┴ └─┘┴└─
+#
 class PixelblazeEnumerator:
     """
     Listens on a network to detect available Pixelblazes, which the user can then list

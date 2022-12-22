@@ -390,6 +390,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#method-compilepattern" class="md-nav__link">
+    method compilePattern
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#method-controlexists" class="md-nav__link">
     method controlExists
   </a>
@@ -1566,6 +1573,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#method-compilepattern" class="md-nav__link">
+    method compilePattern
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#method-controlexists" class="md-nav__link">
     method controlExists
   </a>
@@ -2677,7 +2691,7 @@
 </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L82"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L99"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h2 id="class-pixelblaze"><kbd>class</kbd> <code>Pixelblaze</code><a class="headerlink" href="#class-pixelblaze" title="Permanent link">&para;</a></h2>
 <p>The Pixelblaze class presents a simple synchronous interface to a single Pixelblaze's websocket API.  </p>
 <p>The constructor takes the Pixelblaze's IPv4 address in the usual 12 digit numeric form (for example, "192.168.4.1"). To control multiple Pixelblazes, create multiple objects. </p>
@@ -2781,7 +2795,7 @@
 <li><a href="#method-getStorageSize"><code>getStorageSize</code></a> </li>
 <li><a href="#method-getStorageUsed"><code>getStorageUsed</code></a> </li>
 </ul>
-<p><a href="../pixelblaze/pixelblaze.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L232"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-__init__"><kbd>method</kbd> <code>__init__</code><a class="headerlink" href="#method-__init__" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="fm">__init__</span><span class="p">(</span><span class="n">ipAddress</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">proxyUrl</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
@@ -2792,7 +2806,7 @@
 <li><b><code>proxyUrl</code></b> (str, optional):  The url of a proxy, if required, in the format "protocol://ipAddress:port" (for example, "http://192.168.0.1:8888"). Defaults to None. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L335"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L352"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-enumerateaddresses"><kbd>method</kbd> <code>EnumerateAddresses</code><a class="headerlink" href="#method-enumerateaddresses" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">EnumerateAddresses</span><span class="p">(</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1500</span><span class="p">,</span>
@@ -2812,7 +2826,7 @@
 <li><b><code>LightweightEnumerator</code></b>:  A subclassed Python enumerator object that returns (as a string) the IPv4 address of a Pixelblaze, in the usual dotted-quads numeric format. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L349"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L366"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-enumeratedevices"><kbd>method</kbd> <code>EnumerateDevices</code><a class="headerlink" href="#method-enumeratedevices" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">EnumerateDevices</span><span class="p">(</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1500</span><span class="p">,</span>
@@ -2832,7 +2846,7 @@
 <li><b><code>LightweightEnumerator</code></b>:  A subclassed Python enumerator object that returns a Pixelblaze object for controlling a discovered Pixelblaze. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1022"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1048"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-addtosequencerplaylist"><kbd>method</kbd> <code>addToSequencerPlaylist</code><a class="headerlink" href="#method-addtosequencerplaylist" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">addToSequencerPlaylist</span><span class="p">(</span>
     <span class="n">playlistContents</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
@@ -2852,7 +2866,21 @@
 <li><b><code>dict</code></b>:  The updated playlist, which can then be sent back to the Pixelblaze with <code>setSequencerPlaylist</code>. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2062"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1227"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<h3 id="method-compilepattern"><kbd>method</kbd> <code>compilePattern</code><a class="headerlink" href="#method-compilepattern" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">compilePattern</span><span class="p">(</span><span class="n">patternCode</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="err">→</span> <span class="nb">bytes</span>
+</code></pre></div>
+<p>Compiles pattern sourcecode into a bytecode blob. </p>
+<p><strong>Args:</strong></p>
+<ul>
+<li><b><code>patternCode</code></b> (str):  The PBscript sourcecode of the pattern. </li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><b><code>bytes</code></b>:  a compiled blob of bytecode, ready to send to the Pixelblaze using <code>sendPatternToRenderer()</code>. </li>
+</ul>
+<hr />
+<p><a href="../pixelblaze/pixelblaze.py#L2210"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-controlexists"><kbd>method</kbd> <code>controlExists</code><a class="headerlink" href="#method-controlexists" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">controlExists</span><span class="p">(</span><span class="n">controlName</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">patternId</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">bool</span>
 </code></pre></div>
@@ -2868,7 +2896,7 @@
 <li><b><code>bool</code></b>:  True if the specified control exists, False otherwise. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L754"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L780"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-deletefile"><kbd>method</kbd> <code>deleteFile</code><a class="headerlink" href="#method-deletefile" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">deleteFile</span><span class="p">(</span><span class="n">fileName</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="err">→</span> <span class="nb">bool</span>
 </code></pre></div>
@@ -2882,7 +2910,7 @@
 <li><b><code>bool</code></b>:  True if the file was successfully stored; False otherwise. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1095"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1121"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-deletepattern"><kbd>method</kbd> <code>deletePattern</code><a class="headerlink" href="#method-deletepattern" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">deletePattern</span><span class="p">(</span><span class="n">patternId</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span>
 </code></pre></div>
@@ -2892,7 +2920,7 @@
 <li><b><code>patternId</code></b> (str):  The patternId of the desired pattern. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1159"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1185"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getactivecontrols"><kbd>method</kbd> <code>getActiveControls</code><a class="headerlink" href="#method-getactivecontrols" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getActiveControls</span><span class="p">(</span><span class="n">configSequencer</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">dict</span>
 </code></pre></div>
@@ -2907,7 +2935,7 @@
 <li><b><code>dict</code></b>:  A dictionary containing the control names and values, with controlName as the key and controlValue as the value. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1147"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1173"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getactivepattern"><kbd>method</kbd> <code>getActivePattern</code><a class="headerlink" href="#method-getactivepattern" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getActivePattern</span><span class="p">(</span><span class="n">configSequencer</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">str</span>
 </code></pre></div>
@@ -2921,7 +2949,7 @@
 <li><b><code>str</code></b>:  The patternId of the current pattern, if any; otherwise an empty string. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1114"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1140"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getactivevariables"><kbd>method</kbd> <code>getActiveVariables</code><a class="headerlink" href="#method-getactivevariables" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getActiveVariables</span><span class="p">()</span> <span class="err">→</span> <span class="nb">dict</span>
 </code></pre></div>
@@ -2931,7 +2959,7 @@
 <li><b><code>dict</code></b>:  A dictionary containing all the variables exported by the active pattern, with variableName as the key and variableValue as the value. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1570"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1718"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getautooffenable"><kbd>method</kbd> <code>getAutoOffEnable</code><a class="headerlink" href="#method-getautooffenable" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getAutoOffEnable</span><span class="p">(</span><span class="n">configSettings</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">bool</span>
 </code></pre></div>
@@ -2945,7 +2973,7 @@
 <li><b><code>bool</code></b>:  A boolean indicating whether the auto-Off timer is enabled. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1594"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1742"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getautooffend"><kbd>method</kbd> <code>getAutoOffEnd</code><a class="headerlink" href="#method-getautooffend" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getAutoOffEnd</span><span class="p">(</span><span class="n">configSettings</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">str</span>
 </code></pre></div>
@@ -2959,7 +2987,7 @@
 <li><b><code>str</code></b>:  A Unix time string in "HH:MM" format. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1582"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1730"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getautooffstart"><kbd>method</kbd> <code>getAutoOffStart</code><a class="headerlink" href="#method-getautooffstart" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getAutoOffStart</span><span class="p">(</span><span class="n">configSettings</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">str</span>
 </code></pre></div>
@@ -2973,7 +3001,7 @@
 <li><b><code>str</code></b>:  A Unix time string in "HH:MM" format. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1959"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2107"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getbrandname"><kbd>method</kbd> <code>getBrandName</code><a class="headerlink" href="#method-getbrandname" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getBrandName</span><span class="p">(</span><span class="n">configSettings</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">str</span>
 </code></pre></div>
@@ -2987,7 +3015,7 @@
 <li><b><code>str</code></b>:  The brand name. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1706"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1854"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getbrightnesslimit"><kbd>method</kbd> <code>getBrightnessLimit</code><a class="headerlink" href="#method-getbrightnesslimit" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getBrightnessLimit</span><span class="p">(</span><span class="n">configSettings</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">int</span>
 </code></pre></div>
@@ -3001,7 +3029,7 @@
 <li><b><code>int</code></b>:  The maximum brightness, expressed as a percent value between 0 and 100 (yes, it's inconsistent with the 'brightness' settings). </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L876"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L902"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getbrightnessslider"><kbd>method</kbd> <code>getBrightnessSlider</code><a class="headerlink" href="#method-getbrightnessslider" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getBrightnessSlider</span><span class="p">(</span><span class="n">configSettings</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">float</span>
 </code></pre></div>
@@ -3015,7 +3043,7 @@
 <li><b><code>float</code></b>:  A floating-point value between 0.0 and 1.0. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2100"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2248"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getcolorcontrolname"><kbd>method</kbd> <code>getColorControlName</code><a class="headerlink" href="#method-getcolorcontrolname" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getColorControlName</span><span class="p">(</span><span class="n">patternId</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">str</span>
 </code></pre></div>
@@ -3029,13 +3057,13 @@
 <li><b><code>str</code></b>:  The name of the specified pattern's first rgbPicker or hsvPicker control if one exists, or None otherwise. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2080"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getcolorcontrolnames"><kbd>method</kbd> <code>getColorControlNames</code><a class="headerlink" href="#method-getcolorcontrolnames" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getColorControlNames</span><span class="p">(</span><span class="n">patternId</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">list</span>
 </code></pre></div>
 <p>Returns a list of names of the specified pattern's rgbPicker or hsvPicker controls if any exist, None otherwise.  If the pattern argument is not specified, check the currently running pattern </p>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1747"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1895"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getcolororder"><kbd>method</kbd> <code>getColorOrder</code><a class="headerlink" href="#method-getcolororder" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getColorOrder</span><span class="p">(</span><span class="n">configSettings</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="o">&lt;</span><span class="n">enum</span> <span class="s1">&#39;colorOrders&#39;</span><span class="o">&gt;</span>
 </code></pre></div>
@@ -3049,7 +3077,7 @@
 <li><b><code>colorOrders</code></b>:  The ordering for the color data sent to the LEDs. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1400"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1548"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getconfigexpander"><kbd>method</kbd> <code>getConfigExpander</code><a class="headerlink" href="#method-getconfigexpander" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getConfigExpander</span><span class="p">()</span> <span class="err">→</span> <span class="nb">dict</span>
 </code></pre></div>
@@ -3059,7 +3087,7 @@
 <li><b><code>dict</code></b>:  The OutputExpander configuration as a dictionary, with settingName as the key and settingValue as the value. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1388"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1536"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getconfigsequencer"><kbd>method</kbd> <code>getConfigSequencer</code><a class="headerlink" href="#method-getconfigsequencer" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getConfigSequencer</span><span class="p">()</span> <span class="err">→</span> <span class="nb">dict</span>
 </code></pre></div>
@@ -3069,7 +3097,7 @@
 <li><b><code>dict</code></b>:  The sequencer configuration as a dictionary, with settingName as the key and settingValue as the value. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1357"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1503"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getconfigsettings"><kbd>method</kbd> <code>getConfigSettings</code><a class="headerlink" href="#method-getconfigsettings" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getConfigSettings</span><span class="p">()</span> <span class="err">→</span> <span class="nb">dict</span>
 </code></pre></div>
@@ -3079,7 +3107,7 @@
 <li><b><code>dict</code></b>:  A dictionary containing the configuration settings, with settingName as the key and settingValue as the value. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1795"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1943"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getcpuspeed"><kbd>method</kbd> <code>getCpuSpeed</code><a class="headerlink" href="#method-getcpuspeed" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getCpuSpeed</span><span class="p">(</span><span class="n">configSettings</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="o">&lt;</span><span class="n">enum</span> <span class="s1">&#39;cpuSpeeds&#39;</span><span class="o">&gt;</span>
 </code></pre></div>
@@ -3093,7 +3121,7 @@
 <li><b><code>cpuSpeeds</code></b>:  An enumeration representing the CPU speed. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1735"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1883"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getdataspeed"><kbd>method</kbd> <code>getDataSpeed</code><a class="headerlink" href="#method-getdataspeed" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getDataSpeed</span><span class="p">(</span><span class="n">configSettings</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">int</span>
 </code></pre></div>
@@ -3107,7 +3135,7 @@
 <li><b><code>int</code></b>:  The data speed for communicating with the LEDs. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1533"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1681"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getdevicename"><kbd>method</kbd> <code>getDeviceName</code><a class="headerlink" href="#method-getdevicename" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getDeviceName</span><span class="p">(</span><span class="n">configSettings</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">str</span>
 </code></pre></div>
@@ -3121,7 +3149,7 @@
 <li><b><code>str</code></b>:  The user-friendly name of the Pixelblaze. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1545"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1693"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getdiscovery"><kbd>method</kbd> <code>getDiscovery</code><a class="headerlink" href="#method-getdiscovery" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getDiscovery</span><span class="p">(</span><span class="n">configSettings</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">bool</span>
 </code></pre></div>
@@ -3135,7 +3163,7 @@
 <li><b><code>bool</code></b>:  A boolean signifying whether the Pixelblaze announces itself to the Electromage Discovery Service. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L811"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L837"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getfps"><kbd>method</kbd> <code>getFPS</code><a class="headerlink" href="#method-getfps" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getFPS</span><span class="p">(</span><span class="n">savedStatistics</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">float</span>
 </code></pre></div>
@@ -3149,7 +3177,7 @@
 <li><b><code>int</code></b>:  The pattern speed in FPS, as reported in a Pixelblaze statistics message. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L722"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L748"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getfile"><kbd>method</kbd> <code>getFile</code><a class="headerlink" href="#method-getfile" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getFile</span><span class="p">(</span><span class="n">fileName</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="err">→</span> <span class="nb">bytes</span>
 </code></pre></div>
@@ -3163,7 +3191,7 @@
 <li><b><code>bytes</code></b>:  The contents of the file. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L657"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L683"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getfilelist"><kbd>method</kbd> <code>getFileList</code><a class="headerlink" href="#method-getfilelist" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getFileList</span><span class="p">(</span><span class="n">fileTypes</span><span class="p">:</span> <span class="n">fileTypes</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">fileTypes</span><span class="o">.</span><span class="n">fileAll</span><span class="p">:</span> <span class="mi">63</span><span class="o">&gt;</span><span class="p">)</span> <span class="err">→</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 </code></pre></div>
@@ -3178,7 +3206,7 @@
 <li><b><code>list[str]</code></b>:  A list of filenames of the requested fileType. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1983"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2131"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getlearninguimode"><kbd>method</kbd> <code>getLearningUiMode</code><a class="headerlink" href="#method-getlearninguimode" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getLearningUiMode</span><span class="p">(</span><span class="n">configSettings</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">bool</span>
 </code></pre></div>
@@ -3192,13 +3220,13 @@
 <li><b><code>bool</code></b>:  A boolean indicating whether "Learning UI Mode" is enabled. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1718"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1866"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getledtype"><kbd>method</kbd> <code>getLedType</code><a class="headerlink" href="#method-getledtype" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getLedType</span><span class="p">(</span><span class="n">configSettings</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="o">&lt;</span><span class="n">enum</span> <span class="s1">&#39;ledTypes&#39;</span><span class="o">&gt;</span>
 </code></pre></div>
 <p>Returns the type of LEDs connected to the Pixelblaze. </p>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1274"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1420"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getmapcoordinates"><kbd>method</kbd> <code>getMapCoordinates</code><a class="headerlink" href="#method-getmapcoordinates" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getMapCoordinates</span><span class="p">(</span><span class="n">mapData</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">list</span>
 </code></pre></div>
@@ -3212,7 +3240,7 @@
 <li><b><code>list</code></b>:  A list containing one to three lists of floats, representing the X, Y and Z world coordinates (range 0..1) for each pixel. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1254"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1400"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getmapdata"><kbd>method</kbd> <code>getMapData</code><a class="headerlink" href="#method-getmapdata" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getMapData</span><span class="p">()</span> <span class="err">→</span> <span class="nb">bytes</span>
 </code></pre></div>
@@ -3222,7 +3250,7 @@
 <li><b><code>bytes</code></b>:  The binary mapData as generated by the Mapper tab of the Pixelblaze webUI. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1230"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1352"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getmapfunction"><kbd>method</kbd> <code>getMapFunction</code><a class="headerlink" href="#method-getmapfunction" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getMapFunction</span><span class="p">()</span> <span class="err">→</span> <span class="nb">str</span>
 </code></pre></div>
@@ -3232,7 +3260,7 @@
 <li><b><code>str</code></b>:  The text of the mapFunction. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1318"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1464"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getmapoffsets"><kbd>method</kbd> <code>getMapOffsets</code><a class="headerlink" href="#method-getmapoffsets" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getMapOffsets</span><span class="p">(</span><span class="n">mapCoordinates</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">list</span>
 </code></pre></div>
@@ -3246,7 +3274,7 @@
 <li><b><code>list</code></b>:  A list containing one to three lists of integers, representing the X, Y and Z indices (range 0..pixelCount) for each pixel. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1808"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1956"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getnetworkpowersave"><kbd>method</kbd> <code>getNetworkPowerSave</code><a class="headerlink" href="#method-getnetworkpowersave" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getNetworkPowerSave</span><span class="p">(</span><span class="n">configSettings</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">bool</span>
 </code></pre></div>
@@ -3260,7 +3288,7 @@
 <li><b><code>bool</code></b>:  Whether the "Network Power Saving" mode is enabled. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1077"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getpatternasepe"><kbd>method</kbd> <code>getPatternAsEpe</code><a class="headerlink" href="#method-getpatternasepe" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getPatternAsEpe</span><span class="p">(</span><span class="n">patternId</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="err">→</span> <span class="nb">str</span>
 </code></pre></div>
@@ -3274,7 +3302,7 @@
 <li><b><code>str</code></b>:  The exported pattern as a JSON dictionary. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1175"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1201"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getpatterncontrols"><kbd>method</kbd> <code>getPatternControls</code><a class="headerlink" href="#method-getpatterncontrols" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getPatternControls</span><span class="p">(</span><span class="n">patternId</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="err">→</span> <span class="nb">dict</span>
 </code></pre></div>
@@ -3288,7 +3316,7 @@
 <li><b><code>dict</code></b>:  A dictionary containing the control names and values, with controlName as the key and controlValue as the value. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1038"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1064"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getpatternlist"><kbd>method</kbd> <code>getPatternList</code><a class="headerlink" href="#method-getpatternlist" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getPatternList</span><span class="p">(</span><span class="n">forceRefresh</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="err">→</span> <span class="nb">dict</span>
 </code></pre></div>
@@ -3303,7 +3331,7 @@
 <li><b><code>dict</code></b>:  A dictionary of the patterns stored on the Pixelblaze, where the patternId is the key and the patternName is the value. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1188"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getpatternsourcecode"><kbd>method</kbd> <code>getPatternSourceCode</code><a class="headerlink" href="#method-getpatternsourcecode" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getPatternSourceCode</span><span class="p">(</span><span class="n">patternId</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="err">→</span> <span class="nb">str</span>
 </code></pre></div>
@@ -3317,7 +3345,7 @@
 <li><b><code>str</code></b>:  A string representation of a JSON dictionary containing the pattern source code. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L625"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L651"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getpeers"><kbd>method</kbd> <code>getPeers</code><a class="headerlink" href="#method-getpeers" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getPeers</span><span class="p">()</span>
 </code></pre></div>
@@ -3327,7 +3355,7 @@
 <li><b><code>TBD</code></b>:  To be defined once @wizard implements the function. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1723"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1871"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getpixelcount"><kbd>method</kbd> <code>getPixelCount</code><a class="headerlink" href="#method-getpixelcount" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getPixelCount</span><span class="p">(</span><span class="n">configSettings</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">int</span>
 </code></pre></div>
@@ -3341,7 +3369,7 @@
 <li><b><code>int</code></b>:  The number of LEDs connected to the Pixelblaze. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L793"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L819"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getpreviewframe"><kbd>method</kbd> <code>getPreviewFrame</code><a class="headerlink" href="#method-getpreviewframe" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getPreviewFrame</span><span class="p">()</span> <span class="err">→</span> <span class="nb">bytes</span>
 </code></pre></div>
@@ -3351,7 +3379,7 @@
 <li><b><code>bytes</code></b>:  a collection of bytes representing <code>pixelCount</code> tuples containing the (R, G, B) values for each pixel in the pattern preview. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getpreviewimage"><kbd>method</kbd> <code>getPreviewImage</code><a class="headerlink" href="#method-getpreviewimage" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getPreviewImage</span><span class="p">(</span><span class="n">patternId</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="err">→</span> <span class="nb">bytes</span>
 </code></pre></div>
@@ -3365,7 +3393,7 @@
 <li><b><code>bytes</code></b>:  A JPEG image in which each column represents a particular LED and each row represents an iteration of the pattern. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L919"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L945"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getsequencermode"><kbd>method</kbd> <code>getSequencerMode</code><a class="headerlink" href="#method-getsequencermode" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getSequencerMode</span><span class="p">(</span><span class="n">configSequencer</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="o">&lt;</span><span class="n">enum</span> <span class="s1">&#39;sequencerModes&#39;</span><span class="o">&gt;</span>
 </code></pre></div>
@@ -3379,7 +3407,7 @@
 <li><b><code>sequencerModes</code></b>:  The sequencerMode. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1001"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1027"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getsequencerplaylist"><kbd>method</kbd> <code>getSequencerPlaylist</code><a class="headerlink" href="#method-getsequencerplaylist" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getSequencerPlaylist</span><span class="p">(</span><span class="n">playlistId</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;_defaultplaylist_&#39;</span><span class="p">)</span>
 </code></pre></div>
@@ -3393,7 +3421,7 @@
 <li><b><code>dict</code></b>:  The contents of the playlist. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L987"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1013"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getsequencershuffletime"><kbd>method</kbd> <code>getSequencerShuffleTime</code><a class="headerlink" href="#method-getsequencershuffletime" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getSequencerShuffleTime</span><span class="p">(</span><span class="n">configSequencer</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">int</span>
 </code></pre></div>
@@ -3407,7 +3435,7 @@
 <li><b><code>int</code></b>:  The number of milliseconds to play each pattern. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L931"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L957"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getsequencerstate"><kbd>method</kbd> <code>getSequencerState</code><a class="headerlink" href="#method-getsequencerstate" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getSequencerState</span><span class="p">(</span><span class="n">configSequencer</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">bool</span>
 </code></pre></div>
@@ -3421,7 +3449,7 @@
 <li><b><code>bool</code></b>:  True if the sequencer is running; False otherwise. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1971"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2119"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getsimpleuimode"><kbd>method</kbd> <code>getSimpleUiMode</code><a class="headerlink" href="#method-getsimpleuimode" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getSimpleUiMode</span><span class="p">(</span><span class="n">configSettings</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">bool</span>
 </code></pre></div>
@@ -3435,7 +3463,7 @@
 <li><b><code>bool</code></b>:  A boolean indicating whether "Simple UI Mode" is enabled. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L771"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L797"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getstatistics"><kbd>method</kbd> <code>getStatistics</code><a class="headerlink" href="#method-getstatistics" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getStatistics</span><span class="p">()</span> <span class="err">→</span> <span class="nb">dict</span>
 </code></pre></div>
@@ -3445,7 +3473,7 @@
 <li><b><code>dict</code></b>:  the JSON message received from the Pixelblaze. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L847"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L873"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getstoragesize"><kbd>method</kbd> <code>getStorageSize</code><a class="headerlink" href="#method-getstoragesize" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getStorageSize</span><span class="p">(</span><span class="n">savedStatistics</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">int</span>
 </code></pre></div>
@@ -3459,7 +3487,7 @@
 <li><b><code>int</code></b>:  The available storage in bytes, as reported in a Pixelblaze statistics message. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L835"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L861"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getstorageused"><kbd>method</kbd> <code>getStorageUsed</code><a class="headerlink" href="#method-getstorageused" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getStorageUsed</span><span class="p">(</span><span class="n">savedStatistics</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">int</span>
 </code></pre></div>
@@ -3473,7 +3501,7 @@
 <li><b><code>int</code></b>:  The used storage in bytes, as reported in a Pixelblaze statistics message. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1558"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1706"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-gettimezone"><kbd>method</kbd> <code>getTimezone</code><a class="headerlink" href="#method-gettimezone" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getTimezone</span><span class="p">(</span><span class="n">configSettings</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">str</span>
 </code></pre></div>
@@ -3487,7 +3515,7 @@
 <li><b><code>str</code></b>:  A standard Unix tzstring. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1832"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1980"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getupdatestate"><kbd>method</kbd> <code>getUpdateState</code><a class="headerlink" href="#method-getupdatestate" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getUpdateState</span><span class="p">()</span> <span class="err">→</span> <span class="o">&lt;</span><span class="n">enum</span> <span class="s1">&#39;updateStates&#39;</span><span class="o">&gt;</span>
 </code></pre></div>
@@ -3497,7 +3525,7 @@
 <li><b><code>updateStates</code></b>:  An enumeration describing the updateState of the Pixelblaze. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L823"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L849"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getuptime"><kbd>method</kbd> <code>getUptime</code><a class="headerlink" href="#method-getuptime" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getUptime</span><span class="p">(</span><span class="n">savedStatistics</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">int</span>
 </code></pre></div>
@@ -3511,7 +3539,7 @@
 <li><b><code>int</code></b>:  The uptime in seconds, as reported in a Pixelblaze statistics message. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L636"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L662"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-geturl"><kbd>method</kbd> <code>getUrl</code><a class="headerlink" href="#method-geturl" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getUrl</span><span class="p">(</span><span class="n">endpoint</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="nb">str</span>
 </code></pre></div>
@@ -3525,7 +3553,7 @@
 <li><b><code>str</code></b>:  The URL of the HTTP endpoint on the Pixelblaze. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1873"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2021"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getversion"><kbd>method</kbd> <code>getVersion</code><a class="headerlink" href="#method-getversion" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getVersion</span><span class="p">()</span> <span class="err">→</span> <span class="nb">float</span>
 </code></pre></div>
@@ -3535,7 +3563,7 @@
 <li><b><code>float</code></b>:  The firmware version, in major.minor format. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1883"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2031"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getversionmajor"><kbd>method</kbd> <code>getVersionMajor</code><a class="headerlink" href="#method-getversionmajor" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getVersionMajor</span><span class="p">()</span> <span class="err">→</span> <span class="nb">int</span>
 </code></pre></div>
@@ -3545,7 +3573,7 @@
 <li><b><code>int</code></b>:  A positive integer representing the integer portion of the version number (eg. for v3.24, returns 3). </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1891"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2039"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getversionminor"><kbd>method</kbd> <code>getVersionMinor</code><a class="headerlink" href="#method-getversionminor" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getVersionMinor</span><span class="p">()</span> <span class="err">→</span> <span class="nb">int</span>
 </code></pre></div>
@@ -3555,7 +3583,7 @@
 <li><b><code>int</code></b>:  A positive integer representing the fractional portion of the version number (eg. for v3.24, returns 24). </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1852"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2000"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-installupdate"><kbd>method</kbd> <code>installUpdate</code><a class="headerlink" href="#method-installupdate" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">installUpdate</span><span class="p">()</span> <span class="err">→</span> <span class="o">&lt;</span><span class="n">enum</span> <span class="s1">&#39;updateStates&#39;</span><span class="o">&gt;</span>
 </code></pre></div>
@@ -3565,7 +3593,7 @@
 <li><b><code>updateStates</code></b>:  An enumeration describing the new updateState of the Pixelblaze. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L964"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L990"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-nextsequencer"><kbd>method</kbd> <code>nextSequencer</code><a class="headerlink" href="#method-nextsequencer" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">nextSequencer</span><span class="p">(</span><span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -3575,7 +3603,7 @@
 <li><b><code>saveToFlash</code></b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2039"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2187"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-pauserenderer"><kbd>method</kbd> <code>pauseRenderer</code><a class="headerlink" href="#method-pauserenderer" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">pauseRenderer</span><span class="p">(</span><span class="n">doPause</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span>
 </code></pre></div>
@@ -3587,7 +3615,7 @@
 <li><b><code>doPause</code></b> (bool):  If True, pause the render engine; if False, resume it. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L954"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L980"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-pausesequencer"><kbd>method</kbd> <code>pauseSequencer</code><a class="headerlink" href="#method-pausesequencer" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">pauseSequencer</span><span class="p">(</span><span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -3597,7 +3625,7 @@
 <li><b><code>saveToFlash</code></b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L945"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L971"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-playsequencer"><kbd>method</kbd> <code>playSequencer</code><a class="headerlink" href="#method-playsequencer" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">playSequencer</span><span class="p">(</span><span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -3607,7 +3635,7 @@
 <li><b><code>saveToFlash</code></b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L737"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L763"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-putfile"><kbd>method</kbd> <code>putFile</code><a class="headerlink" href="#method-putfile" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">putFile</span><span class="p">(</span><span class="n">fileName</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fileContents</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="err">→</span> <span class="nb">bool</span>
 </code></pre></div>
@@ -3622,14 +3650,14 @@
 <li><b><code>bool</code></b>:  True if the file was successfully stored; False otherwise. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1918"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2066"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-reboot"><kbd>method</kbd> <code>reboot</code><a class="headerlink" href="#method-reboot" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">reboot</span><span class="p">()</span>
 </code></pre></div>
 <p>Reboots the Pixelblaze. </p>
 <p>This is occasionally necessary, eg. to force the Pixelblaze to recognize changes to configuration files. </p>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1910"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2058"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-restorefrombackup"><kbd>method</kbd> <code>restoreFromBackup</code><a class="headerlink" href="#method-restorefrombackup" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">restoreFromBackup</span><span class="p">(</span><span class="n">fileName</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span>
 </code></pre></div>
@@ -3639,7 +3667,7 @@
 <li><b><code>fileName</code></b> (str):  The desired filename for the Pixelblaze Binary Backup. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1902"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2050"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-savebackup"><kbd>method</kbd> <code>saveBackup</code><a class="headerlink" href="#method-savebackup" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">saveBackup</span><span class="p">(</span><span class="n">fileName</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span>
 </code></pre></div>
@@ -3649,7 +3677,7 @@
 <li><b><code>fileName</code></b> (str):  The desired filename for the Pixelblaze Binary Backup. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1336"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-savepattern"><kbd>method</kbd> <code>savePattern</code><a class="headerlink" href="#method-savepattern" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">savePattern</span><span class="p">(</span><span class="n">previewImage</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">sourceCode</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">byteCode</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span>
 </code></pre></div>
@@ -3662,7 +3690,7 @@
 <li><b><code>byteCode</code></b> (bytes):  A valid blob of bytecode as generated by the Editor tab in the Pixelblaze webUI. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1201"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1324"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-sendpatterntorenderer"><kbd>method</kbd> <code>sendPatternToRenderer</code><a class="headerlink" href="#method-sendpatterntorenderer" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">sendPatternToRenderer</span><span class="p">(</span><span class="n">bytecode</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">controls</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{})</span>
 </code></pre></div>
@@ -3673,7 +3701,7 @@
 <li><b><code>controls</code></b> (dict, optional):  a dictionary of UI controls exported by the pattern, with controlName as the key and controlValue as the value. Defaults to {}. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L495"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L520"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-sendping"><kbd>method</kbd> <code>sendPing</code><a class="headerlink" href="#method-sendping" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">sendPing</span><span class="p">()</span> <span class="err">→</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 </code></pre></div>
@@ -3683,7 +3711,7 @@
 <li><b><code>Union[str, None]</code></b>:  The acknowledgement message received from the Pixelblaze, or None if a timeout occurred. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1132"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1158"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setactivecontrols"><kbd>method</kbd> <code>setActiveControls</code><a class="headerlink" href="#method-setactivecontrols" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setActiveControls</span><span class="p">(</span><span class="n">dictControls</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -3694,7 +3722,7 @@
 <li><b><code>saveToFlash</code></b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1066"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1092"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setactivepattern"><kbd>method</kbd> <code>setActivePattern</code><a class="headerlink" href="#method-setactivepattern" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setActivePattern</span><span class="p">(</span><span class="n">patternId</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -3705,7 +3733,7 @@
 <li><b><code>saveToFlash</code></b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2052"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2200"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setactivepatternbyname"><kbd>method</kbd> <code>setActivePatternByName</code><a class="headerlink" href="#method-setactivepatternbyname" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setActivePatternByName</span><span class="p">(</span><span class="n">patternName</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -3716,7 +3744,7 @@
 <li><b><code>saveToFlash</code></b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1122"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1148"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setactivevariables"><kbd>method</kbd> <code>setActiveVariables</code><a class="headerlink" href="#method-setactivevariables" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setActiveVariables</span><span class="p">(</span><span class="n">dictVariables</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span>
 </code></pre></div>
@@ -3727,7 +3755,7 @@
 <li><b><code>dict</code></b>:  A dictionary containing the variables to be set, with variableName as the key and variableValue as the value. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1498"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1646"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setautooffenable"><kbd>method</kbd> <code>setAutoOffEnable</code><a class="headerlink" href="#method-setautooffenable" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setAutoOffEnable</span><span class="p">(</span><span class="n">boolValue</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -3738,7 +3766,7 @@
 <li><b><code>saveToFlash</code></b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1517"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1665"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setautooffend"><kbd>method</kbd> <code>setAutoOffEnd</code><a class="headerlink" href="#method-setautooffend" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setAutoOffEnd</span><span class="p">(</span><span class="n">timeValue</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -3749,7 +3777,7 @@
 <li><b><code>saveToFlash</code></b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1507"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1655"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setautooffstart"><kbd>method</kbd> <code>setAutoOffStart</code><a class="headerlink" href="#method-setautooffstart" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setAutoOffStart</span><span class="p">(</span><span class="n">timeValue</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -3760,7 +3788,7 @@
 <li><b><code>saveToFlash</code></b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1929"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2077"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setbrandname"><kbd>method</kbd> <code>setBrandName</code><a class="headerlink" href="#method-setbrandname" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setBrandName</span><span class="p">(</span><span class="n">brandName</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span>
 </code></pre></div>
@@ -3770,7 +3798,7 @@
 <li><b><code>brandName</code></b> (str):  The new name. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1608"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1756"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setbrightnesslimit"><kbd>method</kbd> <code>setBrightnessLimit</code><a class="headerlink" href="#method-setbrightnesslimit" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setBrightnessLimit</span><span class="p">(</span><span class="n">maxBrightness</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -3781,7 +3809,7 @@
 <li><b><code>saveToFlash</code></b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L861"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L887"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setbrightnessslider"><kbd>method</kbd> <code>setBrightnessSlider</code><a class="headerlink" href="#method-setbrightnessslider" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setBrightnessSlider</span><span class="p">(</span><span class="n">brightness</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -3792,7 +3820,7 @@
 <li><b><code>saveToFlash</code></b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2130"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2278"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setcacherefreshtime"><kbd>method</kbd> <code>setCacheRefreshTime</code><a class="headerlink" href="#method-setcacherefreshtime" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setCacheRefreshTime</span><span class="p">(</span><span class="n">seconds</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span>
 </code></pre></div>
@@ -3803,19 +3831,19 @@
 <li><b><code>seconds</code></b> (int):  The maximum age of the pattern cache. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2116"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2264"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setcolorcontrol"><kbd>method</kbd> <code>setColorControl</code><a class="headerlink" href="#method-setcolorcontrol" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="n">setColorControl</span><span class="p">(</span><span class="n">controlName</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">color</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="n">setColorControl</span><span class="p">(</span><span class="n">controlName</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
 <p>Sets the 3-element color of the specified HSV or RGB color picker. </p>
 <p><strong>Args:</strong></p>
 <ul>
 <li><b><code>controlName</code></b> (str):  The name of the color control to change. </li>
-<li><b><code>color</code></b> (dict):  A dictionary of RGB or HSV colors, with all values in the range 0-1.  </li>
+<li><b><code>color</code></b>:  RGB or HSV colors, with all values in the range 0-1.  </li>
 <li><b><code>saveToFlash</code></b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1690"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1838"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setcolororder"><kbd>method</kbd> <code>setColorOrder</code><a class="headerlink" href="#method-setcolororder" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setColorOrder</span><span class="p">(</span><span class="n">colorOrder</span><span class="p">:</span> <span class="n">colorOrders</span><span class="p">,</span> <span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -3826,7 +3854,7 @@
 <li><b><code>saveToFlash</code></b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1766"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1914"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setcpuspeed"><kbd>method</kbd> <code>setCpuSpeed</code><a class="headerlink" href="#method-setcpuspeed" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setCpuSpeed</span><span class="p">(</span><span class="n">cpuSpeed</span><span class="p">:</span> <span class="n">cpuSpeeds</span><span class="p">)</span>
 </code></pre></div>
@@ -3837,7 +3865,7 @@
 <li><b><code>cpuSpeed</code></b> (cpuSpeeds):  The desired CPU speed. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1666"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1814"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setdataspeed"><kbd>method</kbd> <code>setDataSpeed</code><a class="headerlink" href="#method-setdataspeed" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setDataSpeed</span><span class="p">(</span><span class="n">speed</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -3849,7 +3877,7 @@
 <li><b><code>saveToFlash</code></b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1463"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1611"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setdevicename"><kbd>method</kbd> <code>setDeviceName</code><a class="headerlink" href="#method-setdevicename" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setDeviceName</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span>
 </code></pre></div>
@@ -3859,7 +3887,7 @@
 <li><b><code>name</code></b> (str):  The human-readable name of the Pixelblaze. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1471"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1619"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setdiscovery"><kbd>method</kbd> <code>setDiscovery</code><a class="headerlink" href="#method-setdiscovery" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setDiscovery</span><span class="p">(</span><span class="n">enableDiscovery</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">timezoneName</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
@@ -3870,7 +3898,7 @@
 <li><b><code>timezoneName</code></b> (str, optional):  If present, a Unix tzstring specifying how to adjust the clocktime reference received from the Electromage Discovery Service. Defaults to None. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1945"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2093"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setlearninguimode"><kbd>method</kbd> <code>setLearningUiMode</code><a class="headerlink" href="#method-setlearninguimode" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setLearningUiMode</span><span class="p">(</span><span class="n">doLearningMode</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span>
 </code></pre></div>
@@ -3880,7 +3908,7 @@
 <li><b><code>doSimpleMode</code></b> (bool):  Whether to enable "Learning UI Mode". </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1634"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1782"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setledtype"><kbd>method</kbd> <code>setLedType</code><a class="headerlink" href="#method-setledtype" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setLedType</span><span class="p">(</span><span class="n">ledType</span><span class="p">:</span> <span class="n">ledTypes</span><span class="p">,</span> <span class="n">dataSpeed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -3892,7 +3920,7 @@
 <li><b><code>saveToFlash</code></b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1262"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1408"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setmapdata"><kbd>method</kbd> <code>setMapData</code><a class="headerlink" href="#method-setmapdata" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setMapData</span><span class="p">(</span><span class="n">mapData</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
@@ -3903,12 +3931,12 @@
 <li><b><code>saveToFlash</code></b> (bool, optional):  A boolean indicating whether the mapData should be saved to Flash. Defaults to True. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1238"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1360"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setmapfunction"><kbd>method</kbd> <code>setMapFunction</code><a class="headerlink" href="#method-setmapfunction" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setMapFunction</span><span class="p">(</span><span class="n">mapFunction</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="err">→</span> <span class="nb">bool</span>
 </code></pre></div>
 <p>Sets the mapFunction text used to populate the Mapper tab in the Pixelblaze UI. </p>
-<p>Note that this is does not change the mapData used by the Pixelblaze; the Mapper tab in the Pixelblaze UI compiles this text to produce binary mapData which is saved separately (see the <code>setMapData</code> function). </p>
+<p>Note that setting the map function also compiles and updates the mapData used by the Pixelblaze. </p>
 <p><strong>Args:</strong></p>
 <ul>
 <li><b><code>mapFunction</code></b> (str):  The text of the mapFunction. </li>
@@ -3918,7 +3946,7 @@
 <li><b><code>bool</code></b>:  True if the function text was successfully saved; otherwise False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1779"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1927"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setnetworkpowersave"><kbd>method</kbd> <code>setNetworkPowerSave</code><a class="headerlink" href="#method-setnetworkpowersave" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setNetworkPowerSave</span><span class="p">(</span><span class="n">disableWifi</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span>
 </code></pre></div>
@@ -3929,7 +3957,7 @@
 <li><b><code>disableWifi</code></b> (bool):  A boolean indicating whether to disable Wifi. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1654"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1802"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setpixelcount"><kbd>method</kbd> <code>setPixelCount</code><a class="headerlink" href="#method-setpixelcount" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setPixelCount</span><span class="p">(</span><span class="n">nPixels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -3941,7 +3969,7 @@
 <li><b><code>saveToFlash</code></b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L782"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L808"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setsendpreviewframes"><kbd>method</kbd> <code>setSendPreviewFrames</code><a class="headerlink" href="#method-setsendpreviewframes" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setSendPreviewFrames</span><span class="p">(</span><span class="n">doUpdates</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span>
 </code></pre></div>
@@ -3951,7 +3979,7 @@
 <li><b><code>doUpdates</code></b> (bool):  True sends preview frames, False stops. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L895"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L921"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setsequencermode"><kbd>method</kbd> <code>setSequencerMode</code><a class="headerlink" href="#method-setsequencermode" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setSequencerMode</span><span class="p">(</span><span class="n">sequencerMode</span><span class="p">:</span> <span class="n">sequencerModes</span><span class="p">,</span> <span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -3962,7 +3990,7 @@
 <li><b><code>saveToFlash</code></b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1012"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1038"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setsequencerplaylist"><kbd>method</kbd> <code>setSequencerPlaylist</code><a class="headerlink" href="#method-setsequencerplaylist" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setSequencerPlaylist</span><span class="p">(</span>
     <span class="n">playlistContents</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
@@ -3976,7 +4004,7 @@
 <li><b><code>playlistId</code></b> (str, optional):  The name of the playlist (for future enhancement; currently only '<em>defaultplaylist</em>' is supported). Defaults to "<em>defaultplaylist</em>". </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L972"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L998"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setsequencershuffletime"><kbd>method</kbd> <code>setSequencerShuffleTime</code><a class="headerlink" href="#method-setsequencershuffletime" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setSequencerShuffleTime</span><span class="p">(</span><span class="n">nMillis</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -3987,7 +4015,7 @@
 <li><b><code>saveToFlash</code></b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L904"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L930"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setsequencerstate"><kbd>method</kbd> <code>setSequencerState</code><a class="headerlink" href="#method-setsequencerstate" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setSequencerState</span><span class="p">(</span><span class="n">sequencerState</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">saveToFlash</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -3998,7 +4026,7 @@
 <li><b><code>saveToFlash</code></b> (bool, optional):  If True, the setting is stored in Flash memory; otherwise the value reverts on a reboot. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1937"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2085"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setsimpleuimode"><kbd>method</kbd> <code>setSimpleUiMode</code><a class="headerlink" href="#method-setsimpleuimode" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setSimpleUiMode</span><span class="p">(</span><span class="n">doSimpleMode</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span>
 </code></pre></div>
@@ -4008,7 +4036,7 @@
 <li><b><code>doSimpleMode</code></b> (bool):  Whether to enable "Simple UI Mode". </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L1485"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L1633"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-settimezone"><kbd>method</kbd> <code>setTimezone</code><a class="headerlink" href="#method-settimezone" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setTimezone</span><span class="p">(</span><span class="n">timezoneName</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span>
 </code></pre></div>
@@ -4019,7 +4047,7 @@
 <li><b><code>timezoneName</code></b> (str):  A Unix tzstring specifying how to adjust the clocktime reference provided by the Electromage Discovery Service. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L422"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L442"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-wsreceive"><kbd>method</kbd> <code>wsReceive</code><a class="headerlink" href="#method-wsreceive" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">wsReceive</span><span class="p">(</span><span class="n">binaryMessageType</span><span class="p">:</span> <span class="n">messageTypes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">NoneType</span><span class="p">]</span>
 </code></pre></div>
@@ -4033,7 +4061,7 @@
 <li><b><code>Union[str, bytes, None]</code></b>:  The message received from the Pixelblaze (of type bytes for binaryMessageTypes, otherwise of type str), or None if a timeout occurred. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L555"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L581"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-wssendbinary"><kbd>method</kbd> <code>wsSendBinary</code><a class="headerlink" href="#method-wssendbinary" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">wsSendBinary</span><span class="p">(</span>
     <span class="n">binaryMessageType</span><span class="p">:</span> <span class="n">messageTypes</span><span class="p">,</span>
@@ -4053,7 +4081,7 @@
 <li><b><code>response</code></b>:  The message received from the Pixelblaze (of type bytes for binaryMessageTypes, otherwise of type str), or None if a timeout occurred. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L503"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L528"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-wssendjson"><kbd>method</kbd> <code>wsSendJson</code><a class="headerlink" href="#method-wssendjson" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">wsSendJson</span><span class="p">(</span><span class="n">command</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">expectedResponse</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">NoneType</span><span class="p">]</span>
 </code></pre></div>
@@ -4068,7 +4096,7 @@
 <li><b><code>Union[str, bytes, None]</code></b>:  The message received from the Pixelblaze (of type bytes for binaryMessageTypes, otherwise of type str), or None if a timeout occurred. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2142"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2300"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h2 id="class-pbb"><kbd>class</kbd> <code>PBB</code><a class="headerlink" href="#class-pbb" title="Permanent link">&para;</a></h2>
 <p>This class provides methods for importing, exporting, and manipulating the contents of a Pixelblaze Binary Backup, as created from the Settings menu on a Pixelblaze. </p>
 <p><strong>CREATION</strong> 
@@ -4088,7 +4116,7 @@
 <blockquote>
 <p>The constructor is not intended to be called directly; objects are created and returned from the object creation methods described above. </p>
 </blockquote>
-<p><a href="../pixelblaze/pixelblaze.py#L2170"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2328"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-__init___1"><kbd>method</kbd> <code>__init__</code><a class="headerlink" href="#method-__init___1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">blob</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span>
 </code></pre></div>
@@ -4110,7 +4138,7 @@
 <li><b><code>str</code></b>:  The user-friendly name of the device from which this PixelBlazeBackup was made. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2323"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2481"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-deletefile_1"><kbd>method</kbd> <code>deleteFile</code><a class="headerlink" href="#method-deletefile_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">deleteFile</span><span class="p">(</span><span class="n">fileName</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span>
 </code></pre></div>
@@ -4120,7 +4148,7 @@
 <li><b><code>fileName</code></b> (str):  The name of the file to be deleted. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2184"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2342"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-fromfile"><kbd>method</kbd> <code>fromFile</code><a class="headerlink" href="#method-fromfile" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">fromFile</span><span class="p">(</span><span class="n">fileName</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="err">→</span> <span class="n">PBB</span>
 </code></pre></div>
@@ -4134,7 +4162,7 @@
 <li><b><code>PBB</code></b>:  A new Pixelblaze Binary Backup object. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2196"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2354"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-fromipaddress"><kbd>method</kbd> <code>fromIpAddress</code><a class="headerlink" href="#method-fromipaddress" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">fromIpAddress</span><span class="p">(</span><span class="n">ipAddress</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">proxyUrl</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="err">→</span> <span class="n">PBB</span>
 </code></pre></div>
@@ -4150,7 +4178,7 @@
 <li><b><code>PBB</code></b>:  A new Pixelblaze Binary Backup object. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2212"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2370"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-frompixelblaze"><kbd>method</kbd> <code>fromPixelblaze</code><a class="headerlink" href="#method-frompixelblaze" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">fromPixelblaze</span><span class="p">(</span><span class="n">pb</span><span class="p">:</span> <span class="n">Pixelblaze</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="err">→</span> <span class="n">PBB</span>
 </code></pre></div>
@@ -4165,7 +4193,7 @@
 <li><b><code>PBB</code></b>:  A new Pixelblaze Binary Backup object. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2301"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2459"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getfile_1"><kbd>method</kbd> <code>getFile</code><a class="headerlink" href="#method-getfile_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getFile</span><span class="p">(</span><span class="n">fileName</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="err">→</span> <span class="nb">bytes</span>
 </code></pre></div>
@@ -4179,7 +4207,7 @@
 <li><b><code>bytes</code></b>:  The contents of the requested file. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2254"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2412"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getfilelist_1"><kbd>method</kbd> <code>getFileList</code><a class="headerlink" href="#method-getfilelist_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getFileList</span><span class="p">(</span><span class="n">fileTypes</span><span class="p">:</span> <span class="n">fileTypes</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">fileTypes</span><span class="o">.</span><span class="n">fileAll</span><span class="p">:</span> <span class="mi">63</span><span class="o">&gt;</span><span class="p">)</span> <span class="err">→</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 </code></pre></div>
@@ -4193,7 +4221,7 @@
 <li><b><code>list[str]</code></b>:  A list of filenames. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2312"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2470"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-putfile_1"><kbd>method</kbd> <code>putFile</code><a class="headerlink" href="#method-putfile_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">putFile</span><span class="p">(</span><span class="n">fileName</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fileContents</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span>
 </code></pre></div>
@@ -4204,7 +4232,7 @@
 <li><b><code>fileContents</code></b> (bytes):  The contents of the file to be stored. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2334"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2492"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-tofile"><kbd>method</kbd> <code>toFile</code><a class="headerlink" href="#method-tofile" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">toFile</span><span class="p">(</span><span class="n">fileName</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">explode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -4215,7 +4243,7 @@
 <li><b><code>explode</code></b> (bool, optional):  If specified, also exports the files within the Pixelblaze Binary Backup to a subdirectory. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2384"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2542"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-toipaddress"><kbd>method</kbd> <code>toIpAddress</code><a class="headerlink" href="#method-toipaddress" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">toIpAddress</span><span class="p">(</span><span class="n">ipAddress</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">proxyUrl</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -4227,7 +4255,7 @@
 <li><b><code>verbose</code></b> (bool, optional):  A boolean specifying whether to print detailed progress statements. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2396"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2554"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-topixelblaze"><kbd>method</kbd> <code>toPixelblaze</code><a class="headerlink" href="#method-topixelblaze" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">toPixelblaze</span><span class="p">(</span><span class="n">pb</span><span class="p">:</span> <span class="n">Pixelblaze</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
@@ -4238,7 +4266,7 @@
 <li><b><code>verbose</code></b> (bool, optional):  A boolean specifying whether to print detailed progress statements. Defaults to False. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2417"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2585"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h2 id="class-pbp"><kbd>class</kbd> <code>PBP</code><a class="headerlink" href="#class-pbp" title="Permanent link">&para;</a></h2>
 <p>This class represents a Pixelblaze Binary Pattern, as stored on the Pixelblaze filesystem or contained in a Pixelblaze Binary Backup. </p>
 <p><strong>CREATION</strong> 
@@ -4262,7 +4290,7 @@
 <blockquote>
 <p>The constructor is not intended to be called directly; objects are created and returned from the object creation methods described above. </p>
 </blockquote>
-<p><a href="../pixelblaze/pixelblaze.py#L2455"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2623"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-__init___2"><kbd>method</kbd> <code>__init__</code><a class="headerlink" href="#method-__init___2" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="fm">__init__</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">blob</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span>
 </code></pre></div>
@@ -4312,7 +4340,7 @@
 <li><b><code>str</code></b>:  The source code of the pattern as a JSON-encoded string. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2622"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2790"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-explode"><kbd>method</kbd> <code>explode</code><a class="headerlink" href="#method-explode" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">explode</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
@@ -4322,7 +4350,7 @@
 <li><b><code>path</code></b> (str, optional):  If provided, a pathname for the folder in which to export the components; otherwise derived from the patternId. Defaults to None. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2469"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2637"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-frombytes"><kbd>method</kbd> <code>fromBytes</code><a class="headerlink" href="#method-frombytes" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">fromBytes</span><span class="p">(</span><span class="n">patternId</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">blob</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="err">→</span> <span class="n">PBP</span>
 </code></pre></div>
@@ -4337,7 +4365,7 @@
 <li><b><code>PBP</code></b>:  A new Pixelblaze Binary Pattern object. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2482"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2650"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-fromfile_1"><kbd>method</kbd> <code>fromFile</code><a class="headerlink" href="#method-fromfile_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">fromFile</span><span class="p">(</span><span class="n">fileName</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="err">→</span> <span class="n">PBP</span>
 </code></pre></div>
@@ -4351,7 +4379,7 @@
 <li><b><code>PBP</code></b>:  A new Pixelblaze Binary Pattern object. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2494"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2662"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-fromipaddress_1"><kbd>method</kbd> <code>fromIpAddress</code><a class="headerlink" href="#method-fromipaddress_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">fromIpAddress</span><span class="p">(</span><span class="n">ipAddress</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">patternId</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">proxyUrl</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="err">→</span> <span class="n">PBP</span>
 </code></pre></div>
@@ -4367,7 +4395,7 @@
 <li><b><code>PBP</code></b>:  A new Pixelblaze Binary Pattern object. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2510"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2678"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-frompixelblaze_1"><kbd>method</kbd> <code>fromPixelblaze</code><a class="headerlink" href="#method-frompixelblaze_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">fromPixelblaze</span><span class="p">(</span><span class="n">pb</span><span class="p">:</span> <span class="n">Pixelblaze</span><span class="p">,</span> <span class="n">patternId</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="err">→</span> <span class="n">PBP</span>
 </code></pre></div>
@@ -4382,7 +4410,7 @@
 <li><b><code>PBP</code></b>:  A new Pixelblaze Binary Pattern object. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2608"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2776"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-toepe"><kbd>method</kbd> <code>toEPE</code><a class="headerlink" href="#method-toepe" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">toEPE</span><span class="p">()</span> <span class="err">→</span> <span class="n">EPE</span>
 </code></pre></div>
@@ -4392,7 +4420,7 @@
 <li><b><code>EPE</code></b>:  A new Electromage Pattern Export object. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2578"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2746"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-tofile_1"><kbd>method</kbd> <code>toFile</code><a class="headerlink" href="#method-tofile_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">toFile</span><span class="p">(</span><span class="n">fileName</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
@@ -4402,7 +4430,7 @@
 <li><b><code>fileName</code></b> (str, optional):  If provided, A name for the Pixelblaze Binary Pattern file to be created; otherwise, the name is derived from the patternId. Defaults to None. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2589"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2757"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-toipaddress_1"><kbd>method</kbd> <code>toIpAddress</code><a class="headerlink" href="#method-toipaddress_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">toIpAddress</span><span class="p">(</span><span class="n">ipAddress</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">proxyUrl</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
@@ -4413,7 +4441,7 @@
 <li><b><code>proxyUrl</code></b> (str, optional):  The url of a proxy, if required, in the format "protocol://ipAddress:port" (for example, "http://192.168.0.1:8888"). Defaults to None. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2600"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2768"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-topixelblaze_1"><kbd>method</kbd> <code>toPixelblaze</code><a class="headerlink" href="#method-topixelblaze_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">toPixelblaze</span><span class="p">(</span><span class="n">pb</span><span class="p">:</span> <span class="n">Pixelblaze</span><span class="p">)</span>
 </code></pre></div>
@@ -4423,7 +4451,7 @@
 <li><b><code>pb</code></b> (Pixelblaze):  An active Pixelblaze object. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2653"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2831"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h2 id="class-epe"><kbd>class</kbd> <code>EPE</code><a class="headerlink" href="#class-epe" title="Permanent link">&para;</a></h2>
 <p>This class provides methods for importing, exporting, and manipulating the contents of an Electromage Pattern Export (EPE), as exported from the Patterns list on a Pixelblaze. </p>
 <p><strong>CREATION</strong> 
@@ -4441,7 +4469,7 @@
 <blockquote>
 <p>The constructor is not intended to be called directly; objects are created and returned from the object creation methods described above. </p>
 </blockquote>
-<p><a href="../pixelblaze/pixelblaze.py#L2677"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2855"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-__init___3"><kbd>method</kbd> <code>__init__</code><a class="headerlink" href="#method-__init___3" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="fm">__init__</span><span class="p">(</span><span class="n">blob</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span>
 </code></pre></div>
@@ -4483,7 +4511,7 @@
 <li><b><code>str</code></b>:  The sourceCode of the pattern contained in this Electromage Pattern Export (EPE). </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2764"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2942"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-explode_1"><kbd>method</kbd> <code>explode</code><a class="headerlink" href="#method-explode_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">explode</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span>
 </code></pre></div>
@@ -4493,7 +4521,7 @@
 <li><b><code>path</code></b> (str):  If provided, a pathname for the folder in which to export the components; otherwise derived from the patternId. Defaults to None. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2689"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2867"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-frombytes_1"><kbd>method</kbd> <code>fromBytes</code><a class="headerlink" href="#method-frombytes_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">fromBytes</span><span class="p">(</span><span class="n">blob</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="err">→</span> <span class="n">EPE</span>
 </code></pre></div>
@@ -4507,7 +4535,7 @@
 <li><b><code>EPE</code></b>:  A new Electromage Pattern Export (EPE) object. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2701"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2879"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-fromfile_2"><kbd>method</kbd> <code>fromFile</code><a class="headerlink" href="#method-fromfile_2" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">fromFile</span><span class="p">(</span><span class="n">fileName</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="err">→</span> <span class="n">EPE</span>
 </code></pre></div>
@@ -4521,7 +4549,7 @@
 <li><b><code>EPE</code></b>:  A new Electromage Pattern Export (EPE) object. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L2753"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L2931"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-tofile_2"><kbd>method</kbd> <code>toFile</code><a class="headerlink" href="#method-tofile_2" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">toFile</span><span class="p">(</span><span class="n">fileName</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
@@ -4531,46 +4559,46 @@
 <li><b><code>fileName</code></b> (str, optional):  If provided, a name for the file to be created; otherwise derived from the patternId. Defaults to None. </li>
 </ul>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L3128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L3316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h2 id="class-pixelblazeenumerator"><kbd>class</kbd> <code>PixelblazeEnumerator</code><a class="headerlink" href="#class-pixelblazeenumerator" title="Permanent link">&para;</a></h2>
 <p>Listens on a network to detect available Pixelblazes, which the user can then list or open as Pixelblaze objects.  Also provides time synchronization services for running synchronized patterns on a network of Pixelblazes. </p>
-<p><a href="../pixelblaze/pixelblaze.py#L3148"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L3336"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-__init___4"><kbd>method</kbd> <code>__init__</code><a class="headerlink" href="#method-__init___4" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="fm">__init__</span><span class="p">(</span><span class="n">hostIP</span><span class="o">=</span><span class="s1">&#39;0.0.0.0&#39;</span><span class="p">)</span>
 </code></pre></div>
 <p>Create an object that listens continuously for Pixelblaze beacon packets, maintains a list of Pixelblazes and supports synchronizing time on multiple Pixelblazes to allows them to run patterns simultaneously. Takes the IPv4 address of the interface to use for listening on the calling computer. Listens on all available interfaces if hostIP is not specified. </p>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L3208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L3396"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-disabletimesync"><kbd>method</kbd> <code>disableTimesync</code><a class="headerlink" href="#method-disabletimesync" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">disableTimesync</span><span class="p">()</span>
 </code></pre></div>
 <p>Turns off the time synchronization -- the PixelblazeEnumerator will not automatically synchronize Pixelblazes. </p>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L3200"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L3388"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-enabletimesync"><kbd>method</kbd> <code>enableTimesync</code><a class="headerlink" href="#method-enabletimesync" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">enableTimesync</span><span class="p">()</span>
 </code></pre></div>
 <p>Instructs the PixelblazeEnumerator object to automatically synchronize time on all Pixelblazes. (Note that time synchronization is off by default when a new PixelblazeEnumerator is created.) </p>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L3300"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L3488"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-getpixelblazelist"><kbd>method</kbd> <code>getPixelblazeList</code><a class="headerlink" href="#method-getpixelblazelist" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">getPixelblazeList</span><span class="p">()</span>
 </code></pre></div>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L3191"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L3379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-setdevicetimeout"><kbd>method</kbd> <code>setDeviceTimeout</code><a class="headerlink" href="#method-setdevicetimeout" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">setDeviceTimeout</span><span class="p">(</span><span class="n">ms</span><span class="p">)</span>
 </code></pre></div>
 <p>Sets the interval in milliseconds which the enumerator will wait without hearing from a device before removing it from the active devices list. </p>
 <p>The default timeout is 30000 (30 seconds). </p>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L3215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L3403"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-start"><kbd>method</kbd> <code>start</code><a class="headerlink" href="#method-start" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">start</span><span class="p">(</span><span class="n">hostIP</span><span class="p">)</span>
 </code></pre></div>
 <p>Open socket for listening to Pixelblaze datagram traffic, set appropriate options and bind to specified interface and start listener thread. </p>
 <hr />
-<p><a href="../pixelblaze/pixelblaze.py#L3237"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
+<p><a href="../pixelblaze/pixelblaze.py#L3425"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a></p>
 <h3 id="method-stop"><kbd>method</kbd> <code>stop</code><a class="headerlink" href="#method-stop" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">stop</span><span class="p">()</span>
 </code></pre></div>
