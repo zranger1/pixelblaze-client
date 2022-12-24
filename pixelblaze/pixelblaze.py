@@ -37,11 +37,11 @@ This module contains the following classes:
 
 # ----------------------------------------------------------------------------
 
-__version__ = "1.0.2"
+__version__ = "1.1.0"
 
 #| Version | Date       | Author        | Comment                                 |
 #|---------|------------|---------------|-----------------------------------------|
-#|  v1.0.3 | 12/25/2022 | @pixie        | Added pattern and map compilation functions |
+#|  v1.1.0 | 12/25/2022 | @pixie        | Added pattern and map compilation functions |
 #|  v1.0.2 | 11/06/2022 | @pixie        | Bug fixes, added new map functions |
 #|  v1.0.1 | 11/04/2022 | ZRanger1      | Bug fixes, revisions to compatibility functions |
 #|  v1.0.0 | 10/10/2022 | @pixie        | large-scale refactoring to add new features; minor loss of compatibility |

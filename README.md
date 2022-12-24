@@ -26,7 +26,7 @@ Sample code illustrating usage is provided in the [examples directory](examples/
 
 **Please note that version 1.0.0 was a major refactoring and enhancement of the library, with many new features and significant changes.** The API surface is completely new. See the the [API documentation](#documentation) for details.  
 
-## Current Version [**v1.0.3**] - 2022-12-25
+## Current Version [**v1.1.0**] - 2022-12-25
 
 Added new utility functions.
 

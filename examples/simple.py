@@ -10,7 +10,7 @@ for ipAddress in Pixelblaze.EnumerateAddresses(timeout=1500) :
     
 # ... uncomment the line below (and comment out the "for ipAddress..." block above)
 # to specify the IP address of the Pixelblaze you want
-#pb = Pixelblaze("192.168.1.18")
+pb = Pixelblaze("192.168.1.18")
 
 # select a pattern (use a pattern name you know is
 # available on your Pixelblaze. It must be spelled exactly
@@ -35,4 +35,4 @@ pb.setColorControl(col,[0.6667,1,1])
 bri = pb.getBrightnessSlider()
 print("Brightness is ",bri)
 
-pb.setBrightnessSlider(0.8)
+pb.setBrightnessSlider(0.6)
