@@ -41,6 +41,7 @@ __version__ = "1.1.0"
 
 #| Version | Date       | Author        | Comment                                 |
 #|---------|------------|---------------|-----------------------------------------|
+#|  v1.1.1 | 02/15/2023 | ZRanger1      | Minor bug fix for Windows
 #|  v1.1.0 | 12/25/2022 | @pixie        | Added pattern and map compilation functions |
 #|  v1.0.2 | 11/06/2022 | @pixie        | Bug fixes, added new map functions |
 #|  v1.0.1 | 11/04/2022 | ZRanger1      | Bug fixes, revisions to compatibility functions |
@@ -208,6 +209,7 @@ class Pixelblaze:
 
     # --- PRIVATE DATA
     default_recv_timeout = 1
+    max_open_retries = 5
     ws = None
     connected = False
     ipAddress = None
@@ -398,8 +400,9 @@ class Pixelblaze:
                         self.ws = websocket.create_connection(uri, sockopt=((socket.SOL_SOCKET, socket.SO_REUSEADDR, 1), (socket.IPPROTO_TCP, socket.TCP_NODELAY, 1),))
                     break
                 except websocket._exceptions.WebSocketConnectionClosedException:
+                    #print("Open failed.  Retry # ",retryCount)
                     retryCount += 1
-                    if retryCount >= 5:
+                    if retryCount >= self.max_open_retries:
                         raise
             self.ws.settimeout(self.default_recv_timeout)
             self.connected = True
@@ -489,7 +492,7 @@ class Pixelblaze:
                             if binaryMessageType == self.messageTypes.specialConfig: return message
                             continue
                         if frameType != binaryMessageType:
-                            print(f"got unwanted binary frame type {frameType} (wanted {binaryMessageType})")
+                            #print(f"got unwanted binary frame type {frameType} (wanted {binaryMessageType})")
                             traceback.print_stack()
                             continue # skip this unwanted binary frame (which shouldn't really happen anyway)
                         return message
@@ -505,8 +508,9 @@ class Pixelblaze:
                 self._close()
                 self._open()
 
-            except IOError as e:  
-                if e.errno == errno.EPIPE:
+            except IOError as e:
+                # add test for WinError 10054 - existing connection reset
+                if e.errno == errno.EPIPE or e.errno == 10054:
                     self.connectionBroken = True
                     self._close()
                     self._open()
@@ -514,7 +518,7 @@ class Pixelblaze:
             except Exception as e:
                 self.connectionBroken = True
                 traceback.print_stack()
-                print(f"wsReceive: unknown exception: {e}")
+                #print(f"wsReceive: unknown exception: {e}")
                 raise
 
     def sendPing(self) -> Union[str, None]:
@@ -540,11 +544,12 @@ class Pixelblaze:
             try:
                 self._open() # make sure it's open, even if it closed while we were doing other things.
                 self.ws.send(json.dumps(command, indent=None, separators=(',', ':')).encode("utf-8"))
+                
                 if expectedResponse is None: 
-                    return None
-
+                    return None                
+                
                 # If the pipe broke while we were sending, restart from the beginning.
-                if self.connectionBroken: break
+                if self.connectionBroken: break                
 
                 # Wait for the expected response.
                 while True:
@@ -566,8 +571,9 @@ class Pixelblaze:
                 self._close()
                 self._open()   # try reopening
 
-            except IOError as e:  
-                if e.errno == errno.EPIPE:
+            except IOError as e:
+                # add test for WinError 10054 - existing connection reset
+                if e.errno == errno.EPIPE or e.errno == 10054:
                     self.connectionBroken = True
                     self._close()
                     self._open()
@@ -628,20 +634,21 @@ class Pixelblaze:
                 return response
 
             except websocket._exceptions.WebSocketConnectionClosedException:
-                print("wsSendBinary reconnection")
+                #print("wsSendBinary reconnection")
                 # try reopening
                 self.connectionBroken = True
                 self._close()
                 self._open()   
 
             except IOError as e:  
-                if e.errno == errno.EPIPE:
+                # add test for WinError 10054 - existing connection reset
+                if e.errno == errno.EPIPE or e.errno == 10054:    
                     self.connectionBroken = True
                     self._close()
                     self._open()
 
             except:
-                print("wsSendBinary received unexpected exception")
+                #print("wsSendBinary received unexpected exception")
                 # try reopening
                 self.connectionBroken = True
                 self._close()
@@ -3529,3 +3536,4 @@ class PixelblazeEnumerator:
         for record in self.devices.values():
             dev.append(record["address"][0])  # just the ip
         return dev
+
