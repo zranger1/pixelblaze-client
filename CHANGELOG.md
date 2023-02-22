@@ -13,6 +13,9 @@ Changes are categorized into the following types:
 - **Security** -- in case of vulnerabilities.
 
 ---
+## [**v1.1.1**] - 2023-2-15
+
+Bug fix - automatic reconnect now works properly on Windows
 
 ## [**v1.1.0**] - 2022-12-25
 

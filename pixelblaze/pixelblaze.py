@@ -37,10 +37,11 @@ This module contains the following classes:
 
 # ----------------------------------------------------------------------------
 
-__version__ = "1.1.0"
+__version__ = "1.1.2"
 
 #| Version | Date       | Author        | Comment                                 |
 #|---------|------------|---------------|-----------------------------------------|
+#|  v1.1.2 | 02/22/2023 | ZRanger1      | Bug fix for long-lived connections
 #|  v1.1.1 | 02/15/2023 | ZRanger1      | Minor bug fix for Windows
 #|  v1.1.0 | 12/25/2022 | @pixie        | Added pattern and map compilation functions |
 #|  v1.0.2 | 11/06/2022 | @pixie        | Bug fixes, added new map functions |
@@ -61,6 +62,7 @@ __version__ = "1.1.0"
 #   Standard library imports.
 import sys
 import socket
+import select
 import errno
 import json
 import time
@@ -404,8 +406,10 @@ class Pixelblaze:
                     retryCount += 1
                     if retryCount >= self.max_open_retries:
                         raise
+                                  
             self.ws.settimeout(self.default_recv_timeout)
             self.connected = True
+            self._connection_maint()
             # Reset our caches so we'll get them afresh.
             self.latestStats = None
             self.latestUpdateCheck = None
@@ -528,6 +532,26 @@ class Pixelblaze:
             Union[str, None]: The acknowledgement message received from the Pixelblaze, or None if a timeout occurred.
         """
         return self.wsSendJson({"ping": True}, expectedResponse="ack")
+        
+    def _connection_maint(self):
+        """
+        Flush receive buffer and see that connection handshake is maintained.
+        This is needed to keep the connection alive during extended sessions
+        where the application is mostly sending data to the Pixelblaze
+        
+        It keeps the receive buffer clear of stray packets, and since connection maintenance
+        is handled by ws.recv(), keeps the connection alive.  Otherwise it'll time out and hang or
+        disconnect after about 10 minutes.          
+        """
+        while True:
+            ready = select.select([self.ws.sock], [], [], 0)
+            if not ready[0]:
+                break
+            try:
+                self.ws.recv()
+            except:
+                raise
+        
 
     def wsSendJson(self, command:dict, *, expectedResponse=None) -> Union[str, bytes, None]:
         """Send a JSON-formatted command to the Pixelblaze, and optionally wait for a suitable response.
@@ -543,6 +567,7 @@ class Pixelblaze:
         while True:
             try:
                 self._open() # make sure it's open, even if it closed while we were doing other things.
+                self._connection_maint()
                 self.ws.send(json.dumps(command, indent=None, separators=(',', ':')).encode("utf-8"))
                 
                 if expectedResponse is None: 
@@ -614,6 +639,7 @@ class Pixelblaze:
                     frameHeader[1] = frameFlag.value
 
                     # Send the packet.
+                    self._connection_maint()                    
                     self.ws.send_binary(bytes(frameHeader) + blob[i:i + maxFrameSize])
 
                     # If the pipe broke while we were sending, restart from the beginning.
