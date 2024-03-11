@@ -13,6 +13,19 @@ Changes are categorized into the following types:
 - **Security** -- in case of vulnerabilities.
 
 ---
+## [**v1.1.2**] - 2024-3-10
+
+New utility functions added for ledmaps.
+
+### Added
+
+* New method setMapCoordinates()
+
+### Changed
+
+* Refactored createMapData out of setMapFunction
+* Call setMapData from setMapFunction and setMapCoordinates
+
 ## [**v1.1.1**] - 2023-2-15
 
 Bug fix - automatic reconnect now works properly on Windows

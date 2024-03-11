@@ -26,14 +26,18 @@ Sample code illustrating usage is provided in the [examples directory](examples/
 
 **Please note that version 1.0.0 was a major refactoring and enhancement of the library, with many new features and significant changes.** The API surface is completely new. See the the [API documentation](#documentation) for details.  
 
-## Current Version [**v1.1.2**] - 2023-2-22
+## Current Version [**v1.1.2**] - 2024-3-10
 
-Bug fix for long-lived connections
+New utility functions added for ledmaps
 
 ### Added
 
-* new methods setMapFunction() and compilePattern() for compiling pixelmaps and patterns.
+* New method setMapCoordinates()
 
+### Changed
+
+* Refactored createMapData out of setMapFunction
+* Call setMapData from setMapFunction and setMapCoordinates
 
 ### Older Versions
 
