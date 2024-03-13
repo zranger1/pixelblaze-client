@@ -13,9 +13,10 @@ Changes are categorized into the following types:
 - **Security** -- in case of vulnerabilities.
 
 ---
-## [**v1.1.2**] - 2024-3-10
+## [**v1.1.3**] - 2024-3-10
 
-New utility functions added for ledmaps.
+* New utility functions added for ledmaps
+* Allow object creation if Pixelblaze can't be opened immediately.
 
 ### Added
 
@@ -25,6 +26,9 @@ New utility functions added for ledmaps.
 
 * Refactored createMapData out of setMapFunction
 * Call setMapData from setMapFunction and setMapCoordinates
+* New argument for Pixelblaze() constructor: "ignoreOpenFailure" (default False). If True, the Pixelblaze object will 
+be successfully created even if the Pixelblaze can't be opened immediately. Subsequent attempts to use the Pixelblaze
+will automatically retry opening the connection.* 
 
 ## [**v1.1.1**] - 2023-2-15
 

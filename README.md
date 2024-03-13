@@ -26,9 +26,10 @@ Sample code illustrating usage is provided in the [examples directory](examples/
 
 **Please note that version 1.0.0 was a major refactoring and enhancement of the library, with many new features and significant changes.** The API surface is completely new. See the the [API documentation](#documentation) for details.  
 
-## Current Version [**v1.1.2**] - 2024-3-10
+## Current Version [**v1.1.3**] - 2024-3-10
 
-New utility functions added for ledmaps
+* New utility functions added for coordinate mapping
+* Added ignoreOpenFailure to Pixelblaze() constructor to allow object creation without immediate connection to Pixelblaze.
 
 ### Added
 

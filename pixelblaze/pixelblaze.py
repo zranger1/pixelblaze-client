@@ -37,10 +37,11 @@ This module contains the following classes:
 
 # ----------------------------------------------------------------------------
 
-__version__ = "1.1.2"
+__version__ = "1.1.3"
 
 #| Version | Date       | Author        | Comment                                 |
 #|---------|------------|---------------|-----------------------------------------|
+#|  v1.1.3 | 03/01/2023 | savdb         | Enhance mapping functionality           |
 #|  v1.1.2 | 02/22/2023 | ZRanger1      | Bug fix for long-lived connections
 #|  v1.1.1 | 02/15/2023 | ZRanger1      | Minor bug fix for Windows
 #|  v1.1.0 | 12/25/2022 | @pixie        | Added pattern and map compilation functions |
@@ -139,7 +140,7 @@ class Pixelblaze:
     - [`savePattern`](#method-savePattern)
 
     **MAPPER tab**
-
+    - [`createMapData`](#method-createMapData)
     - [`getMapFunction`](#method-getMapFunction)/[`setMapFunction`](#method-setMapFunction)
     - [`getMapData`](#method-getMapData)/[`setMapData`](#method-setMapData)
 
@@ -233,19 +234,29 @@ class Pixelblaze:
 
     # --- OBJECT LIFETIME MANAGEMENT (CREATION/DELETION)
 
-    def __init__(self, ipAddress:str, *, proxyUrl:str=None):
+    def __init__(self, ipAddress: str, ignoreOpenFailure: bool = False, *, proxyUrl: str = None):
         """Initializes an object for communicating with and controlling a Pixelblaze.
 
         Args:
             ipAddress (str): The Pixelblaze's IPv4 address in the usual dotted-quads numeric format (for example, "192.168.4.1").
-            proxyUrl (str, optional): The url of a proxy, if required, in the format "protocol://ipAddress:port" (for example, "http://192.168.0.1:8888"). Defaults to None.
+            ignoreOpenFailure (bool, optional): If True, the constructor will create the Pixelblaze object and not raise an exception
+                if connection to the Pixelblaze can't be established. (The connection will be retried on any subsequent
+                attempts to send to, or receive from, the Pixelblaze.) Defaults to False.
+            proxyUrl (str, optional): The url of a proxy, if required, in the format "protocol://ipAddress:port"
+            (for example, "http://192.168.0.1:8888"). Defaults to None.
         """
         self.proxyUrl = proxyUrl
         if not proxyUrl is None:
-            self.proxyDict = { "http": proxyUrl, "https": proxyUrl }
+            self.proxyDict = {"http": proxyUrl, "https": proxyUrl}
         self.ipAddress = ipAddress
-        self._open()
         self.setCacheRefreshTime(600)  # seconds used in public api
+
+        # try to connect to the Pixelblaze.  If we can't, raise an exception unless ignoreOpenFailure is True.
+        try:
+            self._open()
+        except Exception:
+            if not ignoreOpenFailure:
+                raise
 
     def __enter__(self):
         """Internal class method for resource management.
