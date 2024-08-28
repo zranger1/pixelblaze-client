@@ -16,7 +16,7 @@ This module contains the following classes:
 
 # ----------------------------------------------------------------------------
 
-# Copyright 2020-2022 by the pixelblaze-client team
+# Copyright 2020-2024 by the pixelblaze-client team
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this
 # software and associated documentation files (the "Software"), to deal in the Software
@@ -37,10 +37,11 @@ This module contains the following classes:
 
 # ----------------------------------------------------------------------------
 
-__version__ = "1.1.3"
+__version__ = "1.1.4"
 
 #| Version | Date       | Author        | Comment                                 |
 #|---------|------------|---------------|-----------------------------------------|
+#|  v1.1.4 | 08/27/2024 | ZRanger1      | Update pattern compilation for new firmware
 #|  v1.1.3 | 03/01/2023 | savdb         | Enhance mapping functionality           |
 #|  v1.1.2 | 02/22/2023 | ZRanger1      | Bug fix for long-lived connections
 #|  v1.1.1 | 02/15/2023 | ZRanger1      | Minor bug fix for Windows
@@ -57,19 +58,21 @@ __version__ = "1.1.3"
 #|  v0.9.0 | 12/06/2020 | "             | Added PixelblazeEnumerator class |
 #|  v0.0.2 | 12/01/2020 | "             | Name change + color control methods |
 #|  v0.0.1 | 11/20/2020 | ZRanger1      | Created |
-
 # ----------------------------------------------------------------------------
 
 #   Standard library imports.
 import sys
 import socket
+
 import select
 import errno
 import json
 import time
 import threading
 import math
+import random
 import base64
+import binascii
 import struct
 import pathlib
 import pytz
@@ -482,13 +485,13 @@ class Pixelblaze:
                         self.latestSequencer = frame
                         if binaryMessageType is self.messageTypes.specialConfig: return frame
                     # We wanted a text frame, we got a text frame.
-                    elif binaryMessageType is None: 
+                    elif binaryMessageType is None:
                         return frame
                 else:
                     frameType = frame[0]
                     if frameType == self.messageTypes.previewFrame.value: 
                         # This packet type doesn't have frameType flags.
-                        if binaryMessageType == self.messageTypes.previewFrame: return frame[1:] 
+                        if binaryMessageType == self.messageTypes.previewFrame: return frame[19:]
                         else: continue # We weren't looking for a preview frame, so ignore it.
                             
                     # Check the flags to see if we need to read more packets.
@@ -620,7 +623,7 @@ class Pixelblaze:
                 self._open()   # try reopening
                 #raise
 
-    def wsSendBinary(self, binaryMessageType:messageTypes, blob:bytes, *, expectedResponse:str=None):
+    def wsSendBinary(self, binaryMessageType: messageTypes, blob: bytes, *, expectedResponse: str = None):
         """Send a binary command to the Pixelblaze, and optionally wait for a suitable response.
 
         Args:
@@ -636,7 +639,7 @@ class Pixelblaze:
             try:
                 # Break the frame into manageable chunks.
                 response = None
-                maxFrameSize = 8192     ### the webUI source code says limit for v2 is 1024 but this still works...
+                maxFrameSize = 8192  ### the webUI source code says limit for v2 is 1024 but this still works...
                 if binaryMessageType == self.messageTypes.putByteCode: maxFrameSize = 1280
                 for i in range(0, len(blob), maxFrameSize):
 
@@ -645,12 +648,14 @@ class Pixelblaze:
                     frameHeader[0] = binaryMessageType.value
                     frameFlag = self.frameTypes.frameNone
                     if i == 0: frameFlag |= self.frameTypes.frameFirst
-                    if (len(blob) - i) <= maxFrameSize: frameFlag |= self.frameTypes.frameLast
-                    else: frameFlag = self.frameTypes.frameMiddle
+                    if (len(blob) - i) <= maxFrameSize:
+                        frameFlag |= self.frameTypes.frameLast
+                    else:
+                        frameFlag = self.frameTypes.frameMiddle
                     frameHeader[1] = frameFlag.value
 
                     # Send the packet.
-                    self._connection_maint()                    
+                    self._connection_maint()
                     self.ws.send_binary(bytes(frameHeader) + blob[i:i + maxFrameSize])
 
                     # If the pipe broke while we were sending, restart from the beginning.
@@ -662,7 +667,7 @@ class Pixelblaze:
                         if type(expectedResponse) is str:
                             response = self.wsReceive(binaryMessageType=None)
                             if response is None: break
-                            if response.startswith(expectedResponse): break
+                            if response.startswith(f'{{"{expectedResponse}":'): break
                         # Or the right binary response.
                         elif type(expectedResponse) is self.messageTypes:
                             response = self.wsReceive(binaryMessageType=expectedResponse)
@@ -671,26 +676,26 @@ class Pixelblaze:
                 return response
 
             except websocket._exceptions.WebSocketConnectionClosedException:
-                #print("wsSendBinary reconnection")
+                # print("wsSendBinary reconnection")
                 # try reopening
                 self.connectionBroken = True
                 self._close()
-                self._open()   
+                self._open()
 
-            except IOError as e:  
+            except IOError as e:
                 # add test for WinError 10054 - existing connection reset
-                if e.errno == errno.EPIPE or e.errno == 10054:    
+                if e.errno == errno.EPIPE or e.errno == 10054:
                     self.connectionBroken = True
                     self._close()
                     self._open()
 
             except:
-                #print("wsSendBinary received unexpected exception")
+                # print("wsSendBinary received unexpected exception")
                 # try reopening
                 self.connectionBroken = True
                 self._close()
                 self._open()
-                #raise
+                # raise
 
     def getPeers(self):
         """A new command, added to the API but not yet implemented as of v2.29/v3.24, that will return a list of all the Pixelblazes visible on the local network segment.
@@ -1301,7 +1306,7 @@ class Pixelblaze:
             components["compiler"] = extractCompiler(webUI)
             return components
 
-        def v3AdapterOlder(webUI:str):
+        def v3AdapterV1(webUI:str):
             # Extract the model-dependent constants from the webUI.
             components = {}
             components["hardwareVariant"] = getSubstring(webUI, "var hardwareVariant=", ",")
@@ -1310,7 +1315,7 @@ class Pixelblaze:
             components["compiler"] = extractCompiler(webUI)
             return components
 
-        def v3Adapter(webUI:str):
+        def v3AdapterV2(webUI:str):
             # Extract the model-dependent constants from the webUI.
             components = {}
             components["hardwareVariant"] = getSubstring(webUI, "var hardwareVariant=", "$('")
@@ -1319,27 +1324,45 @@ class Pixelblaze:
             components["compiler"] = extractCompiler(webUI)
             return components
 
-        # These are the only versions we know how to work with.
-        supportedVersions = {
-            "2.21": v2Adapter,
-            "2.23": v2Adapter,
-            "2.28": v2Adapter,
-            "2.29": v2Adapter,  
-            "3.18": v3AdapterOlder,
-            "3.20": v3AdapterOlder,
-            "3.24": v3Adapter,
-            "3.25": v3Adapter,
-            "3.30": v3Adapter,
-        }
+        ",[])"
 
-        # Check that we support this firmware.
-        version = self.getVersion()
-        if not version in supportedVersions:
-            raise(ValueError(f"Sorry, I don't know how to compile with firmware version {version}."))
+        def v3AdapterV3(webUI:str):
+            # Extract the model-dependent constants from the webUI.
+            components = {}
+            components["hardwareVariant"] = "var " + getSubstring(webUI, "hardwareVariant=", ",varWatcherPoller") + ";"
+            components["extendedOperators"] = getSubstring(webUI, "extendedOperators={", ",lastErrorMarkers=") + ";"
+            components["constants"] = "var constants;" + getSubstring(webUI, '"ESP8266"===hardwareVariant&&', ",[])") + ";"
+            components["compiler"] = extractCompiler(webUI) + ";"
+            return components
+
+        # Determine which adapter to use based on the firmware version.
+        def getAdapter(version: float):
+            # print("Version is: ", version)
+            if version < 3.0:
+                # print("Using v2Adapter")
+                return v2Adapter
+            elif version <= 3.20:
+                # print("Using v3AdapterV1")
+                return v3AdapterV1
+            elif version <= 3.4:
+                # print("Using v3AdapterV2")
+                return v3AdapterV2
+            else:
+                # print("Using v3AdapterV3")
+                return v3AdapterV3
 
         # Download the webUI from the Pixelblaze and extract the pieces we need for compilation.
         webUI = gzip.decompress(self.getFile("/index.html.gz")).decode('utf-8-sig')
-        components = supportedVersions[version](webUI)
+        version = self.getVersion()
+        # DEBUG BLOCK -- REMOVE BEFORE COMMITTING
+        # print(webUI.encode('utf-8-sig'))
+        # quit(0)
+        # DEBUG BLOCK -- REMOVE BEFORE COMMITTING
+        components = getAdapter(float(version))(webUI)
+        # print("Hardware Variant: ", components["hardwareVariant"].encode('utf-8-sig'))
+        # print("Constants: ", components["constants"].encode('utf-8'))
+        # print("Extended Operators: ", components["extendedOperators"].encode('utf-8'))
+        # print("Compiler: ", components["compiler"].encode('utf-8-sig'))
 
         # Build up the compilation environment from bits and pieces.
         compiler = 'window = {};\nvar predefinedGlobals = ["pixelCount"];\n' + components["hardwareVariant"] + '\n' + \
@@ -1376,8 +1399,11 @@ class Pixelblaze:
         ctx.eval(compiler)
 
         # Use the interpreter to run the compiler to convert the sourcecode into the bytecode.
+        # set up MiniRacer to give detailed error messages
+
         result = ctx.call("compilePattern", patternCode)
-        if result["status"] != "OK": raise ValueError(f'compilation error: {result["status"]}')
+        if result["status"] != "OK":
+            raise ValueError(f'Compilation error: {result["status"]}')
 
         # Build the results into a bytecode packet.
         program = result["program"]
@@ -1401,8 +1427,19 @@ class Pixelblaze:
             bytecode += int.to_bytes(symbol["address"], 4, "little")
             bytecode += bytes(symbol["name"], "ascii") + int.to_bytes(0, 1, "little")
 
+        # save flag.  (apparently new with v3.5-ish firmware
+        # bytecode += int.to_bytes(0, 1, "little")
+
         # Return the completed bytecode blob.
         return bytecode
+
+    def makeId(self):
+        e = "23456789ABCDEFGHJKLMNPQRSTWXYZabcdefghijkmnopqrstuvwxyz"
+        # build a 17-character ID consisting of characters from the list above
+        return ''.join(random.choice(e) for _ in range(17))
+
+    def calculate_crc32(self, data):
+        return binascii.crc32(data) & 0xffffffff
 
     def sendPatternToRenderer(self, bytecode:bytes, controls:dict={}):
         """Sends a blob of bytecode and a JSON dictionary of UI controls to the Renderer. Mimics the actions of the webUI code editor.
@@ -1411,10 +1448,14 @@ class Pixelblaze:
             bytecode (bytes): A valid blob of bytecode as generated by the Editor tab in the Pixelblaze webUI.
             controls (dict, optional): a dictionary of UI controls exported by the pattern, with controlName as the key and controlValue as the value. Defaults to {}.
         """
-        self.wsSendJson({"pause":True,"setCode":{ "size": len(bytecode)}}, expectedResponse="ack")
+        # NOTE: crc may only be needed for v3.5+ firmware, but doesn't seem to hurt other versions
+        crcVal = self.calculate_crc32(bytecode)
+        self.wsSendJson({"pause": True, "setCode": {"size": len(bytecode), "crc": crcVal, "name": "", "id": self.makeId()}}, expectedResponse="ack")
         self.wsSendBinary(self.messageTypes.putByteCode, bytecode, expectedResponse="ack")
-        self.wsSendJson({"setControls": controls}, expectedResponse="ack")
-        self.wsSendJson({"pause":False}, expectedResponse="ack")
+        time.sleep(0.25)
+        self.wsSendJson({"setControls": controls})
+        self.wsSendJson({"pause": False}, expectedResponse="ack")
+        time.sleep(0.25)
 
     def savePattern(self, *, previewImage:bytes, sourceCode:str, byteCode:bytes):
         """Saves a new pattern to the Pixelblaze filesystem.  Mimics the effects of the 'Save' button.  
@@ -2299,7 +2340,7 @@ class Pixelblaze:
     # easy-to-use replacement in the current API.  
 
     def pauseRenderer(self, doPause:bool):
-        """Pause rendering. Lasts until unpause() is called or the Pixelblaze is reset.
+        """Pause rendering. Lasts until unpaused or the Pixelblaze is reset.
 
         CAUTION: For advanced users only.  Only used to stop the render engine before
         sending new bytecode.  
