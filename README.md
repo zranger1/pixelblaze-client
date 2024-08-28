@@ -3,7 +3,7 @@ A Python library that presents a simple, synchronous interface for communicating
 controlling one or more Pixelblaze LED controllers. 
 
 ## Requirements
-- Python 3.9-3.10
+- Python 3.9 or newer
 - websocket-client (installable via `pip install websocket-client`, or from https://github.com/websocket-client/websocket-client)
 - requests (installable via `pip install requests`, or from https://github.com/psf/requests)
 - pytz (installable via `pip install pytz`, or from https://github.com/stub42/pytz)
@@ -26,24 +26,16 @@ Sample code illustrating usage is provided in the [examples directory](examples/
 
 **Please note that version 1.0.0 was a major refactoring and enhancement of the library, with many new features and significant changes.** The API surface is completely new. See the the [API documentation](#documentation) for details.  
 
-## Current Version [**v1.1.4**] - 2024-3-10
+## Current Version [**v1.1.4**] - 2024-8-27
 
 #### Fixed
-* Update firmware version check for remote compilation
+* Update firmware version check for remote pattern compilation
 * Added ignoreOpenFailure to Pixelblaze() constructor to allow object creation without immediate connection to Pixelblaze.
-
-### Added
-
-* New method setMapCoordinates()
-
-### Changed
-
-* Refactored createMapData out of setMapFunction
-* Call setMapData from setMapFunction and setMapCoordinates
+* Preview frame image no longer contains unwanted header data
 
 ### Older Versions
 
 See [CHANGELOG.md](CHANGELOG.md) for complete version history.
 
 ## Known Issues
-- None at the moment; if you find something, [let us know](/../../issues/new/choose)!
+- Check our github repo; if you find something, [let us know](/../../issues/new/choose)!
