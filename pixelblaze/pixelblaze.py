@@ -320,6 +320,7 @@ class Pixelblaze:
                 self.proxyUrl = proxyUrl
                 self.listenSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 self.listenSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                self.listenSocket.settimeout(timeout / 1000.0)
                 self.listenSocket.bind((hostIP, 1889))
             except socket.error as e:
                 print(e)
@@ -342,20 +343,23 @@ class Pixelblaze:
             # If we receive a beacon packet from a new Pixelblaze, return an object for it.
             self.timeStop = self._time_in_millis() + self.timeout
             while self._time_in_millis() <= self.timeStop:
-                data, ipAddress = self.listenSocket.recvfrom(1024)
-                pkt = struct.unpack("<LLL", data)
-                if pkt[0] == 42: # beacon packet
-                    if ipAddress not in self.seenPixelblazes:
-                        # Add this address to our list so we don't repeat it.
-                        self.seenPixelblazes.append(ipAddress)
-                        # Return an enumerator of the appropriate type.
-                        if self.enumeratorType == Pixelblaze.LightweightEnumerator.EnumeratorTypes.ipAddress:
-                            return ipAddress[0]
-                        elif self.enumeratorType == Pixelblaze.LightweightEnumerator.EnumeratorTypes.pixelblazeObject:
-                            return Pixelblaze(ipAddress[0], proxyUrl=self.proxyUrl)
-                        else: 
-                            # No such type...How did that happen?
-                            raise
+                try:
+                    data, ipAddress = self.listenSocket.recvfrom(1024)
+                    pkt = struct.unpack("<LLL", data)
+                    if pkt[0] == 42: # beacon packet
+                        if ipAddress not in self.seenPixelblazes:
+                            # Add this address to our list so we don't repeat it.
+                            self.seenPixelblazes.append(ipAddress)
+                            # Return an enumerator of the appropriate type.
+                            if self.enumeratorType == Pixelblaze.LightweightEnumerator.EnumeratorTypes.ipAddress:
+                                return ipAddress[0]
+                            elif self.enumeratorType == Pixelblaze.LightweightEnumerator.EnumeratorTypes.pixelblazeObject:
+                                return Pixelblaze(ipAddress[0], proxyUrl=self.proxyUrl)
+                            else: 
+                                # No such type...How did that happen?
+                                raise
+                except socket.timeout:
+                    raise StopIteration
                 
             # Exit because the timeout has expired.
             raise StopIteration
