@@ -13,6 +13,13 @@ Changes are categorized into the following types:
 - **Security** -- in case of vulnerabilities.
 
 ---
+## [**v1.1.4**] - 2024-8-27
+
+#### Fixed
+* Update firmware version check for remote pattern compilation
+* Added ignoreOpenFailure to Pixelblaze() constructor to allow object creation without immediate connection to Pixelblaze.
+* Preview frame image no longer contains unwanted header data
+
 ## [**v1.1.3**] - 2024-3-10
 
 * New utility functions added for ledmaps

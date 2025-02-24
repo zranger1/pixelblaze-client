@@ -26,12 +26,11 @@ Sample code illustrating usage is provided in the [examples directory](examples/
 
 **Please note that version 1.0.0 was a major refactoring and enhancement of the library, with many new features and significant changes.** The API surface is completely new. See the the [API documentation](#documentation) for details.  
 
-## Current Version [**v1.1.4**] - 2024-8-27
+## Current Version [**v1.1.5**] - 2025-2-23
 
 #### Fixed
-* Update firmware version check for remote pattern compilation
-* Added ignoreOpenFailure to Pixelblaze() constructor to allow object creation without immediate connection to Pixelblaze.
-* Preview frame image no longer contains unwanted header data
+* Added socket timeout to lightweight enumerator
+* Various small fixes, improvements and code cleanup
 
 ### Older Versions
 
