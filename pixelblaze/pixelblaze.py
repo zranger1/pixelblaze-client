@@ -77,7 +77,6 @@ import pathlib
 import pytz
 import traceback
 import gzip
-from re import T
 from typing import Union
 from enum import Enum, Flag, IntEnum, IntFlag
 from urllib.parse import urlparse, urljoin
