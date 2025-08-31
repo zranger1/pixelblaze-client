@@ -29,7 +29,7 @@ setuptools.setup(
       "websocket-client",
       "requests",
       "pytz",
-      "py-mini-racer"
+      "mini-racer"
     ],
     packages=["pixelblaze"],
     python_requires='>=3.9',
