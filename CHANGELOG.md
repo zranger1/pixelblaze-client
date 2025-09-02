@@ -13,6 +13,12 @@ Changes are categorized into the following types:
 - **Security** -- in case of vulnerabilities.
 
 ---
+## Current Version [**v1.1.5**] - 2025-2-23
+
+#### Fixed
+* Added socket timeout to lightweight enumerator
+* Various small fixes, improvements and code cleanup
+
 ## [**v1.1.4**] - 2024-8-27
 
 #### Fixed

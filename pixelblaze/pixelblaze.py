@@ -35,10 +35,13 @@ This module contains the following classes:
 #
 # ----------------------------------------------------------------------------
 
-__version__ = "1.1.5"
+__version__ = "1.1.6"
 
 # | Version | Date       | Author        | Comment
 # |---------|------------|---------------|--------------------------------------------------
+# |  v1.1.6 | 09/02/2025 | TheMariday,   | Fix expander data bug, remove unused imports
+# |         |            | zwily,        | replace py-mini-racer with mini-racer
+# |         |            | zranger1      |
 # |  v1.1.5 | 02/23/2025 | m@bustos.org  | Add socket timeout to lightweight enumerator
 # |  v1.1.4 | 08/27/2024 | zranger1      | Update pattern compilation for new firmware
 # |  v1.1.3 | 03/01/2023 | savdb         | Enhance mapping functionality
