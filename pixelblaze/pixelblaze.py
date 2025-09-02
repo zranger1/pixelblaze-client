@@ -1776,8 +1776,8 @@ class Pixelblaze:
             numElements = offsets[2]
             colorOrder = offsets[3]
             pixelCount = offsets[4]
-            startIndex = offsets[5]
-            dataSpeed = offsets[6:10]
+            startIndex = offsets[5:7]
+            dataSpeed = offsets[7:12]
 
             #   boardAddress
             #       channel | type | startIndex | pixelCount | colorOrder | dataSpeed
@@ -1788,8 +1788,8 @@ class Pixelblaze:
             boards['expanders'][board]['rows'][rowNumber] = []
             if ledType == 1 or ledType == 3:
                 boards['expanders'][board]['rows'][rowNumber].append(
-                    {'channel': channel, 'type': ledType, 'startIndex': startIndex, 'count': pixelCount,
-                     'options': colorOrders[colorOrder], 'dataSpeed': dataSpeed})
+                    {'channel': channel, 'type': ledType, 'numElements' : numElements, 'startIndex': startIndex,
+                     'count': pixelCount,'options': colorOrders[colorOrder], 'dataSpeed': dataSpeed})
             else:
                 boards['expanders'][board]['rows'][rowNumber].append({'channel': channel, 'type': ledType})
 
