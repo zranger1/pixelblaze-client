@@ -107,6 +107,93 @@ from py_mini_racer import MiniRacer
 #    ║ ├─┤├┤   ╠═╝│┌┴┬┘├┤ │  ├┴┐│  ├─┤┌─┘├┤   ║║║├┤ ├┴┐└─┐│ ││  ├┴┐├┤  │   ╠═╣╠═╝║
 #    ╩ ┴ ┴└─┘  ╩  ┴┴ └─└─┘┴─┘└─┘┴─┘┴ ┴└─┘└─┘  ╚╩╝└─┘└─┘└─┘└─┘└─┘┴ ┴└─┘ ┴   ╩ ╩╩  ╩
 #
+BEACON_PORT = 1889
+
+
+def openBeaconSocket(hostIP: str = "0.0.0.0", timeout: float = None) -> socket.socket:
+    """Open a UDP socket bound to the Pixelblaze discovery port (1889).
+
+    Shared by the two beacon listeners. Sets SO_REUSEADDR and, where the
+    platform has it, SO_REUSEPORT: on macOS and the BSDs SO_REUSEADDR alone
+    does not let two wildcard UDP binders share a port, and beacons are
+    broadcast, so every SO_REUSEPORT socket still receives each one. That
+    is what lets `pb find`, `pb top`, and a Firestorm all listen at once.
+
+    Args:
+        hostIP (str, optional): Interface address to bind. Defaults to all interfaces.
+        timeout (float, optional): Socket timeout in seconds; None for blocking.
+
+    Returns:
+        socket.socket: The bound socket.
+
+    Raises:
+        OSError: If the port cannot be bound, with a message naming the usual
+            cause (another listener already holds UDP:1889) and how to check.
+            Deliberately not swallowed: a listener that silently never binds
+            looks exactly like a network with no Pixelblazes on it.
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if hasattr(socket, "SO_REUSEPORT"):
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        if timeout is not None:
+            sock.settimeout(timeout)
+        sock.bind((hostIP, BEACON_PORT))
+    except OSError as e:
+        sock.close()
+        raise OSError(
+            e.errno,
+            f"cannot listen for Pixelblaze beacons on UDP port {BEACON_PORT} "
+            f"(bind {hostIP}): {e.strerror or e}. Another process probably holds "
+            f"the port (an older pb, Firestorm, the Pixelblaze app?); check with "
+            f"`lsof -nP -iUDP:{BEACON_PORT}` on macOS/Linux."
+        ) from e
+    return sock
+
+
+def sendBeaconProbe(sock: socket.socket) -> str:
+    """Broadcast one beacon packet from `sock` to solicit timeSync replies.
+
+    A Pixelblaze answers any beacon it hears with a unicast timeSync packet
+    (type 43) carrying its own chipId — including sync-group *followers*,
+    which never broadcast beacons of their own and are otherwise invisible
+    to a passive listener. One broadcast therefore makes every Pixelblaze on
+    the LAN identify itself within a few milliseconds, with no TCP or
+    websocket connection involved.
+
+    Side effect, observed on firmware 3.51: after a few probes in quick
+    succession the device listed this host among its sync-group peers
+    (`getPeers`), and dropped it again within about a minute of the probes
+    stopping. Callers reading peer lists should ignore their own address.
+
+    The packet is a well-formed beacon (type 42, this host's IPv4 as the
+    sender id, low 32 bits of the current time in ms). Devices only adjust
+    their clocks on *timeSync* packets, never on beacons, so it is inert
+    beyond eliciting the reply.
+
+    Returns:
+        str: This host's IPv4 address, which the caller should ignore as a
+            sender since the broadcast loops back to our own listener; or ""
+            if the send failed (no route, no broadcast permission), in which
+            case the passive listen still works.
+    """
+    try:
+        probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            probe.connect(("10.255.255.255", 1))  # no packet sent; resolves our address
+            local = probe.getsockname()[0]
+        finally:
+            probe.close()
+        now = int(round(time.time() * 1000)) % 0xFFFFFFFF
+        packet = struct.pack("<L", 42) + socket.inet_aton(local) + struct.pack("<L", now)
+        sock.sendto(packet, ("255.255.255.255", BEACON_PORT))
+        return local
+    except OSError:
+        return ""
+
+
 class Pixelblaze:
     """
     The Pixelblaze class presents a simple synchronous interface to a single Pixelblaze's websocket API.
@@ -219,6 +306,12 @@ class Pixelblaze:
 
     # --- PRIVATE DATA
     default_recv_timeout = 1
+    # Ceiling on the websocket *handshake* (TCP connect + HTTP upgrade).
+    # Without this, create_connection() inherits socket.getdefaulttimeout()
+    # -- None -- and a Pixelblaze whose websocket server is wedged (accepts
+    # the connection on :81, then never answers the upgrade) blocks the
+    # calling thread forever. See _open().
+    default_open_timeout = 4
     max_open_retries = 5
     ws = None
     connected = False
@@ -305,7 +398,7 @@ class Pixelblaze:
 
         # private constructor:
         def __init__(self, enumeratorType: EnumeratorTypes, *, timeout: int = 1500, proxyUrl: str = None,
-                     hostIP: str = "0.0.0.0"):
+                     hostIP: str = "0.0.0.0", probe: bool = False):
             """
             Create an iterable object that listens for Pixelblaze beacon packets, returning a Pixelblaze object for each unique beacon seen during the timeout period.
 
@@ -314,22 +407,28 @@ class Pixelblaze:
                 hostIP (str, optional): The network interface on which to listen for Pixelblazes. Defaults to "0.0.0.0" meaning all available interfaces.
                 timeout (int, optional): The amount of time in milliseconds to listen for a new Pixelblaze to announce itself (They announce themselves once per second). Defaults to 1500.
                 proxyUrl (str, optional): The url of a proxy, if required, in the format "protocol://ipAddress:port" (for example, "http://192.168.0.1:8888"). Defaults to None.
+                probe (bool, optional): Also broadcast one beacon of our own and treat the timeSync replies as discoveries. Finds sync-group followers, which never beacon. See `sendBeaconProbe`. Defaults to False.
 
             Note:
                 This method is not intended to be called directly; use the static methods [`EnumerateAddresses`](#method-enumerateaddresses) or [`EnumerateDevices`](#method-enumeratedevices) to create and return an iterator object.
+
+            Raises:
+                OSError: If UDP port 1889 cannot be bound (typically because another
+                    listener already holds it). See `openBeaconSocket`.
             """
-            try:
-                # clear seenPixelblazes so we start fresh if the enumerator is used multiple times.
-                self.seenPixelblazes = []
-                self.enumeratorType = enumeratorType
-                self.timeout = timeout
-                self.proxyUrl = proxyUrl
-                self.listenSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                self.listenSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                self.listenSocket.settimeout(timeout / 1000.0)
-                self.listenSocket.bind((hostIP, 1889))
-            except socket.error as e:
-                print(e)
+            # clear seenPixelblazes so we start fresh if the enumerator is used multiple times.
+            self.seenPixelblazes = []
+            # ip -> packet type (42 beacon, 43 timeSync reply to our probe) for
+            # each address returned, so callers can tell how it was found.
+            self.packetTypes = {}
+            self.enumeratorType = enumeratorType
+            self.timeout = timeout
+            self.proxyUrl = proxyUrl
+            self.probe = probe
+            self.localAddress = ""
+            self.listenSocket = openBeaconSocket(hostIP, timeout=timeout / 1000.0)
+            if probe:
+                self.localAddress = sendBeaconProbe(self.listenSocket)
 
         def __del__(self):
             """
@@ -351,11 +450,18 @@ class Pixelblaze:
             while self._time_in_millis() <= self.timeStop:
                 try:
                     data, ipAddress = self.listenSocket.recvfrom(1024)
-                    pkt = struct.unpack("<LLL", data)
-                    if pkt[0] == 42:  # beacon packet
+                    if len(data) < 12:
+                        continue  # not ours; a beacon is 12 bytes, a timeSync 20
+                    if ipAddress[0] == self.localAddress:
+                        continue  # our own probe, looped back by the kernel
+                    pkt = struct.unpack("<LLL", data[:12])
+                    # 42 is a beacon. 43 is a timeSync, which only reaches us as a
+                    # reply to a probe we sent -- and then it is a Pixelblaze too.
+                    if pkt[0] == 42 or (pkt[0] == 43 and self.probe):
                         if ipAddress not in self.seenPixelblazes:
                             # Add this address to our list so we don't repeat it.
                             self.seenPixelblazes.append(ipAddress)
+                            self.packetTypes[ipAddress[0]] = pkt[0]
                             # Return an enumerator of the appropriate type.
                             if self.enumeratorType == Pixelblaze.LightweightEnumerator.EnumeratorTypes.ipAddress:
                                 return ipAddress[0]
@@ -379,35 +485,45 @@ class Pixelblaze:
     # Static methods:
     @staticmethod
     def EnumerateAddresses(*, timeout: int = 1500, proxyUrl: str = None,
-                           hostIP: str = "0.0.0.0") -> LightweightEnumerator:
+                           hostIP: str = "0.0.0.0", probe: bool = False) -> LightweightEnumerator:
         """Returns an enumerator that will iterate through all the Pixelblazes on the local network, until {timeout} milliseconds have passed with no new devices appearing.
 
         Args:
             hostIP (str, optional): The network interface on which to listen for Pixelblazes. Defaults to "0.0.0.0" meaning all available interfaces.
             timeout (int, optional): The amount of time in milliseconds to listen for a new Pixelblaze to announce itself (They announce themselves once per second). Defaults to 1500.
             proxyUrl (str, optional): The url of a proxy, if required, in the format "protocol://ipAddress:port" (for example, "http://192.168.0.1:8888"). Defaults to None.
+            probe (bool, optional): Also broadcast one beacon and count the timeSync replies as discoveries, which finds sync-group followers (they never beacon). Defaults to False.
 
         Returns:
             LightweightEnumerator: A subclassed Python enumerator object that returns (as a string) the IPv4 address of a Pixelblaze, in the usual dotted-quads numeric format.
+
+        Raises:
+            OSError: If UDP port 1889 cannot be bound, e.g. another listener holds it.
         """
         return Pixelblaze.LightweightEnumerator(Pixelblaze.LightweightEnumerator.EnumeratorTypes.ipAddress,
-                                                timeout=timeout, proxyUrl=proxyUrl, hostIP=hostIP)
+                                                timeout=timeout, proxyUrl=proxyUrl, hostIP=hostIP,
+                                                probe=probe)
 
     @staticmethod
     def EnumerateDevices(*, timeout: int = 1500, proxyUrl: str = None,
-                         hostIP: str = "0.0.0.0") -> LightweightEnumerator:
+                         hostIP: str = "0.0.0.0", probe: bool = False) -> LightweightEnumerator:
         """Returns an enumerator that will iterate through all the Pixelblazes on the local network, until {timeout} milliseconds have passed with no new devices appearing.
 
         Args:
             hostIP (str, optional): The network interface on which to listen for Pixelblazes. Defaults to "0.0.0.0" meaning all available interfaces.
             timeout (int, optional): The amount of time in milliseconds to listen for a new Pixelblaze to announce itself (They announce themselves once per second). Defaults to 1500.
             proxyUrl (str, optional): The url of a proxy, if required, in the format "protocol://ipAddress:port" (for example, "http://192.168.0.1:8888"). Defaults to None.
+            probe (bool, optional): Also broadcast one beacon and count the timeSync replies as discoveries, which finds sync-group followers (they never beacon). Defaults to False.
 
         Returns:
             LightweightEnumerator: A subclassed Python enumerator object that returns a Pixelblaze object for controlling a discovered Pixelblaze.
+
+        Raises:
+            OSError: If UDP port 1889 cannot be bound, e.g. another listener holds it.
         """
         return Pixelblaze.LightweightEnumerator(Pixelblaze.LightweightEnumerator.EnumeratorTypes.pixelblazeObject,
-                                                timeout=timeout, proxyUrl=proxyUrl, hostIP=hostIP)
+                                                timeout=timeout, proxyUrl=proxyUrl, hostIP=hostIP,
+                                                probe=probe)
 
     # --- CONNECTION MANAGEMENT
 
@@ -427,11 +543,13 @@ class Pixelblaze:
                         url = urlparse(self.proxyUrl)
                         self.ws = websocket.create_connection(uri, sockopt=(
                         (socket.SOL_SOCKET, socket.SO_REUSEADDR, 1), (socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)),
+                                                              timeout=self.default_open_timeout,
                                                               proxy_type=url.scheme, http_proxy_host=url.hostname,
                                                               http_proxy_port=url.port)
                     else:
                         self.ws = websocket.create_connection(uri, sockopt=(
-                        (socket.SOL_SOCKET, socket.SO_REUSEADDR, 1), (socket.IPPROTO_TCP, socket.TCP_NODELAY, 1),))
+                        (socket.SOL_SOCKET, socket.SO_REUSEADDR, 1), (socket.IPPROTO_TCP, socket.TCP_NODELAY, 1),),
+                                                              timeout=self.default_open_timeout)
                     break
                 except (websocket._exceptions.WebSocketConnectionClosedException,
                         websocket._exceptions.WebSocketBadStatusException):
@@ -3575,22 +3693,17 @@ class PixelblazeEnumerator:
         Open socket for listening to Pixelblaze datagram traffic,
         set appropriate options and bind to specified interface and
         start listener thread.
+
+        Raises:
+            OSError: If UDP port 1889 cannot be bound (typically because another
+                listener already holds it). See `openBeaconSocket`.
         """
-        try:
-            self.listener = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self.listener.bind((hostIP, self.PORT))
-
-            self.threadObj = threading.Thread(target=self._listen)
-            self.isRunning = True
-            self.listTimeoutCheck = 0
-            self.threadObj.start()
-
-            return True
-        except socket.error as e:
-            print(e)
-            self.stop()
-            return False
+        self.listener = openBeaconSocket(hostIP)
+        self.threadObj = threading.Thread(target=self._listen)
+        self.isRunning = True
+        self.listTimeoutCheck = 0
+        self.threadObj.start()
+        return True
 
     def stop(self):
         """
@@ -3625,6 +3738,8 @@ class PixelblazeEnumerator:
         while self.isRunning:
             data, addr = self.listener.recvfrom(1024)
             now = self._time_in_millis()
+            if len(data) < 12:
+                continue  # not a Pixelblaze packet; a beacon is 12 bytes, a timeSync 20
 
             # check the list periodically,and remove devices we haven't seen in a while
             if (now - self.listTimeoutCheck) >= self.LIST_CHECK_INTERVAL:
@@ -3639,7 +3754,7 @@ class PixelblazeEnumerator:
 
             # when we receive a beacon packet from a Pixelblaze,
             # update device record and timestamp in our device list
-            pkt = self._unpack_beacon(data)
+            pkt = self._unpack_beacon(data[:12])
             if pkt[0] == self.BEACON_PACKET:
                 # add pixelblaze to list of devices
                 self.devices[pkt[1]] = {"address": addr,

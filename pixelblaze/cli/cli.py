@@ -30,6 +30,7 @@ from pixelblaze.cli.cli_utils import cli, log, no_save_option, input_arg, read_i
                                      get_cache_dir, check, parse_vars, get_pixelblaze, discover_pixelblaze, \
                                      enumerate_pixelblazes, cache_ip, _read_cache, _write_cache, \
                                      _fetch_device_config, update_device_cache, lookup_cached_device
+from pixelblaze.cli.top import register as _register_top
 
 @click.group()
 @click.option(
@@ -76,29 +77,43 @@ def pixelblaze(ctx, ip, timeout, retries):
 @click.option('--full', '--slow', '-s', '-f', 'slow', is_flag=True,
               help='Connect to each device to fetch name, version, config (parallel)')
 @click.option('--no-cache', is_flag=True, help='Do not cache the selected IP')
+@click.option('--passive', is_flag=True,
+              help='Only listen for beacons; do not broadcast a probe beacon. '
+                   'Sync-group followers never beacon, so they are then found only '
+                   'if cached or listed by a peer.')
 @click.pass_context
-def find(ctx, name_filter, ip_filter, scan_timeout, slow, no_cache):
+def find(ctx, name_filter, ip_filter, scan_timeout, slow, no_cache, passive):
     """
     Discover and enumerate all Pixelblazes on the network.
 
-    By default runs fast: listens for UDP beacons and returns IPs only.
-    Use --full/--slow to connect to each device (in parallel) and fetch names,
-    version, pixel count, etc. Using --name implies --full.
+    Every source is tried at once, so a sweep takes as long as the beacon
+    listen and no longer: UDP beacons; one probe beacon of our own, which
+    every Pixelblaze answers (including sync-group followers, which never
+    beacon themselves); a connect on ports 80/81 to the ad-hoc address and
+    every cached address; and each found device's sync-group peer list.
+    Nothing is sent over TCP by the probes, so they are safe against a
+    device in any state.
+
+    By default runs fast: returns each IP with how it was found (`via`)
+    and, when probed, whether ports 80 (`http`) and 81 (`ws`) answered.
+    Use --full/--slow to also connect to each device (in parallel) and fetch
+    names, version, pixel count, etc. Using --name implies --full.
 
     Prints JSONL (one JSON object per line) to stdout. Discovery progress
-    is logged to stderr.
+    is logged to stderr, including why nothing beaconed when that happens.
 
     The first matching device (after any filters) is cached as the default
     IP for subsequent commands.
 
     \b
     Examples:
-        pb find                          # Fast: just IPs from beacons
+        pb find                          # Fast: IPs, how found, ports
         pb find --full                   # Connect to each, get full info (--slow is an alias)
         pb find --name living            # Filter by name (implies --full)
         pb find --ip 192.168.1           # Filter by IP substring (fast)
         pb find --name tree --ip 10.     # Combine filters
         pb find --timeout 5000           # Scan longer for slow networks
+        pb find --passive                # Listen only, no probe broadcast
         pb find --no-cache               # Don't update cached IP
         pb find 2>/dev/null              # Quiet mode (stdout JSONL only)
     """
@@ -106,10 +121,13 @@ def find(ctx, name_filter, ip_filter, scan_timeout, slow, no_cache):
     if name_filter:
         slow = True
 
-    devices = enumerate_pixelblazes(timeout=scan_timeout, slow=slow)
+    devices = enumerate_pixelblazes(timeout=scan_timeout, slow=slow, probe=not passive)
 
     if not devices:
-        raise click.ClickException("No Pixelblazes found on the network.")
+        raise click.ClickException(
+            "No Pixelblazes found: nothing beaconed, nothing answered the probe, and no "
+            "known address accepted a connection on port 80 or 81."
+        )
 
     # Apply filters
     matched = []
@@ -137,8 +155,16 @@ def find(ctx, name_filter, ip_filter, scan_timeout, slow, no_cache):
     for dev in matched:
         click.echo(jsonlib.dumps(dev, separators=(',', ':')))
 
-    # Cache the first match
-    selected = matched[0]
+    # Cache the best match as the default IP: a device that announced itself
+    # or answers on both ports beats a partial answer, and a LAN device beats
+    # the emulator on loopback. Ties keep the order in which they answered.
+    def _preference(dev):
+        via, http, ws = dev.get('via'), dev.get('http'), dev.get('ws')
+        announced = via in ('beacon', 'timeSync')
+        whole = (http and ws) or announced
+        return (0 if whole else 1, 1 if dev['ip'].startswith('127.') else 0)
+
+    selected = min(matched, key=_preference)
     if not no_cache:
         cache_ip(selected['ip'])
         log(f"Cached IP: {selected['ip']}" + (f" ({selected['name']})" if selected.get('name') else ""))
@@ -2145,6 +2171,10 @@ def cache_refresh(query, all_devices, conn_timeout):
         log(f"Refreshed {len(refreshed)}/{len(targets)} device(s).")
     else:
         raise click.ClickException("Could not refresh any devices.")
+
+
+# `pb top` lives in a sibling module for size; register it onto the group here.
+_register_top(pixelblaze)
 
 
 def main():

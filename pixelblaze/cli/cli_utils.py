@@ -11,7 +11,10 @@ import json5
 import json
 import pathlib
 import datetime
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import errno
+import select
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed, wait, FIRST_COMPLETED
 from functools import wraps
 from typing import Callable, Optional
 from pixelblaze.pixelblaze import Pixelblaze
@@ -74,6 +77,11 @@ def _write_cache(cache: dict):
         pass
 
 
+# Per-run discovery facts (how a device was found, which ports answered this
+# time). They ride along in `pb find` output but are not durable device info.
+_TRANSIENT_KEYS = frozenset(('via', 'http', 'ws', 'error'))
+
+
 def update_device_cache(devices: list[dict]):
     """Merge device info into cache.json devices map, preserving existing richer data."""
     cache = _read_cache()
@@ -85,7 +93,7 @@ def update_device_cache(devices: list[dict]):
             continue
         entry = known.setdefault(ip, {'ip': ip})
         for k, v in dev.items():
-            if v is not None and v != '':
+            if v is not None and v != '' and k not in _TRANSIENT_KEYS:
                 entry[k] = v
         if host_ip:
             entry['hostIp'] = host_ip
@@ -124,6 +132,73 @@ def _check_ip_reachable(ip: str, timeout: float = 1.0) -> bool:
         return result == 0
     except Exception:
         return False
+
+
+# The two ports a Pixelblaze answers on: 80 serves the web UI and the HTTP
+# file endpoints, 81 the websocket API.
+HTTP_PORT = 80
+WS_PORT = 81
+ADHOC_IP = "192.168.4.1"
+_PROBE_TIMEOUT = 1.0
+_IN_PROGRESS = {errno.EINPROGRESS, errno.EWOULDBLOCK, errno.EAGAIN,
+                getattr(errno, 'WSAEWOULDBLOCK', 10035)}
+
+
+def _tcp_ports_open(ip: str, ports: tuple[int, ...] = (HTTP_PORT, WS_PORT),
+                    timeout: float = _PROBE_TIMEOUT) -> dict[int, bool]:
+    """Is anything listening on these ports? Non-blocking connects, all at once.
+
+    This is the cheapest "is a Pixelblaze alive here" check there is, and
+    deliberately the *only* kind of contact it makes: the connection is
+    closed the instant it opens, and not a byte is ever sent. That matters.
+    The firmware's websocket server has a handful of connection slots and a
+    client that starts a session and drops it uncleanly can leave the device
+    wedged until it reboots — so a liveness probe must not look like a client
+    at all. A bare connect + FIN is indistinguishable from a port scan and is
+    released by the device immediately.
+
+    Returns {port: open} for every port asked. `80 open, 81 closed` is the
+    classic hung-websocket-server state and worth surfacing to the user.
+    """
+    result = {port: False for port in ports}
+    waiting: dict[socket.socket, int] = {}
+    for port in ports:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setblocking(False)
+        try:
+            err = sock.connect_ex((ip, port))
+        except OSError:
+            sock.close()
+            continue
+        if err == 0:
+            result[port] = True
+            sock.close()
+        elif err in _IN_PROGRESS:
+            waiting[sock] = port
+        else:
+            sock.close()
+
+    deadline = time.monotonic() + timeout
+    while waiting:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        socks = list(waiting)
+        # A finished connect shows up writable; on Windows a *failed* one shows
+        # up in the exceptional set instead, so watch both.
+        _, writable, failed = select.select([], socks, socks, remaining)
+        if not writable and not failed:
+            break
+        for sock in set(writable) | set(failed):
+            port = waiting.pop(sock)
+            try:
+                result[port] = sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR) == 0
+            except OSError:
+                result[port] = False
+            sock.close()
+    for sock in waiting:
+        sock.close()
+    return result
 
 
 # Top-level keys promoted out of `settings` for quick display in `pb cache ls` / `pb find`.
@@ -243,96 +318,277 @@ def lookup_cached_device(query: str) -> tuple[str, dict]:
     raise click.ClickException(f"No cached device matches '{query}'.")
 
 
-def _discover_ips(timeout: int = 2000) -> list[str]:
-    """
-    Discover Pixelblaze IP addresses via ad-hoc check and UDP beacons.
+def _describe_ports(ports: dict) -> str:
+    """`http+ws open`, or a warning when the websocket server isn't answering."""
+    http, ws = ports.get('http'), ports.get('ws')
+    if http and ws:
+        return 'http+ws open'
+    if http and not ws:
+        return 'http open, ws port 81 CLOSED — websocket server may be wedged, try `pb reboot`'
+    if ws and not http:
+        return 'ws open, http port 80 closed'
+    return 'no ports open'
 
-    Fast — no websocket connections, just network probing.
+
+def _discover_devices(
+    timeout: int = 2000,
+    on_ip: Optional[Callable[[str], None]] = None,
+    probe: bool = True,
+) -> list[dict]:
+    """
+    Find every Pixelblaze on the network, using every source at once.
+
+    All of these run in parallel from the first millisecond, so the answer
+    takes as long as the slowest source (the beacon listen), never the sum:
+
+      * UDP beacons — listen for `timeout` ms. With `probe`, also broadcast
+        one beacon of our own: every Pixelblaze answers with a timeSync
+        packet, *including sync-group followers, which never beacon* and
+        are otherwise invisible here (see `sendBeaconProbe`).
+      * Known addresses — the ad-hoc address and every device in the cache
+        get a TCP connect on ports 80 and 81 (`_tcp_ports_open`: nothing is
+        sent, so this is safe to do to a device in any state). Catches
+        devices on a quiet or broadcast-filtered network.
+      * Sync-group peers — each device found, from any source, is asked for
+        its peer list; new addresses are probed the same way.
 
     Args:
         timeout: Beacon listen timeout in milliseconds.
+        on_ip: Optional callback invoked with each newly-discovered IP the
+            instant it's found — before the sweep completes. Lets callers
+            (e.g. `pb top`) fire workers against a device as soon as it
+            answers. Callback exceptions are logged and swallowed.
+        probe: Broadcast a beacon to solicit timeSync replies. Default on.
 
     Returns:
-        list[str]: List of discovered IP addresses.
+        list[dict]: One per device, in the order they answered:
+            ip (str)
+            via (str): 'beacon', 'timeSync' (answered our probe), 'adhoc',
+                'cache', or 'peer'.
+            http, ws (bool): present when the device was TCP-probed —
+                whether ports 80 / 81 accepted a connection.
+
+    Raises:
+        click.ClickException: If the beacon port cannot be bound (another
+            listener holds UDP:1889). Not swallowed: a listener that never
+            bound looks exactly like an empty network.
     """
-    ips = []
-    seen = set()
+    found: dict[str, dict] = {}
+    pending: list = []
+    lock = threading.Lock()
+    pool = ThreadPoolExecutor(max_workers=16, thread_name_prefix='pb-discover')
 
-    # Check ad-hoc mode first
-    adhoc_ip = "192.168.4.1"
-    log(f"Checking ad-hoc ({adhoc_ip})...")
-    if _check_ip_reachable(adhoc_ip):
-        ips.append(adhoc_ip)
-        seen.add(adhoc_ip)
-        log(f"  Found @ {adhoc_ip} (ad-hoc)")
+    def submit(fn, *args):
+        with lock:
+            pending.append(pool.submit(fn, *args))
 
-    # Beacon enumeration
-    log(f"Listening for beacons ({timeout}ms)...")
-    try:
-        for found_ip in Pixelblaze.EnumerateAddresses(timeout=timeout):
-            if found_ip not in seen:
-                seen.add(found_ip)
-                ips.append(found_ip)
-                log(f"  Found @ {found_ip}")
-    except Exception as e:
-        log(f"Enumeration error: {e}")
+    def report(ip: str):
+        if on_ip is None:
+            return
+        try:
+            on_ip(ip)
+        except Exception as e:
+            log(f"  on_ip callback failed for {ip}: {e}")
 
-    # Follower enrichment — follower devices don't broadcast beacons, but any
-    # beacon-visible peer knows about them via the sync group. Ask each for
-    # its peer list and union in anything new.
-    for ip in list(ips):
+    def add(ip: str, via: str, detail: str = '', **ports) -> bool:
+        with lock:
+            if ip in found:
+                # Already known; just remember port state if this is the probe.
+                found[ip].update(ports)
+                return False
+            found[ip] = {'ip': ip, 'via': via, **ports}
+        extra = f"; {_describe_ports(ports)}" if ports else ''
+        log(f"  Found @ {ip} ({detail or via}{extra})")
+        report(ip)
+        submit(ask_peers, ip)
+        return True
+
+    def listen():
+        enumerator = Pixelblaze.EnumerateAddresses(timeout=timeout, probe=probe)
+        for ip in enumerator:
+            if enumerator.packetTypes.get(ip) == 43:
+                add(ip, 'timeSync', 'answered our probe beacon')
+            else:
+                add(ip, 'beacon')
+
+    def probe_tcp(ip: str, via: str, detail: str = ''):
+        ports = _tcp_ports_open(ip)
+        if ports[HTTP_PORT] or ports[WS_PORT]:
+            add(ip, via, detail, http=ports[HTTP_PORT], ws=ports[WS_PORT])
+        elif via == 'peer':
+            log(f"  {ip} ({detail}) did not answer on ports 80/81")
+
+    def ask_peers(ip: str):
+        # Followers don't beacon, but every peer knows about them. This is
+        # the one place discovery opens a websocket, and it is closed
+        # cleanly by the context manager. Skip it entirely when the probe
+        # already showed the websocket server isn't answering — poking a
+        # wedged server helps nothing.
+        with lock:
+            if found[ip].get('ws') is False:
+                return
         try:
             with Pixelblaze(ip) as pb:
-                for peer in pb.getPeers():
-                    peer_ip = peer.get('address')
-                    if peer_ip and peer_ip not in seen:
-                        seen.add(peer_ip)
-                        ips.append(peer_ip)
-                        log(f"  Found @ {peer_ip} (via {ip} sync group)")
+                peers = pb.getPeers()
         except Exception as e:
             log(f"  Peer query failed on {ip}: {e}")
+            return
+        for peer in peers:
+            peer_ip = peer.get('address')
+            if not peer_ip or peer.get('self') or peer_ip == self_ip:
+                continue
+            with lock:
+                known = peer_ip in found
+            if not known:
+                submit(probe_tcp, peer_ip, 'peer', f"via {ip} sync group")
 
-    return ips
+    # Our own address is never a device: a probe beacon makes devices list
+    # us as a peer for a while, and a stale cache may carry that over.
+    self_ip = get_host_ip()
+    candidates = [ADHOC_IP]
+    for cached_ip in _read_cache().get('devices', {}):
+        if cached_ip not in candidates and cached_ip != self_ip:
+            candidates.append(cached_ip)
+
+    log(f"Listening for beacons ({timeout}ms){' + probing' if probe else ''}, "
+        f"checking {len(candidates)} known address(es)...")
+    try:
+        submit(listen)
+        for ip in candidates:
+            submit(probe_tcp, ip, 'adhoc' if ip == ADHOC_IP else 'cache')
+
+        # Tasks spawn tasks (a found device queues a peer query, a peer queues
+        # a probe), so keep draining until nothing is in flight.
+        while True:
+            with lock:
+                live = [f for f in pending if not f.done()]
+            if not live:
+                break
+            wait(live, return_when=FIRST_COMPLETED)
+    finally:
+        pool.shutdown(wait=True)
+
+    # Loud failure. The only task that raises rather than logs is the beacon
+    # listener, when UDP:1889 could not be bound.
+    for future in pending:
+        exc = future.exception()
+        if exc is not None:
+            raise click.ClickException(str(exc))
+
+    return list(found.values())
 
 
-def enumerate_pixelblazes(timeout: int = 3000, slow: bool = False) -> list[dict]:
+def _explain_silent_beacons(found: list[dict]):
+    """When no beacon was heard, say why the devices that did answer were quiet.
+
+    The usual reason is a sync group whose leader is off: followers never
+    beacon, so `pb find` used to come up empty while the web UI worked fine.
+    Everything here comes from the cache, so it costs nothing.
+    """
+    if any(d['via'] == 'beacon' for d in found):
+        return
+    if not found:
+        log("No beacons heard, and no known address answered on ports 80/81.")
+        return
+    cache = _read_cache().get('devices', {})
+    by_chip = {}
+    for ip, entry in cache.items():
+        chip = (entry.get('settings') or {}).get('chipId') or entry.get('chipId')
+        if chip:
+            by_chip[chip] = (ip, entry)
+    found_ips = {d['ip'] for d in found}
+    log("No beacons heard; the device(s) above answered a direct probe instead.")
+    for d in found:
+        entry = cache.get(d['ip']) or {}
+        leader = (entry.get('settings') or {}).get('leaderId') or entry.get('leaderId')
+        if not leader:
+            continue
+        name = entry.get('name') or d['ip']
+        leader_ip, leader_entry = by_chip.get(leader, (None, {}))
+        who = (f"{leader_entry.get('name') or leader_ip} ({leader_ip})" if leader_ip
+               else f"chip {leader}")
+        gone = ', which did not answer' if leader_ip and leader_ip not in found_ips else ''
+        log(f"  {name} is a sync-group follower of {who}{gone} — followers don't beacon.")
+
+
+def _discover_ips(
+    timeout: int = 2000,
+    on_ip: Optional[Callable[[str], None]] = None,
+) -> list[str]:
+    """Discover Pixelblaze IP addresses. See `_discover_devices` for how.
+
+    Kept for callers that only want addresses; the order is the order in
+    which devices answered.
+    """
+    return [d['ip'] for d in _discover_devices(timeout=timeout, on_ip=on_ip)]
+
+
+def enumerate_pixelblazes(
+    timeout: int = 3000,
+    slow: bool = False,
+    on_ip: Optional[Callable[[str], None]] = None,
+    probe: bool = True,
+) -> list[dict]:
     """
     Discover all Pixelblazes on the network.
 
-    In fast mode (default), returns minimal dicts with just the IP from
-    beacon discovery. In slow mode, connects to each device in parallel
-    to fetch name, config, version, etc.
+    Beacons, a probe broadcast, the ad-hoc address, every cached address and
+    sync-group peer lists are all tried in parallel — see `_discover_devices`.
+    In fast mode (default), returns minimal dicts: the IP, how it was found,
+    and which ports answered. In slow mode, also connects to each device in
+    parallel to fetch name, config, version, etc.
 
     Args:
         timeout: Beacon listen timeout in milliseconds.
         slow: If True, connect to each device to fetch full config info.
+        on_ip: Optional per-IP callback fired the instant each device is
+            found (before the sweep returns). See `_discover_devices`.
+        probe: Broadcast a beacon so followers answer. Default on.
 
     Returns:
-        list[dict]: Device info dicts. Fast mode: {'ip': ...} only.
-                    Slow mode adds: name, pixelCount, brightness, ver, brandName, hostIp.
+        list[dict]: Device info dicts. Fast mode: ip, via, and (when probed)
+                    http / ws. Slow mode adds: name, pixelCount, brightness,
+                    ver, brandName, hostIp.
     """
-    ips = _discover_ips(timeout=timeout)
+    found = _discover_devices(timeout=timeout, on_ip=on_ip, probe=probe)
+    _explain_silent_beacons(found)
 
-    if not ips:
+    if not found:
         return []
 
+    ips = [d['ip'] for d in found]
+    by_ip = {d['ip']: d for d in found}
     host_ip = get_host_ip()
 
     if not slow:
-        devices = [{'ip': ip} for ip in ips]
+        devices = [dict(d) for d in found]
         update_device_cache(devices)
         return devices
 
-    # Slow mode: connect to each device to get full info, in parallel
+    # Slow mode: connect to each device to get full info, in parallel. A
+    # device whose websocket port did not answer is reported from cache
+    # rather than connected to — it would only time out, and a wedged
+    # server is not improved by more clients.
     log(f"Fetching device info from {len(ips)} device(s)...")
     devices = []
+
+    def fetch(ip: str) -> dict:
+        if by_ip[ip].get('ws') is False:
+            cached = _read_cache().get('devices', {}).get(ip, {})
+            return {'ip': ip, 'name': cached.get('name', ''),
+                    'error': 'websocket port 81 not answering; details from cache'}
+        return _get_device_info(ip)
+
     with ThreadPoolExecutor(max_workers=min(len(ips), 8)) as pool:
-        futures = {pool.submit(_get_device_info, ip): ip for ip in ips}
+        futures = {pool.submit(fetch, ip): ip for ip in ips}
         for future in as_completed(futures):
             info = future.result()
             if info:
                 if host_ip:
                     info['hostIp'] = host_ip
+                for key in ('via', 'http', 'ws'):
+                    if key in by_ip[info['ip']]:
+                        info[key] = by_ip[info['ip']][key]
                 devices.append(info)
                 name = info.get('name', '?')
                 if name:

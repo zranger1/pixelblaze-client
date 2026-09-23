@@ -20,6 +20,27 @@ pb --ip 192.168.1.100 pixels
 pb ping
 
 
+# Realtime Dashboard (top-style)
+# ==============================
+
+# Live table of every Pixelblaze on the LAN — FPS, memory, active pattern,
+# uptime, brightness, etc. Devices that drop off go red; when they rejoin
+# they turn back green.
+pb top
+
+# Faster redraw
+pb top -n 0.25
+
+# Sort by frames-per-second
+pb top --sort fps
+
+# One-shot machine-readable snapshot (great for cron / dashboards)
+pb top --once --json | jq .
+
+# Rediscover every 10s (default 30s) — pick up devices that just booted
+pb top -r 10
+
+
 # Basic Controls
 # =============
 
