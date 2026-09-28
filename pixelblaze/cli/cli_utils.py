@@ -712,6 +712,7 @@ def _discover_devices(
     on_ip: Optional[Callable[[str], None]] = None,
     probe: bool = True,
     sweep: bool = True,
+    peers: bool = True,
 ) -> list[dict]:
     """
     Find every Pixelblaze on the network, using every source at once.
@@ -744,6 +745,11 @@ def _discover_devices(
         probe: Broadcast a beacon to solicit timeSync replies. Default on.
         sweep: TCP-sweep each local /24. Default on; costs nothing in
             wall-clock because it runs inside the beacon listen.
+        peers: Ask each device found for its sync-group peer list. This is
+            the only part of discovery that opens a **websocket**, and the
+            firmware has few connection slots, so an unattended caller that
+            sweeps on a timer should pass False: the subnet sweep already
+            finds everything a peer list would, without connecting.
 
     Returns:
         list[dict]: One per device, in the order they answered:
@@ -795,7 +801,11 @@ def _discover_devices(
         who = f"{name} @ " if name else '@ '
         log(f"  Found {who}{ip} ({detail or via}{extra})")
         report(ip)
-        submit(ask_peers, ip)
+        # The only websocket discovery opens. Skippable, because an unattended
+        # caller sweeping on a timer should not be opening sockets on a device
+        # with a handful of connection slots.
+        if peers:
+            submit(ask_peers, ip)
         return True
 
     def listen():
@@ -947,6 +957,7 @@ def enumerate_pixelblazes(
     on_ip: Optional[Callable[[str], None]] = None,
     probe: bool = True,
     sweep: bool = True,
+    peers: bool = True,
 ) -> list[dict]:
     """
     Discover all Pixelblazes on the network.
@@ -973,7 +984,8 @@ def enumerate_pixelblazes(
                     something did. Slow mode connects and adds the live name,
                     pixelCount, brightness, ver, brandName, hostIp.
     """
-    found = _discover_devices(timeout=timeout, on_ip=on_ip, probe=probe, sweep=sweep)
+    found = _discover_devices(timeout=timeout, on_ip=on_ip, probe=probe, sweep=sweep,
+                              peers=peers)
     _explain_silent_beacons(found)
 
     if not found:
