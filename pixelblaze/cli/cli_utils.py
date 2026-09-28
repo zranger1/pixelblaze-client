@@ -21,7 +21,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed, wait, FIRST_COMPLETED
 from functools import wraps
 from typing import Callable, Optional
-from pixelblaze.pixelblaze import Pixelblaze
+from pixelblaze.pixelblaze import Pixelblaze, localIPv4Interfaces
 
 log = lambda *args, **kwargs: click.echo(*args, err=True, *kwargs)
 jsons = lambda x: click.echo(json.dumps(x, separators=(',', ':')))
@@ -74,6 +74,23 @@ def get_host_ip() -> str:
         return ip
     except Exception:
         return ''
+
+
+def get_host_ips() -> set:
+    """Every address this machine answers to, not just the outbound one.
+
+    `get_host_ip()` resolves the default route alone. On a host with more than
+    one interface -- a Pi hosting an access point for its Pixelblazes while
+    plugged into ethernet -- the other addresses are just as much "us", and
+    treating them as devices puts the host itself in `pb find` output. It reads
+    convincingly too: probe a device and it lists us among its sync-group peers
+    for a while, and anything we serve on port 80 answers the probe.
+    """
+    addresses = {address for address, _ in localIPv4Interfaces()}
+    outbound = get_host_ip()
+    if outbound:
+        addresses.add(outbound)
+    return addresses
 
 
 # ── What we know about a fleet, in two files ─────────────────────────────
@@ -771,7 +788,7 @@ def _discover_devices(
             return
         for peer in peers:
             peer_ip = peer.get('address')
-            if not peer_ip or peer.get('self') or peer_ip == self_ip:
+            if not peer_ip or peer.get('self') or peer_ip in self_ips:
                 continue
             with lock:
                 known = peer_ip in found
@@ -780,10 +797,10 @@ def _discover_devices(
 
     # Our own address is never a device: a probe beacon makes devices list
     # us as a peer for a while, and a stale cache may carry that over.
-    self_ip = get_host_ip()
+    self_ips = get_host_ips()
     candidates = [ADHOC_IP]
     for cached_ip in cached_addresses():
-        if cached_ip not in candidates and cached_ip != self_ip:
+        if cached_ip not in candidates and cached_ip not in self_ips:
             candidates.append(cached_ip)
 
     log(f"Listening for beacons ({timeout}ms){' + probing' if probe else ''}, "
