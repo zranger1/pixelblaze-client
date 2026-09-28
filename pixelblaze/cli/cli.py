@@ -3094,6 +3094,13 @@ def update(ctx, file, timeout, chunk, no_ver, no_monitor):
         except Exception as e:
             log(f"Could not read current firmware version ({type(e).__name__}); continuing anyway")
 
+    # `installFirmwareFile` works out *why* it succeeded or failed and hands it
+    # over in the result event. Keep it: without it a failure is a guess, and
+    # the guesses are not close together — "the device refused this image" and
+    # "the POST came back before we finished sending" want completely different
+    # next moves.
+    outcome = {'reason': None}
+
     try:
         if no_monitor:
             ok = pb.installFirmwareFile(str(path), monitor=False,
@@ -3126,16 +3133,33 @@ def update(ctx, file, timeout, chunk, no_ver, no_monitor):
                         pretty = evt.get('progress') or ''
                     # tqdm.write cooperates with the live bar; keep line above it.
                     tqdm.write(f"[device] state={evt['code']} {pretty}".rstrip())
-                elif t == 'result' and bar is not None:
-                    bar.close()
-                    bar_state['bar'] = None
+                elif t == 'result':
+                    outcome['reason'] = evt.get('reason')
+                    if bar is not None:
+                        bar.close()
+                        bar_state['bar'] = None
 
             ok = pb.installFirmwareFile(str(path), monitor=True, callback=on_event,
                                         chunkSize=chunk, timeout=timeout)
     except Exception as e:
         raise click.ClickException(f"Firmware upload failed: {e}")
 
-    check(ok, "Device rejected the firmware (wrong variant, corrupted file, or flash error)")
+    if not ok:
+        why = outcome['reason'] or (
+            "no reason available — --no-monitor judges on the HTTP response alone; "
+            "run without it to get the device's own upgradeState"
+        )
+        # Worth spelling out: the firmware answers the upload with HTTP 200 and
+        # the words "Update Success! Rebooting..." even when its own upgrade
+        # state machine goes to updateError. Anything trusting the HTTP response
+        # reports a flash that never happened.
+        hint = ""
+        if "updateError" in why and "HTTP 200" in why:
+            hint = ("\n  The device returned HTTP 200 and said 'Update Success' while its own "
+                    "upgradeState said updateError — the HTTP response is not trustworthy here. "
+                    "The image was fully transferred and refused, so it is the file the device "
+                    "objects to, not the transfer.")
+        raise click.ClickException(f"Firmware not installed: {why}{hint}")
     log("Firmware accepted. Device is rebooting; it may take 30-60s to reappear on WiFi.")
 
 
