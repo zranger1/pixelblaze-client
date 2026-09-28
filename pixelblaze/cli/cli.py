@@ -128,11 +128,15 @@ def pixelblaze(ctx, ip, prefix, timeout, retries):
               help='Connect to each device to fetch name, version, config (parallel)')
 @click.option('--no-cache', is_flag=True, help='Do not cache the selected IP')
 @click.option('--passive', is_flag=True,
-              help='Only listen for beacons; do not broadcast a probe beacon. '
+              help='Only listen for beacons: no probe beacon and no subnet sweep. '
                    'Sync-group followers never beacon, so they are then found only '
                    'if cached or listed by a peer.')
+@click.option('--no-sweep', is_flag=True,
+              help='Do not TCP-sweep the local /24. The sweep is the only source '
+                   'that can find a device which never beaconed and was never '
+                   'cached; it runs inside the beacon listen, so it costs no time.')
 @click.pass_context
-def find(ctx, name_filter, ip_filter, scan_timeout, slow, no_cache, passive):
+def find(ctx, name_filter, ip_filter, scan_timeout, slow, no_cache, passive, no_sweep):
     """
     Discover and enumerate all Pixelblazes on the network.
 
@@ -163,7 +167,8 @@ def find(ctx, name_filter, ip_filter, scan_timeout, slow, no_cache, passive):
         pb find --ip 192.168.1           # Filter by IP substring (fast)
         pb find --name tree --ip 10.     # Combine filters
         pb find --timeout 5000           # Scan longer for slow networks
-        pb find --passive                # Listen only, no probe broadcast
+        pb find --passive                # Listen only: no probe, no sweep
+      pb find --no-sweep               # Skip the local /24 sweep
         pb find --no-cache               # Don't update cached IP
         pb find 2>/dev/null              # Quiet mode (stdout JSONL only)
     """
@@ -171,7 +176,8 @@ def find(ctx, name_filter, ip_filter, scan_timeout, slow, no_cache, passive):
     if name_filter:
         slow = True
 
-    devices = enumerate_pixelblazes(timeout=scan_timeout, slow=slow, probe=not passive)
+    devices = enumerate_pixelblazes(timeout=scan_timeout, slow=slow, probe=not passive,
+                                    sweep=not (passive or no_sweep))
 
     if not devices:
         raise click.ClickException(
