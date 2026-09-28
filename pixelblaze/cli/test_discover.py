@@ -155,7 +155,7 @@ def test_enumerator_ignores_junk_and_reads_types():
     del listener
 
     # With probe on, a timeSync reply counts and is labelled 43.
-    with patched(lib, sendBeaconProbe=lambda sock: '10.9.9.9'):
+    with patched(lib, sendBeaconProbe=lambda sock: {'10.9.9.9'}):
         listener = lib.Pixelblaze.EnumerateAddresses(timeout=700, hostIP=LOOP, probe=True)
     threading.Thread(target=lambda: (time.sleep(0.1), tx.sendto(sync, (LOOP, lib.BEACON_PORT))),
                      daemon=True).start()
@@ -164,6 +164,79 @@ def test_enumerator_ignores_junk_and_reads_types():
     assert listener.packetTypes == {LOOP: 43}, listener.packetTypes
     tx.close()
     print("✓ enumerator ignores junk, labels packet types")
+
+
+def test_enumerator_sees_sync_group_followers():
+    """A follower never sends 42 -- it sends 45, and it is still a Pixelblaze.
+
+    Missing this made a follower invisible to `pb find` even when it answered
+    a probe, which is how a rig whose only reachable device was a follower
+    reported an empty network.
+    """
+    listener = lib.Pixelblaze.EnumerateAddresses(timeout=700, hostIP=LOOP)
+    tx = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    tx.bind((LOOP, 0))
+    # 12 bytes, same shape as a beacon: type, senderId (chipId), senderTimeMs
+    follower = struct.pack('<LLL', 45, 5243300, 1193167)
+    threading.Thread(target=lambda: (time.sleep(0.1), tx.sendto(follower, (LOOP, lib.BEACON_PORT))),
+                     daemon=True).start()
+    found = list(listener)
+    tx.close()
+    assert found == [LOOP], found
+    assert listener.packetTypes == {LOOP: 45}, listener.packetTypes
+    print("✓ enumerator counts sync-group followers (type 45)")
+
+
+def test_probe_leaves_by_every_interface():
+    """One send to 255.255.255.255 only reaches the default-route subnet.
+
+    A Pi hosting an access point while plugged into ethernet has the
+    Pixelblazes on the AP and the default route on the cable, so a single
+    limited broadcast never reaches them.
+    """
+    sent = []
+
+    class FakeSock:
+        def sendto(self, packet, addr):
+            sent.append((socket.inet_ntoa(packet[4:8]), addr[0]))
+
+    interfaces = [('192.168.2.4', '192.168.2.255'), ('10.17.76.1', '10.17.76.255')]
+    with patched(lib, localIPv4Interfaces=lambda: interfaces):
+        local = lib.sendBeaconProbe(FakeSock())
+
+    assert local == {'192.168.2.4', '10.17.76.1'}, local
+    # every interface's own directed broadcast, each stamped with that
+    # interface's address as the sender id
+    assert ('192.168.2.4', '192.168.2.255') in sent, sent
+    assert ('10.17.76.1', '10.17.76.255') in sent, sent
+    # and the limited broadcast from each, for anything the netmask misses
+    assert ('10.17.76.1', '255.255.255.255') in sent, sent
+    print("✓ probe leaves by every interface")
+
+
+def test_probe_falls_back_when_getifaddrs_is_unavailable():
+    """Windows has no getifaddrs; the default route is still better than nothing."""
+    sent = []
+
+    class FakeSock:
+        def sendto(self, packet, addr):
+            sent.append(addr[0])
+
+    with patched(lib, localIPv4Interfaces=lambda: []):
+        local = lib.sendBeaconProbe(FakeSock())
+
+    assert len(local) == 1, local
+    assert sent == ['255.255.255.255'], sent
+    print("✓ probe falls back to the default route without getifaddrs")
+
+
+def test_local_interfaces_are_real_and_exclude_loopback():
+    """Whatever this machine actually has: dotted quads, no loopback."""
+    for address, broadcast in lib.localIPv4Interfaces():
+        assert not address.startswith('127.'), address
+        assert len(address.split('.')) == 4, address
+        assert len(broadcast.split('.')) == 4, broadcast
+    print("✓ localIPv4Interfaces returns sane addresses")
 
 
 # ── _discover_devices ───────────────────────────────────────────────────────

@@ -66,6 +66,8 @@ __version__ = "1.1.8"
 #   Standard library imports.
 import sys
 import socket
+import ctypes
+import ctypes.util
 
 import select
 import errno
@@ -153,45 +155,140 @@ def openBeaconSocket(hostIP: str = "0.0.0.0", timeout: float = None) -> socket.s
     return sock
 
 
-def sendBeaconProbe(sock: socket.socket) -> str:
-    """Broadcast one beacon packet from `sock` to solicit timeSync replies.
+def localIPv4Interfaces() -> "list[tuple[str, str]]":
+    """Every local IPv4 interface, as (address, directed-broadcast) pairs.
 
-    A Pixelblaze answers any beacon it hears with a unicast timeSync packet
-    (type 43) carrying its own chipId — including sync-group *followers*,
-    which never broadcast beacons of their own and are otherwise invisible
-    to a passive listener. One broadcast therefore makes every Pixelblaze on
-    the LAN identify itself within a few milliseconds, with no TCP or
-    websocket connection involved.
+    Discovery has to leave the machine by *every* interface, not just the one
+    the default route happens to use. A Pi that is both plugged into ethernet
+    and hosting its own access point is the ordinary case for a light rig: the
+    Pixelblazes are on the AP, and the default route is the cable.
+
+    Uses `getifaddrs(3)` through ctypes rather than a dependency. Only the
+    fields common to the Linux and BSD/macOS `struct ifaddrs` are read, and
+    within `sockaddr` the IPv4 address sits at offset 4 on both (macOS spends
+    its first byte on `sin_len`, Linux on the low half of a 16-bit family).
+
+    Returns:
+        list: (address, broadcast) for each AF_INET interface, loopback
+            excluded. Empty if the platform has no `getifaddrs` (Windows), in
+            which case callers should fall back to the default route.
+    """
+    class _sockaddr(ctypes.Structure):
+        _fields_ = [("sa_data_0", ctypes.c_uint8 * 4), ("sa_addr", ctypes.c_uint8 * 4)]
+
+    class _ifaddrs(ctypes.Structure):
+        pass
+
+    # Only up to ifa_netmask is read, and that prefix is shared by Linux and BSD.
+    _ifaddrs._fields_ = [
+        ("ifa_next", ctypes.POINTER(_ifaddrs)),
+        ("ifa_name", ctypes.c_char_p),
+        ("ifa_flags", ctypes.c_uint),
+        ("ifa_addr", ctypes.POINTER(_sockaddr)),
+        ("ifa_netmask", ctypes.POINTER(_sockaddr)),
+    ]
+
+    def _family(sa) -> int:
+        # Linux: uint16 at 0. macOS/BSD: sin_len at 0, family at 1.
+        raw = bytes(sa.contents.sa_data_0)
+        return raw[0] if raw[1] == 0 else raw[1]
+
+    def _quad(sa) -> str:
+        return ".".join(str(b) for b in bytes(sa.contents.sa_addr))
+
+    try:
+        libc = ctypes.CDLL(ctypes.util.find_library("c") or "libc.so.6", use_errno=True)
+        head = ctypes.POINTER(_ifaddrs)()
+        if libc.getifaddrs(ctypes.byref(head)) != 0:
+            return []
+    except (OSError, AttributeError):
+        return []
+
+    found, node = [], head
+    try:
+        while node:
+            entry = node.contents
+            node = entry.ifa_next
+            if not entry.ifa_addr or _family(entry.ifa_addr) != socket.AF_INET:
+                continue
+            address = _quad(entry.ifa_addr)
+            if address.startswith("127.") or address == "0.0.0.0":
+                continue
+            mask = _quad(entry.ifa_netmask) if entry.ifa_netmask else "255.255.255.0"
+            try:
+                octets = [int(a) | (~int(m) & 0xFF)
+                          for a, m in zip(address.split("."), mask.split("."))]
+                broadcast = ".".join(str(o) for o in octets)
+            except ValueError:
+                broadcast = "255.255.255.255"
+            found.append((address, broadcast))
+    finally:
+        try:
+            libc.freeifaddrs(head)
+        except Exception:
+            pass
+    return found
+
+
+def sendBeaconProbe(sock: socket.socket) -> "set[str]":
+    """Broadcast one beacon packet per interface to solicit replies.
+
+    A Pixelblaze answers any beacon it hears with a unicast reply carrying its
+    own chipId -- including sync-group *followers*, which never broadcast
+    beacons of their own and are otherwise invisible to a passive listener. One
+    broadcast therefore makes every Pixelblaze on the LAN identify itself within
+    a few milliseconds, with no TCP or websocket connection involved.
+
+    The probe goes out **every** interface, each with that interface's own
+    address as the sender id and its own directed broadcast as the destination.
+    A single send to 255.255.255.255 is not enough: the kernel routes it out the
+    default-route interface alone, so a Pixelblaze on any other subnet -- the
+    access point a Pi is hosting while also plugged into ethernet -- never hears
+    it, and `find` reports an empty network that is not empty.
 
     Side effect, observed on firmware 3.51: after a few probes in quick
     succession the device listed this host among its sync-group peers
     (`getPeers`), and dropped it again within about a minute of the probes
     stopping. Callers reading peer lists should ignore their own address.
 
-    The packet is a well-formed beacon (type 42, this host's IPv4 as the
-    sender id, low 32 bits of the current time in ms). Devices only adjust
-    their clocks on *timeSync* packets, never on beacons, so it is inert
-    beyond eliciting the reply.
+    The packet is a well-formed beacon (type 42, this host's IPv4 as the sender
+    id, low 32 bits of the current time in ms). Devices only adjust their clocks
+    on *timeSync* packets, never on beacons, so it is inert beyond eliciting the
+    reply.
 
     Returns:
-        str: This host's IPv4 address, which the caller should ignore as a
-            sender since the broadcast loops back to our own listener; or ""
-            if the send failed (no route, no broadcast permission), in which
+        set: This host's IPv4 addresses, which the caller should ignore as
+            senders since each broadcast loops back to our own listener. Empty
+            if every send failed (no route, no broadcast permission), in which
             case the passive listen still works.
     """
-    try:
-        probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    now = int(round(time.time() * 1000)) % 0xFFFFFFFF
+
+    def _beacon(local: str) -> bytes:
+        return struct.pack("<L", 42) + socket.inet_aton(local) + struct.pack("<L", now)
+
+    targets = localIPv4Interfaces()
+    if not targets:
+        # No getifaddrs: fall back to whichever address the default route uses.
         try:
-            probe.connect(("10.255.255.255", 1))  # no packet sent; resolves our address
-            local = probe.getsockname()[0]
-        finally:
-            probe.close()
-        now = int(round(time.time() * 1000)) % 0xFFFFFFFF
-        packet = struct.pack("<L", 42) + socket.inet_aton(local) + struct.pack("<L", now)
-        sock.sendto(packet, ("255.255.255.255", BEACON_PORT))
-        return local
-    except OSError:
-        return ""
+            probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            try:
+                probe.connect(("10.255.255.255", 1))  # no packet sent; resolves our address
+                targets = [(probe.getsockname()[0], "255.255.255.255")]
+            finally:
+                probe.close()
+        except OSError:
+            return set()
+
+    sent = set()
+    for local, broadcast in targets:
+        for destination in {broadcast, "255.255.255.255"}:
+            try:
+                sock.sendto(_beacon(local), (destination, BEACON_PORT))
+                sent.add(local)
+            except OSError:
+                continue
+    return sent
 
 
 class Pixelblaze:
@@ -418,17 +515,18 @@ class Pixelblaze:
             """
             # clear seenPixelblazes so we start fresh if the enumerator is used multiple times.
             self.seenPixelblazes = []
-            # ip -> packet type (42 beacon, 43 timeSync reply to our probe) for
-            # each address returned, so callers can tell how it was found.
+            # ip -> packet type (42 beacon, 45 follower beacon, 43 timeSync
+            # reply to our probe) for each address returned, so callers can
+            # tell how it was found.
             self.packetTypes = {}
             self.enumeratorType = enumeratorType
             self.timeout = timeout
             self.proxyUrl = proxyUrl
             self.probe = probe
-            self.localAddress = ""
+            self.localAddresses = set()
             self.listenSocket = openBeaconSocket(hostIP, timeout=timeout / 1000.0)
             if probe:
-                self.localAddress = sendBeaconProbe(self.listenSocket)
+                self.localAddresses = sendBeaconProbe(self.listenSocket)
 
         def __del__(self):
             """
@@ -452,12 +550,15 @@ class Pixelblaze:
                     data, ipAddress = self.listenSocket.recvfrom(1024)
                     if len(data) < 12:
                         continue  # not ours; a beacon is 12 bytes, a timeSync 20
-                    if ipAddress[0] == self.localAddress:
+                    if ipAddress[0] in self.localAddresses:
                         continue  # our own probe, looped back by the kernel
                     pkt = struct.unpack("<LLL", data[:12])
-                    # 42 is a beacon. 43 is a timeSync, which only reaches us as a
-                    # reply to a probe we sent -- and then it is a Pixelblaze too.
-                    if pkt[0] == 42 or (pkt[0] == 43 and self.probe):
+                    # 42 is a beacon, sent by any Pixelblaze that leads or is
+                    # standalone. 45 is the same thing from a sync-group
+                    # follower, which never sends 42. 43 is a timeSync, which
+                    # only reaches us as a reply to a probe we sent -- and then
+                    # it is a Pixelblaze too.
+                    if pkt[0] in (42, 45) or (pkt[0] == 43 and self.probe):
                         if ipAddress not in self.seenPixelblazes:
                             # Add this address to our list so we don't repeat it.
                             self.seenPixelblazes.append(ipAddress)
@@ -3970,6 +4071,10 @@ class PixelblazeEnumerator:
     SYNC_ID = 890
     BEACON_PACKET = 42
     TIMESYNC_PACKET = 43
+    # A sync-group follower does not send type 42. It sends this instead, in the
+    # same 12-byte shape (type, senderId=chipId, senderTimeMs). Observed on
+    # firmware 3.70; a follower is otherwise invisible to a passive listener.
+    FOLLOWER_BEACON_PACKET = 45
     DEVICE_TIMEOUT = 30000
     LIST_CHECK_INTERVAL = 5000
 
