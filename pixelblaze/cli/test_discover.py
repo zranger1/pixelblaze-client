@@ -281,7 +281,7 @@ class FakePixelblaze:
 
 
 def _run_discovery(cache, ports, script, probe=True, self_ip='192.168.1.67', peers=None,
-                   raise_on_start=None, subnets=None):
+                   raise_on_start=None, subnets=None, ask_peers=True):
     # sweep off unless a test asks for it: a real one would connect to every
     # host on whatever LAN the suite happens to be running on.
     FakeEnumerator.script = script
@@ -305,7 +305,7 @@ def _run_discovery(cache, ports, script, probe=True, self_ip='192.168.1.67', pee
                  })):
         with contextlib.redirect_stderr(err):
             found = _discover_devices(timeout=300, on_ip=seen.append, probe=probe,
-                                      sweep=subnets is not None)
+                                      sweep=subnets is not None, peers=ask_peers)
     return found, seen, err.getvalue()
 
 
@@ -601,3 +601,29 @@ def test_sweep_refuses_anything_wider_than_a_24():
     assert [label for label, _ in got] == ['192.168.1.0/24'], got
     assert len(got[0][1]) == 254
     print("✓ sweep is bounded at a /24")
+
+
+def test_peers_false_opens_no_websocket():
+    """The one socket discovery opens, and why an unattended sweeper must not.
+
+    The firmware has a handful of websocket slots, and `wsSendJson` reopens and
+    retries on a closed connection — so against a device whose server is
+    already saturated, a caller sweeping on a timer keeps it saturated. The
+    subnet sweep finds everything a peer list would, without connecting.
+    """
+    ports = {'10.1.1.86': {80: True, 81: True}}
+    peers = {'10.1.1.86': [{'address': '10.1.1.99'}]}
+
+    # With peers on, the peer is followed and FakePixelblaze is opened.
+    found, _, _ = _run_discovery(cache={'devices': {}}, ports={**ports, '10.1.1.99': {80: True, 81: True}},
+                                 script=[(0.05, '10.1.1.86', 42)], peers=peers)
+    assert '10.1.1.99' in {d['ip'] for d in found}
+    assert FakePixelblaze.opened, "expected a websocket when peers=True"
+
+    # With peers off: the device is still found, nothing is opened, no peer followed.
+    FakePixelblaze.opened = []
+    found, _, _ = _run_discovery(cache={'devices': {}}, ports={**ports, '10.1.1.99': {80: True, 81: True}},
+                                 script=[(0.05, '10.1.1.86', 42)], peers=peers, ask_peers=False)
+    assert {d['ip'] for d in found} == {'10.1.1.86'}, found
+    assert FakePixelblaze.opened == [], FakePixelblaze.opened
+    print("✓ peers=False finds the device and opens no websocket")
