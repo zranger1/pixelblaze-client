@@ -76,6 +76,40 @@ def get_host_ip() -> str:
         return ''
 
 
+SWEEP_MAX_HOSTS = 256        # a /24. Anything wider is not worth scanning blind.
+SWEEP_WORKERS = 128
+
+
+def sweepable_subnets() -> "list[tuple[str, list[str]]]":
+    """Local /24-or-smaller subnets, as (label, hosts-to-probe) pairs.
+
+    Discovery is otherwise blind to a device that never beacons and was never
+    cached — which is exactly a sync-group follower whose leader is off. Its
+    web UI works fine and `pb find` cannot see it. A connect sweep of our own
+    subnet is the only source that needs no prior knowledge of the device.
+
+    Bounded at a /24 on purpose: a blind scan of a /16 is 65k connects and a
+    thing you do to a corporate network by accident, not a discovery strategy.
+    """
+    out = []
+    for address, broadcast in localIPv4Interfaces():
+        try:
+            octets = [int(o) for o in address.split('.')]
+            bcast = [int(o) for o in broadcast.split('.')]
+        except ValueError:
+            continue
+        # host bits come from where the broadcast address differs from ours
+        size = 1
+        for a, b in zip(octets, bcast):
+            size *= (b - a) + 1 if b >= a else 1
+        if size <= 1 or size > SWEEP_MAX_HOSTS:
+            continue
+        prefix = '.'.join(str(o) for o in octets[:3])
+        hosts = [f'{prefix}.{n}' for n in range(1, 255)]
+        out.append((f'{prefix}.0/24', hosts))
+    return out
+
+
 def get_host_ips() -> set:
     """Every address this machine answers to, not just the outbound one.
 
@@ -677,6 +711,7 @@ def _discover_devices(
     timeout: int = 2000,
     on_ip: Optional[Callable[[str], None]] = None,
     probe: bool = True,
+    sweep: bool = True,
 ) -> list[dict]:
     """
     Find every Pixelblaze on the network, using every source at once.
@@ -694,6 +729,11 @@ def _discover_devices(
         devices on a quiet or broadcast-filtered network.
       * Sync-group peers — each device found, from any source, is asked for
         its peer list; new addresses are probed the same way.
+      * Subnet sweep — with `sweep`, a TCP connect to every host on each
+        local /24. The only source that needs no prior knowledge of a
+        device, and the only one that finds a *follower that was never
+        cached*: followers never beacon, so with their leader off they are
+        invisible to every other source while their web UI works fine.
 
     Args:
         timeout: Beacon listen timeout in milliseconds.
@@ -702,12 +742,14 @@ def _discover_devices(
             (e.g. `pb top`) fire workers against a device as soon as it
             answers. Callback exceptions are logged and swallowed.
         probe: Broadcast a beacon to solicit timeSync replies. Default on.
+        sweep: TCP-sweep each local /24. Default on; costs nothing in
+            wall-clock because it runs inside the beacon listen.
 
     Returns:
         list[dict]: One per device, in the order they answered:
             ip (str)
             via (str): 'beacon', 'timeSync' (answered our probe), 'adhoc',
-                'cache', or 'peer'.
+                'cache', 'peer', or 'sweep'.
             http, ws (bool): present when the device was TCP-probed —
                 whether ports 80 / 81 accepted a connection.
 
@@ -771,6 +813,17 @@ def _discover_devices(
         elif via == 'peer':
             log(f"  {ip} ({detail}) did not answer on ports 80/81")
 
+    def sweep_subnet(label: str, hosts: "list[str]"):
+        # Its own pool: 254 connects at the discovery pool's 16 workers would
+        # outlast the beacon listen and make `find` feel slow. At this width
+        # the whole /24 lands well inside the listen window.
+        targets = [ip for ip in hosts if ip not in self_ips]
+        with ThreadPoolExecutor(max_workers=SWEEP_WORKERS,
+                                thread_name_prefix='pb-sweep') as sweeper:
+            for ip, ports in zip(targets, sweeper.map(_tcp_ports_open, targets)):
+                if ports[HTTP_PORT] or ports[WS_PORT]:
+                    add(ip, 'sweep', label, http=ports[HTTP_PORT], ws=ports[WS_PORT])
+
     def ask_peers(ip: str):
         # Followers don't beacon, but every peer knows about them. This is
         # the one place discovery opens a websocket, and it is closed
@@ -803,12 +856,16 @@ def _discover_devices(
         if cached_ip not in candidates and cached_ip not in self_ips:
             candidates.append(cached_ip)
 
+    subnets = sweepable_subnets() if sweep else []
+    swept = f", sweeping {', '.join(label for label, _ in subnets)}" if subnets else ""
     log(f"Listening for beacons ({timeout}ms){' + probing' if probe else ''}, "
-        f"checking {len(candidates)} known address(es)...")
+        f"checking {len(candidates)} known address(es){swept}...")
     try:
         submit(listen)
         for ip in candidates:
             submit(probe_tcp, ip, 'adhoc' if ip == ADHOC_IP else 'cache')
+        for label, hosts in subnets:
+            submit(sweep_subnet, label, hosts)
 
         # Tasks spawn tasks (a found device queues a peer query, a peer queues
         # a probe), so keep draining until nothing is in flight.
@@ -889,12 +946,14 @@ def enumerate_pixelblazes(
     slow: bool = False,
     on_ip: Optional[Callable[[str], None]] = None,
     probe: bool = True,
+    sweep: bool = True,
 ) -> list[dict]:
     """
     Discover all Pixelblazes on the network.
 
-    Beacons, a probe broadcast, the ad-hoc address, every cached address and
-    sync-group peer lists are all tried in parallel — see `_discover_devices`.
+    Beacons, a probe broadcast, the ad-hoc address, every cached address, a
+    sweep of each local /24 and sync-group peer lists are all tried in
+    parallel — see `_discover_devices`.
     In fast mode (default), returns minimal dicts: the IP, how it was found,
     and which ports answered. In slow mode, also connects to each device in
     parallel to fetch name, config, version, etc.
@@ -914,7 +973,7 @@ def enumerate_pixelblazes(
                     something did. Slow mode connects and adds the live name,
                     pixelCount, brightness, ver, brandName, hostIp.
     """
-    found = _discover_devices(timeout=timeout, on_ip=on_ip, probe=probe)
+    found = _discover_devices(timeout=timeout, on_ip=on_ip, probe=probe, sweep=sweep)
     _explain_silent_beacons(found)
 
     if not found:

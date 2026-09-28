@@ -281,7 +281,9 @@ class FakePixelblaze:
 
 
 def _run_discovery(cache, ports, script, probe=True, self_ip='192.168.1.67', peers=None,
-                   raise_on_start=None):
+                   raise_on_start=None, subnets=None):
+    # sweep off unless a test asks for it: a real one would connect to every
+    # host on whatever LAN the suite happens to be running on.
     FakeEnumerator.script = script
     FakeEnumerator.raise_on_start = raise_on_start
     FakePixelblaze.peers = peers or {}
@@ -295,13 +297,15 @@ def _run_discovery(cache, ports, script, probe=True, self_ip='192.168.1.67', pee
     with patched(cli_utils,
                  _read_cache=lambda: cache,
                  get_host_ip=lambda: self_ip,
+                 sweepable_subnets=lambda: subnets or [],
                  _tcp_ports_open=lambda ip, ports_=(80, 81), timeout=1.0: ports.get(ip, {80: False, 81: False}),
                  Pixelblaze=type('PBShim', (), {
                      'EnumerateAddresses': PB.EnumerateAddresses,
                      '__new__': lambda cls, ip, **kw: FakePixelblaze(ip, **kw),
                  })):
         with contextlib.redirect_stderr(err):
-            found = _discover_devices(timeout=300, on_ip=seen.append, probe=probe)
+            found = _discover_devices(timeout=300, on_ip=seen.append, probe=probe,
+                                      sweep=subnets is not None)
     return found, seen, err.getvalue()
 
 
@@ -552,3 +556,48 @@ def test_host_ips_survive_no_getifaddrs():
     with patched(cli_utils, localIPv4Interfaces=lambda: [], get_host_ip=lambda: ''):
         assert cli_utils.get_host_ips() == set()
     print("✓ get_host_ips degrades to the outbound address")
+
+
+def test_sweep_finds_what_no_other_source_can():
+    """A follower that never beaconed and was never cached, with its leader off.
+
+    Its web UI works fine, but beacons, the probe, the cache, the ad-hoc
+    address and peer lists are all blind to it — the leader that would have
+    listed it as a peer is the thing that is down. The sweep is the only
+    source left, and it needs no prior knowledge of the device.
+    """
+    ports = {'10.17.76.143': {80: True, 81: True}}     # the orphaned follower
+    subnets = [('10.17.76.0/24', ['10.17.76.1', '10.17.76.53', '10.17.76.143'])]
+
+    found, seen, log = _run_discovery(cache={'devices': {}}, ports=ports, script=[],
+                                      self_ip='10.17.76.1', subnets=subnets)
+    by_ip = {d['ip']: d for d in found}
+
+    assert set(by_ip) == {'10.17.76.143'}, by_ip
+    assert by_ip['10.17.76.143']['via'] == 'sweep'
+    assert by_ip['10.17.76.143']['http'] is True and by_ip['10.17.76.143']['ws'] is True
+    assert '10.17.76.0/24' in log
+    print("✓ sweep finds an orphaned follower nothing else can see")
+
+
+def test_sweep_never_probes_ourselves():
+    """We answer on port 80 — the jam web console does — and are not a device."""
+    ports = {'10.17.76.1': {80: True, 81: True}}       # us, serving something
+    subnets = [('10.17.76.0/24', ['10.17.76.1', '10.17.76.143'])]
+
+    found, _, _ = _run_discovery(cache={'devices': {}}, ports=ports, script=[],
+                                 self_ip='10.17.76.1', subnets=subnets)
+    assert found == [], found
+    print("✓ sweep skips our own addresses")
+
+
+def test_sweep_refuses_anything_wider_than_a_24():
+    """A blind scan of a /16 is 65k connects, and an accident, not a strategy."""
+    with patched(cli_utils, localIPv4Interfaces=lambda: [
+            ('10.0.0.5', '10.255.255.255'),      # /8  — skipped
+            ('192.168.1.67', '192.168.1.255'),   # /24 — swept
+            ('172.16.4.2', '172.16.255.255')]):  # /16 — skipped
+        got = cli_utils.sweepable_subnets()
+    assert [label for label, _ in got] == ['192.168.1.0/24'], got
+    assert len(got[0][1]) == 254
+    print("✓ sweep is bounded at a /24")
