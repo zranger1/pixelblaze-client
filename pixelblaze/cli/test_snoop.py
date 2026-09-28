@@ -30,7 +30,7 @@ import click
 from pixelblaze.cli import cli_utils, snoop
 from pixelblaze.cli.snoop import (
     _capture_filter, _display_filter, _jq_program, _jq_udp_program, _resolve_others,
-    _udp_display_filter,
+    _udp_display_filter, _jq_http_program, _jq_all_program,
 )
 
 HOST = '192.168.1.67'
@@ -718,3 +718,90 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+# ── --http and --all ────────────────────────────────────────────────────────
+
+def _jq(program, lines):
+    """Push synthetic `tshark -T ek` objects through the real jq program."""
+    jq = shutil.which('jq')
+    if not jq:                      # pragma: no cover - jq is a hard dep of snoop
+        raise AssertionError("jq is required for these tests")
+    src = "\n".join(json.dumps(l) for l in lines)
+    out = subprocess.run([jq, '-c', '-M', program], input=src,
+                         capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    return [json.loads(l) for l in out.stdout.splitlines() if l.strip()]
+
+
+def _ek(**fields):
+    """tshark -T ek wraps every field value in a list."""
+    return {'layers': {k: [str(v)] for k, v in fields.items()}}
+
+
+def test_http_program_decodes_requests_and_responses():
+    """The firmware's endpoints — /update, /recovery.html, /wifistatus — are
+    invisible to a websocket-only capture, which is the whole point of --http."""
+    prog = _jq_http_program(show_time=False, bare=False, grep=None, exclude=None, extra=None)
+    got = _jq(prog, [
+        _ek(ip_src='10.0.0.1', ip_dst='10.0.0.5',
+            http_request_method='POST', http_request_uri='/update'),
+        _ek(ip_src='10.0.0.5', ip_dst='10.0.0.1',
+            http_response_code='200', http_content_type='text/html',
+            http_content_length='57'),
+        _ek(ip_src='10.0.0.5', ip_dst='10.0.0.1'),          # neither: dropped
+    ])
+    assert got == [
+        {'kind': 'http', 'src': '10.0.0.1', 'dst': '10.0.0.5',
+         'method': 'POST', 'uri': '/update'},
+        {'kind': 'http', 'src': '10.0.0.5', 'dst': '10.0.0.1',
+         'status': 200, 'contentType': 'text/html', 'bytes': 57},
+    ], got
+
+
+def test_http_program_bare_and_filters():
+    bare = _jq_http_program(show_time=False, bare=True, grep=None, exclude=None, extra=None)
+    got = _jq(bare, [_ek(ip_src='a', ip_dst='b', http_request_method='GET',
+                         http_request_uri='/wifistatus')])
+    assert got == [{'method': 'GET', 'uri': '/wifistatus'}], got
+
+    only = _jq_http_program(show_time=False, bare=False, grep='update',
+                            exclude=None, extra=None)
+    got = _jq(only, [
+        _ek(ip_src='a', ip_dst='b', http_request_method='POST', http_request_uri='/update'),
+        _ek(ip_src='a', ip_dst='b', http_request_method='GET', http_request_uri='/recovery.html'),
+    ])
+    assert [g['uri'] for g in got] == ['/update'], got
+
+
+def test_all_program_tags_each_protocol():
+    """One timeline, three protocols. An OTA is an HTTP POST whose real verdict
+    arrives as websocket upgradeState frames — seeing one without the other is
+    how you end up believing the HTTP response."""
+    prog = _jq_all_program(show_time=False, grep=None, exclude=None, extra=None)
+    got = _jq(prog, [
+        _ek(ip_src='10.0.0.1', ip_dst='10.0.0.5',
+            http_request_method='POST', http_request_uri='/update'),
+        _ek(ip_src='10.0.0.5', ip_dst='10.0.0.1',
+            websocket_payload_text='{"upgradeState":3}'),
+        _ek(ip_src='10.0.0.5', ip_dst='10.0.0.1', http_response_code='200',
+            http_content_type='text/html'),
+        _ek(ip_src='10.0.0.5', ip_dst='10.0.0.1', data_data='2a000000'),
+        _ek(ip_src='10.0.0.5', ip_dst='10.0.0.1'),           # nothing decodable
+    ])
+    assert [g['kind'] for g in got] == ['http', 'ws', 'http', 'udp'], got
+    assert got[0]['uri'] == '/update'
+    assert got[1]['text'] == '{"upgradeState":3}'
+    assert got[2]['status'] == 200
+    assert got[3]['bytes'] == 4              # 8 hex chars -> 4 bytes
+
+
+def test_all_and_udp_are_mutually_exclusive():
+    """They are different captures, and --all is a superset — say so rather
+    than silently honouring one."""
+    from click.testing import CliRunner
+    from pixelblaze.cli.cli import pixelblaze
+    res = CliRunner().invoke(pixelblaze, ['--ip', '10.0.0.5', 'snoop',
+                                          '--all', '--udp', '--dry-run'])
+    assert res.exit_code != 0
+    assert 'different captures' in res.output, res.output

@@ -37,6 +37,7 @@ string and the jq program carries a small little-endian decoder for it.
 from __future__ import annotations
 
 import glob
+import json
 import os
 import re
 import shlex
@@ -562,8 +563,89 @@ _TSHARK_FIELDS = ('ip.src', 'ip.dst', 'tcp.srcport', 'tcp.dstport',
                   'frame.time_epoch', 'websocket.payload.text')
 _TSHARK_UDP_FIELDS = ('ip.src', 'ip.dst', 'udp.srcport', 'udp.dstport',
                       'frame.time_epoch', 'data.data')
+# HTTP is where the firmware endpoints live — /update (OTA), /recovery.html,
+# /wifistatus, /wifiscan. None of it is visible in a websocket-only capture,
+# and the OTA response in particular is worth seeing: the device answers a
+# failed flash with 200 "Update Success! Rebooting...".
+_TSHARK_HTTP_FIELDS = ('ip.src', 'ip.dst', 'tcp.srcport', 'tcp.dstport',
+                       'frame.time_epoch', 'http.request.method',
+                       'http.request.uri', 'http.response.code',
+                       'http.content_type', 'http.content_length')
+# --all: one capture, all three protocols, one timeline. Fields absent from a
+# given packet simply do not appear in its `-T ek` object, so the union is safe.
+_TSHARK_ALL_FIELDS = tuple(dict.fromkeys(
+    _TSHARK_FIELDS + _TSHARK_UDP_FIELDS + _TSHARK_HTTP_FIELDS))
+
+def _jq_http_program(show_time: bool, bare: bool, grep: str | None,
+                     exclude: str | None, extra: str | None) -> str:
+    """One line per HTTP request or response, request/response paired by nothing
+    at all — tshark emits them as they go past, which is the order that matters
+    when you are watching an OTA and the websocket state in the same capture."""
+    parts = ['select(.layers) | .layers as $L',
+             '| ($L["ip_src"][0] // "") as $src',
+             '| ($L["ip_dst"][0] // "") as $dst',
+             '| (($L["frame_time_epoch"][0] // "0") | tonumber) as $ts',
+             '| ($L["http_request_method"][0] // null) as $method',
+             '| ($L["http_request_uri"][0] // null) as $uri',
+             '| ($L["http_response_code"][0] // null) as $code',
+             '| ($L["http_content_type"][0] // null) as $ctype',
+             '| ($L["http_content_length"][0] // null) as $clen',
+             '| select($method != null or $code != null)',
+             '| {kind: "http", src: $src, dst: $dst}',
+             '+ (if $method then {method: $method, uri: $uri} else {} end)',
+             '+ (if $code then {status: ($code | tonumber)} else {} end)',
+             '+ (if $ctype then {contentType: $ctype} else {} end)',
+             '+ (if $clen then {bytes: ($clen | tonumber)} else {} end)']
+    if show_time:
+        parts.append('+ {ts: ($ts | strftime("%H:%M:%S"))}')
+    if bare:
+        parts.append('| {method, uri, status} | with_entries(select(.value != null))')
+    prog = '\n'.join(parts)
+    if grep:
+        prog += f'\n| select(tostring | test({json.dumps(grep)}))'
+    if exclude:
+        prog += f'\n| select(tostring | test({json.dumps(exclude)}) | not)'
+    if extra:
+        prog += f'\n| {extra}'
+    return prog
+
+
+def _jq_all_program(show_time: bool, grep: str | None, exclude: str | None,
+                    extra: str | None) -> str:
+    """websocket + HTTP + UDP:1889 on one timeline, each line tagged by `kind`.
+
+    The point is correlation: an OTA is an HTTP POST whose real verdict arrives
+    as websocket `upgradeState` frames, and a sync group is UDP. Watching any
+    one of the three in isolation is how you end up believing the HTTP response.
+    """
+    parts = ['select(.layers) | .layers as $L',
+             '| ($L["ip_src"][0] // "") as $src',
+             '| ($L["ip_dst"][0] // "") as $dst',
+             '| (($L["frame_time_epoch"][0] // "0") | tonumber) as $ts',
+             '| ($L["websocket_payload_text"][0] // null) as $ws',
+             '| ($L["http_request_method"][0] // null) as $method',
+             '| ($L["http_response_code"][0] // null) as $code',
+             '| ($L["data_data"][0] // null) as $udp',
+             '| (if $ws then {kind: "ws", text: $ws}',
+             '   elif $method then {kind: "http", method: $method, uri: ($L["http_request_uri"][0] // "")}',
+             '   elif $code then {kind: "http", status: ($code | tonumber), contentType: ($L["http_content_type"][0] // null)}',
+             '   elif $udp then {kind: "udp", bytes: (($udp | length) / 2 | floor)}',
+             '   else empty end)',
+             '| . + {src: $src, dst: $dst}']
+    if show_time:
+        parts.append('| . + {ts: ($ts | strftime("%H:%M:%S"))}')
+    prog = '\n'.join(parts)
+    if grep:
+        prog += f'\n| select(tostring | test({json.dumps(grep)}))'
+    if exclude:
+        prog += f'\n| select(tostring | test({json.dumps(exclude)}) | not)'
+    if extra:
+        prog += f'\n| {extra}'
+    return prog
+
 
 _WS_PORT = 81        # Pixelblaze websocket API
+_HTTP_PORT = 80      # /update, /recovery.html, /wifistatus, /wifiscan
 _BEACON_PORT = 1889  # discovery beacons and timeSync
 
 
@@ -580,6 +662,16 @@ def register(cli_group):
                        'timeSync packets Firestorm answers with. Broadcast, so this sees '
                        'every device on the LAN, not only ones this machine talks to. '
                        'Shows all devices unless --ip or --others narrows it.')
+    @click.option('-H', '--http', 'http_mode', is_flag=True,
+                  help='Capture the HTTP endpoints instead of websocket frames: /update '
+                       '(OTA), /recovery.html, /wifistatus, /wifiscan. Invisible to a '
+                       'websocket-only capture, and the OTA response is worth seeing — a '
+                       'failed flash is answered with 200 "Update Success! Rebooting...".')
+    @click.option('-A', '--all', 'all_mode', is_flag=True,
+                  help='Everything this device says, on one timeline: websocket frames, '
+                       'HTTP, and UDP:1889, each line tagged with "kind". Use when the '
+                       'answer spans protocols — an OTA is an HTTP POST whose real verdict '
+                       'arrives as websocket upgradeState frames.')
     @click.option('-S', '--sensor', 'sensor_only', is_flag=True,
                   help='Implies --udp and shows only sensor board frames: the UDP:1889 '
                        'audio/accelerometer/light datagrams a sync group leader — or '
@@ -651,7 +743,7 @@ def register(cli_group):
     @click.option('--sudo', 'use_sudo', is_flag=True,
                   help='Run tshark under sudo, for when the capture device is root-only.')
     @click.pass_context
-    def snoop(ctx, udp_mode, sensor_only, any_device, others, host_spec, requests, responses, iface,
+    def snoop(ctx, udp_mode, http_mode, all_mode, sensor_only, any_device, others, host_spec, requests, responses, iface,
               ports_csv, midstream, grep, exclude, jq_prog, show_time, bare, full, count,
               duration, read_file, write_file, color_mode, no_color, dry_run, use_sudo):
         """
@@ -683,6 +775,18 @@ def register(cli_group):
             already open (a browser tab you left running), pass --midstream.
 
         \b
+        HTTP endpoints (--http) and everything (--all):
+            --http decodes the firmware's HTTP side — /update (OTA),
+            /recovery.html, /wifistatus, /wifiscan — which a websocket
+            capture cannot see at all. Worth knowing when reading an OTA:
+            the device answers a *failed* flash with 200 "Update Success!
+            Rebooting...", so the HTTP response alone will lie to you.
+            --all captures websocket, HTTP and UDP:1889 together and tags
+            each line with "kind", which is what you want when the answer
+            spans protocols: an OTA is an HTTP POST whose real verdict
+            arrives as websocket upgradeState frames.
+
+        \b
         Discovery beacons (--udp, alias --beacons):
             Every Pixelblaze that is not a sync-group follower broadcasts a
             beacon on UDP:1889 about once a second, and Firestorm answers
@@ -700,6 +804,8 @@ def register(cli_group):
             pb --ip kitchen snoop                # by cached name
             pb snoop --others 231,bike2          # several devices at once
             pb snoop --any                       # every websocket on the wire
+            pb snoop --http -t                   # the HTTP endpoints, timestamped
+            pb snoop --all -t                    # ws + HTTP + UDP on one timeline
             pb snoop --host me                   # ignore other clients
             pb snoop -v '"fps"'                  # hide the periodic status spam
             pb snoop -g setVars                  # only variable writes
@@ -719,12 +825,27 @@ def register(cli_group):
         # the capture differs, so just turn udp mode on.
         udp_mode = udp_mode or sensor_only
 
+        chosen = [n for n, on in (('--udp', udp_mode), ('--http', http_mode),
+                                  ('--all', all_mode)) if on]
+        if len(chosen) > 1:
+            raise click.ClickException(
+                f"{' and '.join(chosen)} are different captures — pick one. "
+                f"--all already includes what the others show.")
+        if all_mode:
+            # One capture covering all three, so the ports have to cover them too.
+            udp_mode = False
+
         live = read_file is None
         if not live and (write_file or count or duration):
             log("Note: --write/--count/--duration apply to live capture; ignored with --read.")
 
         if ports_csv is None:
-            ports_csv = str(_BEACON_PORT if udp_mode else _WS_PORT)
+            if all_mode:
+                ports_csv = f'{_HTTP_PORT},{_WS_PORT}'      # UDP:1889 added to the filter below
+            elif http_mode:
+                ports_csv = str(_HTTP_PORT)
+            else:
+                ports_csv = str(_BEACON_PORT if udp_mode else _WS_PORT)
         try:
             ports = [int(p.strip()) for p in ports_csv.split(',') if p.strip()]
         except ValueError:
@@ -764,8 +885,16 @@ def register(cli_group):
 
         capture_filter = ''
         if live:
-            capture_filter = _capture_filter(devices, host, ports,
-                                             proto='udp' if udp_mode else 'tcp')
+            if all_mode:
+                # Both transports in one BPF expression: the TCP endpoints plus
+                # the beacon port, still narrowed to the devices we care about.
+                tcp_part = _capture_filter([], None, ports, proto='tcp')
+                both = f'(({tcp_part}) or udp port {_BEACON_PORT})'
+                who = ' or '.join(f'host {ip}' for ip in devices)
+                capture_filter = f'{both} and ({who})' if devices else both
+            else:
+                capture_filter = _capture_filter(devices, host, ports,
+                                                 proto='udp' if udp_mode else 'tcp')
 
         # `tshark -w` and `-Y` are mutually exclusive on a live capture, so when
         # saving we narrow with the BPF capture filter alone and let jq do the
@@ -774,7 +903,20 @@ def register(cli_group):
         # needing --midstream.
         saving_live = bool(live and write_file)
         wants_direction = requests != responses
-        if udp_mode:
+        if all_mode:
+            # Let everything through and tag it in jq; a per-protocol display
+            # filter would be three filters and could only drop things.
+            who = ' or '.join(f'ip.addr == {ip}' for ip in devices)
+            expr = '(websocket or http or udp.port == %d)' % _BEACON_PORT
+            display_filter = None if saving_live else (
+                f'{expr} and ({who})' if devices else expr)
+            jq_direction = None
+        elif http_mode:
+            who = ' or '.join(f'ip.addr == {ip}' for ip in devices)
+            display_filter = None if saving_live else (
+                f'http and ({who})' if devices else 'http')
+            jq_direction = None
+        elif udp_mode:
             # Direction is a packet-type question here, so jq always owns it.
             display_filter = None if saving_live else _udp_display_filter(devices, host, ports)
             jq_direction = ('requests' if requests else 'responses') if wants_direction else None
@@ -804,7 +946,10 @@ def register(cli_group):
         if display_filter is not None:
             tshark_cmd += ['-Y', display_filter]
         tshark_cmd += ['-T', 'ek']
-        for field in (_TSHARK_UDP_FIELDS if udp_mode else _TSHARK_FIELDS):
+        fields = (_TSHARK_ALL_FIELDS if all_mode else
+                  _TSHARK_HTTP_FIELDS if http_mode else
+                  _TSHARK_UDP_FIELDS if udp_mode else _TSHARK_FIELDS)
+        for field in fields:
             tshark_cmd += ['-e', field]
         if live and write_file:
             tshark_cmd += ['-w', write_file]
@@ -818,7 +963,14 @@ def register(cli_group):
         # ── Build the jq side ────────────────────────────────────────────
         both_directions = requests == responses  # neither flag, or both
         multi_peer = any_device or len(devices) > 1
-        if udp_mode:
+        if all_mode:
+            program = _jq_all_program(
+                show_time=show_time or full, grep=grep, exclude=exclude, extra=jq_prog)
+        elif http_mode:
+            program = _jq_http_program(
+                show_time=show_time or full, bare=bare,
+                grep=grep, exclude=exclude, extra=jq_prog)
+        elif udp_mode:
             program = _jq_udp_program(
                 show_time=show_time or full,
                 show_endpoints=full,
