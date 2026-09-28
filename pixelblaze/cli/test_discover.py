@@ -526,3 +526,29 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+def test_host_ips_cover_every_interface():
+    """All of our addresses are "us", not just the default-route one.
+
+    A Pi hosting an AP while on ethernet has two. Probing a device makes it
+    list us among its sync-group peers for a while, so if only one address
+    counts as ours the other comes back as a discovered device — convincingly,
+    because whatever we serve on port 80 answers the probe.
+    """
+    interfaces = [('192.168.2.4', '192.168.2.255'), ('10.17.76.1', '10.17.76.255')]
+    with patched(cli_utils, localIPv4Interfaces=lambda: interfaces,
+                 get_host_ip=lambda: '192.168.2.4'):
+        ours = cli_utils.get_host_ips()
+    assert ours == {'192.168.2.4', '10.17.76.1'}, ours
+    print("✓ get_host_ips covers every interface")
+
+
+def test_host_ips_survive_no_getifaddrs():
+    """Windows falls back to the outbound address alone rather than nothing."""
+    with patched(cli_utils, localIPv4Interfaces=lambda: [],
+                 get_host_ip=lambda: '192.168.2.4'):
+        assert cli_utils.get_host_ips() == {'192.168.2.4'}
+    with patched(cli_utils, localIPv4Interfaces=lambda: [], get_host_ip=lambda: ''):
+        assert cli_utils.get_host_ips() == set()
+    print("✓ get_host_ips degrades to the outbound address")
