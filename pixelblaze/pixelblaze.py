@@ -66,6 +66,8 @@ __version__ = "1.1.8"
 #   Standard library imports.
 import sys
 import socket
+import ctypes
+import ctypes.util
 
 import select
 import errno
@@ -89,11 +91,43 @@ from urllib.parse import urlparse, urljoin
 #   Related third party imports.
 import websocket
 import requests
-from py_mini_racer import MiniRacer
 
 
 #   Local application/library specific imports.
 #   -None-
+
+# V8 sets itself up the first time a MiniRacer is constructed, and that one-time
+# setup is not thread-safe: two threads reaching it together trip
+# `Check failed: !IsConfigurablePoolInitialized()` and V8 aborts the whole
+# process with SIGTRAP. `pb <cmd> --ip all` fans out over a thread pool and each
+# worker compiles, so it lost that race about half the time — intermittently,
+# which is why it looked like a bad pattern rather than a bad race.
+#
+# Serializing only the first construction is enough; once V8 is up the rest are
+# free. The import is deferred with it because loading libmini_racer.so costs
+# ~80ms and only pattern compilation and pixelmap evaluation ever need it —
+# every other CLI command was paying for a JS engine it never used.
+_js_init_lock = threading.Lock()
+_js_initialized = False
+
+
+def _newJsContext():
+    """A MiniRacer interpreter, with V8's one-time global init serialized.
+
+    Import and initialization are both lazy: nothing here runs until something
+    actually needs to evaluate JavaScript.
+    """
+    global _js_initialized
+    from py_mini_racer import MiniRacer
+
+    if _js_initialized:
+        return MiniRacer()
+    with _js_init_lock:
+        # A second thread that queued on the lock finds V8 already up; building
+        # its context inside the lock is harmless and keeps this branch simple.
+        ctx = MiniRacer()
+        _js_initialized = True
+        return ctx
 
 # ----------------------------------------------------------------------------
 #
@@ -107,6 +141,188 @@ from py_mini_racer import MiniRacer
 #    ║ ├─┤├┤   ╠═╝│┌┴┬┘├┤ │  ├┴┐│  ├─┤┌─┘├┤   ║║║├┤ ├┴┐└─┐│ ││  ├┴┐├┤  │   ╠═╣╠═╝║
 #    ╩ ┴ ┴└─┘  ╩  ┴┴ └─└─┘┴─┘└─┘┴─┘┴ ┴└─┘└─┘  ╚╩╝└─┘└─┘└─┘└─┘└─┘┴ ┴└─┘ ┴   ╩ ╩╩  ╩
 #
+BEACON_PORT = 1889
+
+
+def openBeaconSocket(hostIP: str = "0.0.0.0", timeout: float = None) -> socket.socket:
+    """Open a UDP socket bound to the Pixelblaze discovery port (1889).
+
+    Shared by the two beacon listeners. Sets SO_REUSEADDR and, where the
+    platform has it, SO_REUSEPORT: on macOS and the BSDs SO_REUSEADDR alone
+    does not let two wildcard UDP binders share a port, and beacons are
+    broadcast, so every SO_REUSEPORT socket still receives each one. That
+    is what lets `pb find`, `pb top`, and a Firestorm all listen at once.
+
+    Args:
+        hostIP (str, optional): Interface address to bind. Defaults to all interfaces.
+        timeout (float, optional): Socket timeout in seconds; None for blocking.
+
+    Returns:
+        socket.socket: The bound socket.
+
+    Raises:
+        OSError: If the port cannot be bound, with a message naming the usual
+            cause (another listener already holds UDP:1889) and how to check.
+            Deliberately not swallowed: a listener that silently never binds
+            looks exactly like a network with no Pixelblazes on it.
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if hasattr(socket, "SO_REUSEPORT"):
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        if timeout is not None:
+            sock.settimeout(timeout)
+        sock.bind((hostIP, BEACON_PORT))
+    except OSError as e:
+        sock.close()
+        raise OSError(
+            e.errno,
+            f"cannot listen for Pixelblaze beacons on UDP port {BEACON_PORT} "
+            f"(bind {hostIP}): {e.strerror or e}. Another process probably holds "
+            f"the port (an older pb, Firestorm, the Pixelblaze app?); check with "
+            f"`lsof -nP -iUDP:{BEACON_PORT}` on macOS/Linux."
+        ) from e
+    return sock
+
+
+def localIPv4Interfaces() -> "list[tuple[str, str]]":
+    """Every local IPv4 interface, as (address, directed-broadcast) pairs.
+
+    Discovery has to leave the machine by *every* interface, not just the one
+    the default route happens to use. A Pi that is both plugged into ethernet
+    and hosting its own access point is the ordinary case for a light rig: the
+    Pixelblazes are on the AP, and the default route is the cable.
+
+    Uses `getifaddrs(3)` through ctypes rather than a dependency. Only the
+    fields common to the Linux and BSD/macOS `struct ifaddrs` are read, and
+    within `sockaddr` the IPv4 address sits at offset 4 on both (macOS spends
+    its first byte on `sin_len`, Linux on the low half of a 16-bit family).
+
+    Returns:
+        list: (address, broadcast) for each AF_INET interface, loopback
+            excluded. Empty if the platform has no `getifaddrs` (Windows), in
+            which case callers should fall back to the default route.
+    """
+    class _sockaddr(ctypes.Structure):
+        _fields_ = [("sa_data_0", ctypes.c_uint8 * 4), ("sa_addr", ctypes.c_uint8 * 4)]
+
+    class _ifaddrs(ctypes.Structure):
+        pass
+
+    # Only up to ifa_netmask is read, and that prefix is shared by Linux and BSD.
+    _ifaddrs._fields_ = [
+        ("ifa_next", ctypes.POINTER(_ifaddrs)),
+        ("ifa_name", ctypes.c_char_p),
+        ("ifa_flags", ctypes.c_uint),
+        ("ifa_addr", ctypes.POINTER(_sockaddr)),
+        ("ifa_netmask", ctypes.POINTER(_sockaddr)),
+    ]
+
+    def _family(sa) -> int:
+        # Linux: uint16 at 0. macOS/BSD: sin_len at 0, family at 1.
+        raw = bytes(sa.contents.sa_data_0)
+        return raw[0] if raw[1] == 0 else raw[1]
+
+    def _quad(sa) -> str:
+        return ".".join(str(b) for b in bytes(sa.contents.sa_addr))
+
+    try:
+        libc = ctypes.CDLL(ctypes.util.find_library("c") or "libc.so.6", use_errno=True)
+        head = ctypes.POINTER(_ifaddrs)()
+        if libc.getifaddrs(ctypes.byref(head)) != 0:
+            return []
+    except (OSError, AttributeError):
+        return []
+
+    found, node = [], head
+    try:
+        while node:
+            entry = node.contents
+            node = entry.ifa_next
+            if not entry.ifa_addr or _family(entry.ifa_addr) != socket.AF_INET:
+                continue
+            address = _quad(entry.ifa_addr)
+            if address.startswith("127.") or address == "0.0.0.0":
+                continue
+            mask = _quad(entry.ifa_netmask) if entry.ifa_netmask else "255.255.255.0"
+            try:
+                octets = [int(a) | (~int(m) & 0xFF)
+                          for a, m in zip(address.split("."), mask.split("."))]
+                broadcast = ".".join(str(o) for o in octets)
+            except ValueError:
+                broadcast = "255.255.255.255"
+            found.append((address, broadcast))
+    finally:
+        try:
+            libc.freeifaddrs(head)
+        except Exception:
+            pass
+    return found
+
+
+def sendBeaconProbe(sock: socket.socket) -> "set[str]":
+    """Broadcast one beacon packet per interface to solicit replies.
+
+    A Pixelblaze answers any beacon it hears with a unicast reply carrying its
+    own chipId -- including sync-group *followers*, which never broadcast
+    beacons of their own and are otherwise invisible to a passive listener. One
+    broadcast therefore makes every Pixelblaze on the LAN identify itself within
+    a few milliseconds, with no TCP or websocket connection involved.
+
+    The probe goes out **every** interface, each with that interface's own
+    address as the sender id and its own directed broadcast as the destination.
+    A single send to 255.255.255.255 is not enough: the kernel routes it out the
+    default-route interface alone, so a Pixelblaze on any other subnet -- the
+    access point a Pi is hosting while also plugged into ethernet -- never hears
+    it, and `find` reports an empty network that is not empty.
+
+    Side effect, observed on firmware 3.51: after a few probes in quick
+    succession the device listed this host among its sync-group peers
+    (`getPeers`), and dropped it again within about a minute of the probes
+    stopping. Callers reading peer lists should ignore their own address.
+
+    The packet is a well-formed beacon (type 42, this host's IPv4 as the sender
+    id, low 32 bits of the current time in ms). Devices only adjust their clocks
+    on *timeSync* packets, never on beacons, so it is inert beyond eliciting the
+    reply.
+
+    Returns:
+        set: This host's IPv4 addresses, which the caller should ignore as
+            senders since each broadcast loops back to our own listener. Empty
+            if every send failed (no route, no broadcast permission), in which
+            case the passive listen still works.
+    """
+    now = int(round(time.time() * 1000)) % 0xFFFFFFFF
+
+    def _beacon(local: str) -> bytes:
+        return struct.pack("<L", 42) + socket.inet_aton(local) + struct.pack("<L", now)
+
+    targets = localIPv4Interfaces()
+    if not targets:
+        # No getifaddrs: fall back to whichever address the default route uses.
+        try:
+            probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            try:
+                probe.connect(("10.255.255.255", 1))  # no packet sent; resolves our address
+                targets = [(probe.getsockname()[0], "255.255.255.255")]
+            finally:
+                probe.close()
+        except OSError:
+            return set()
+
+    sent = set()
+    for local, broadcast in targets:
+        for destination in {broadcast, "255.255.255.255"}:
+            try:
+                sock.sendto(_beacon(local), (destination, BEACON_PORT))
+                sent.add(local)
+            except OSError:
+                continue
+    return sent
+
+
 class Pixelblaze:
     """
     The Pixelblaze class presents a simple synchronous interface to a single Pixelblaze's websocket API.
@@ -178,7 +394,7 @@ class Pixelblaze:
 
     ***UPDATES section***
 
-    - [`getUpdateState`](#method-getUpdateState)/[`installUpdate`](#method-installUpdate)
+    - [`getUpdateState`](#method-getUpdateState)/[`installUpdate`](#method-installUpdate)/[`installFirmwareFile`](#method-installFirmwareFile)
     - [`getVersion`](#method-getVersion)/[`getVersionMajor`](#method-getVersionMajor)/[`getVersionMinor`](#method-getVersionMinor)/
 
     ***BACKUPS section***
@@ -219,6 +435,12 @@ class Pixelblaze:
 
     # --- PRIVATE DATA
     default_recv_timeout = 1
+    # Ceiling on the websocket *handshake* (TCP connect + HTTP upgrade).
+    # Without this, create_connection() inherits socket.getdefaulttimeout()
+    # -- None -- and a Pixelblaze whose websocket server is wedged (accepts
+    # the connection on :81, then never answers the upgrade) blocks the
+    # calling thread forever. See _open().
+    default_open_timeout = 4
     max_open_retries = 5
     ws = None
     connected = False
@@ -305,7 +527,7 @@ class Pixelblaze:
 
         # private constructor:
         def __init__(self, enumeratorType: EnumeratorTypes, *, timeout: int = 1500, proxyUrl: str = None,
-                     hostIP: str = "0.0.0.0"):
+                     hostIP: str = "0.0.0.0", probe: bool = False):
             """
             Create an iterable object that listens for Pixelblaze beacon packets, returning a Pixelblaze object for each unique beacon seen during the timeout period.
 
@@ -314,22 +536,29 @@ class Pixelblaze:
                 hostIP (str, optional): The network interface on which to listen for Pixelblazes. Defaults to "0.0.0.0" meaning all available interfaces.
                 timeout (int, optional): The amount of time in milliseconds to listen for a new Pixelblaze to announce itself (They announce themselves once per second). Defaults to 1500.
                 proxyUrl (str, optional): The url of a proxy, if required, in the format "protocol://ipAddress:port" (for example, "http://192.168.0.1:8888"). Defaults to None.
+                probe (bool, optional): Also broadcast one beacon of our own and treat the timeSync replies as discoveries. Finds sync-group followers, which never beacon. See `sendBeaconProbe`. Defaults to False.
 
             Note:
                 This method is not intended to be called directly; use the static methods [`EnumerateAddresses`](#method-enumerateaddresses) or [`EnumerateDevices`](#method-enumeratedevices) to create and return an iterator object.
+
+            Raises:
+                OSError: If UDP port 1889 cannot be bound (typically because another
+                    listener already holds it). See `openBeaconSocket`.
             """
-            try:
-                # clear seenPixelblazes so we start fresh if the enumerator is used multiple times.
-                self.seenPixelblazes = []
-                self.enumeratorType = enumeratorType
-                self.timeout = timeout
-                self.proxyUrl = proxyUrl
-                self.listenSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                self.listenSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                self.listenSocket.settimeout(timeout / 1000.0)
-                self.listenSocket.bind((hostIP, 1889))
-            except socket.error as e:
-                print(e)
+            # clear seenPixelblazes so we start fresh if the enumerator is used multiple times.
+            self.seenPixelblazes = []
+            # ip -> packet type (42 beacon, 45 follower beacon, 43 timeSync
+            # reply to our probe) for each address returned, so callers can
+            # tell how it was found.
+            self.packetTypes = {}
+            self.enumeratorType = enumeratorType
+            self.timeout = timeout
+            self.proxyUrl = proxyUrl
+            self.probe = probe
+            self.localAddresses = set()
+            self.listenSocket = openBeaconSocket(hostIP, timeout=timeout / 1000.0)
+            if probe:
+                self.localAddresses = sendBeaconProbe(self.listenSocket)
 
         def __del__(self):
             """
@@ -351,11 +580,21 @@ class Pixelblaze:
             while self._time_in_millis() <= self.timeStop:
                 try:
                     data, ipAddress = self.listenSocket.recvfrom(1024)
-                    pkt = struct.unpack("<LLL", data)
-                    if pkt[0] == 42:  # beacon packet
+                    if len(data) < 12:
+                        continue  # not ours; a beacon is 12 bytes, a timeSync 20
+                    if ipAddress[0] in self.localAddresses:
+                        continue  # our own probe, looped back by the kernel
+                    pkt = struct.unpack("<LLL", data[:12])
+                    # 42 is a beacon, sent by any Pixelblaze that leads or is
+                    # standalone. 45 is the same thing from a sync-group
+                    # follower, which never sends 42. 43 is a timeSync, which
+                    # only reaches us as a reply to a probe we sent -- and then
+                    # it is a Pixelblaze too.
+                    if pkt[0] in (42, 45) or (pkt[0] == 43 and self.probe):
                         if ipAddress not in self.seenPixelblazes:
                             # Add this address to our list so we don't repeat it.
                             self.seenPixelblazes.append(ipAddress)
+                            self.packetTypes[ipAddress[0]] = pkt[0]
                             # Return an enumerator of the appropriate type.
                             if self.enumeratorType == Pixelblaze.LightweightEnumerator.EnumeratorTypes.ipAddress:
                                 return ipAddress[0]
@@ -379,35 +618,45 @@ class Pixelblaze:
     # Static methods:
     @staticmethod
     def EnumerateAddresses(*, timeout: int = 1500, proxyUrl: str = None,
-                           hostIP: str = "0.0.0.0") -> LightweightEnumerator:
+                           hostIP: str = "0.0.0.0", probe: bool = False) -> LightweightEnumerator:
         """Returns an enumerator that will iterate through all the Pixelblazes on the local network, until {timeout} milliseconds have passed with no new devices appearing.
 
         Args:
             hostIP (str, optional): The network interface on which to listen for Pixelblazes. Defaults to "0.0.0.0" meaning all available interfaces.
             timeout (int, optional): The amount of time in milliseconds to listen for a new Pixelblaze to announce itself (They announce themselves once per second). Defaults to 1500.
             proxyUrl (str, optional): The url of a proxy, if required, in the format "protocol://ipAddress:port" (for example, "http://192.168.0.1:8888"). Defaults to None.
+            probe (bool, optional): Also broadcast one beacon and count the timeSync replies as discoveries, which finds sync-group followers (they never beacon). Defaults to False.
 
         Returns:
             LightweightEnumerator: A subclassed Python enumerator object that returns (as a string) the IPv4 address of a Pixelblaze, in the usual dotted-quads numeric format.
+
+        Raises:
+            OSError: If UDP port 1889 cannot be bound, e.g. another listener holds it.
         """
         return Pixelblaze.LightweightEnumerator(Pixelblaze.LightweightEnumerator.EnumeratorTypes.ipAddress,
-                                                timeout=timeout, proxyUrl=proxyUrl, hostIP=hostIP)
+                                                timeout=timeout, proxyUrl=proxyUrl, hostIP=hostIP,
+                                                probe=probe)
 
     @staticmethod
     def EnumerateDevices(*, timeout: int = 1500, proxyUrl: str = None,
-                         hostIP: str = "0.0.0.0") -> LightweightEnumerator:
+                         hostIP: str = "0.0.0.0", probe: bool = False) -> LightweightEnumerator:
         """Returns an enumerator that will iterate through all the Pixelblazes on the local network, until {timeout} milliseconds have passed with no new devices appearing.
 
         Args:
             hostIP (str, optional): The network interface on which to listen for Pixelblazes. Defaults to "0.0.0.0" meaning all available interfaces.
             timeout (int, optional): The amount of time in milliseconds to listen for a new Pixelblaze to announce itself (They announce themselves once per second). Defaults to 1500.
             proxyUrl (str, optional): The url of a proxy, if required, in the format "protocol://ipAddress:port" (for example, "http://192.168.0.1:8888"). Defaults to None.
+            probe (bool, optional): Also broadcast one beacon and count the timeSync replies as discoveries, which finds sync-group followers (they never beacon). Defaults to False.
 
         Returns:
             LightweightEnumerator: A subclassed Python enumerator object that returns a Pixelblaze object for controlling a discovered Pixelblaze.
+
+        Raises:
+            OSError: If UDP port 1889 cannot be bound, e.g. another listener holds it.
         """
         return Pixelblaze.LightweightEnumerator(Pixelblaze.LightweightEnumerator.EnumeratorTypes.pixelblazeObject,
-                                                timeout=timeout, proxyUrl=proxyUrl, hostIP=hostIP)
+                                                timeout=timeout, proxyUrl=proxyUrl, hostIP=hostIP,
+                                                probe=probe)
 
     # --- CONNECTION MANAGEMENT
 
@@ -427,11 +676,13 @@ class Pixelblaze:
                         url = urlparse(self.proxyUrl)
                         self.ws = websocket.create_connection(uri, sockopt=(
                         (socket.SOL_SOCKET, socket.SO_REUSEADDR, 1), (socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)),
+                                                              timeout=self.default_open_timeout,
                                                               proxy_type=url.scheme, http_proxy_host=url.hostname,
                                                               http_proxy_port=url.port)
                     else:
                         self.ws = websocket.create_connection(uri, sockopt=(
-                        (socket.SOL_SOCKET, socket.SO_REUSEADDR, 1), (socket.IPPROTO_TCP, socket.TCP_NODELAY, 1),))
+                        (socket.SOL_SOCKET, socket.SO_REUSEADDR, 1), (socket.IPPROTO_TCP, socket.TCP_NODELAY, 1),),
+                                                              timeout=self.default_open_timeout)
                     break
                 except (websocket._exceptions.WebSocketConnectionClosedException,
                         websocket._exceptions.WebSocketBadStatusException):
@@ -1237,6 +1488,21 @@ class Pixelblaze:
                                                                 "setActivePattern(id)/setActivePatternByName(name")
         self.wsSendJson({"activeProgramId": patternId, "save": saveToFlash}, expectedResponse="activeProgram")
 
+    def reloadActivePattern(self):
+        """Restarts the pattern that is already running.
+
+        The firmware decides where a pattern's sensor globals (`frequencyData`,
+        `energyAverage`, `light`, ...) come from when the pattern loads. A
+        pattern that started before remote sensor data began arriving keeps
+        using its own simulated values until it is reloaded, so a host
+        streaming sensor data with [`SensorSender`](#class-sensorsender) should
+        call this once the frames are flowing. Verified on firmware 3.70.
+
+        Does nothing if no pattern is active.
+        """
+        patternId = self.getActivePattern()
+        if patternId: self.setActivePattern(patternId)
+
     def getPatternAsEpe(self, patternId: str) -> str:
         """Convert a stored pattern into an exportable, portable JSON format (which then needs to be saved by the caller).
 
@@ -1525,7 +1791,7 @@ class Pixelblaze:
                 _cache_compiler(version, compiler)
 
         # Load the compiler into the interpreter.
-        ctx = MiniRacer()
+        ctx = _newJsContext()
         ctx.eval(compiler)
 
         # Use the interpreter to run the compiler to convert the sourcecode into the bytecode.
@@ -1682,7 +1948,7 @@ class Pixelblaze:
             bool: True if the function text was successfully saved; otherwise False.
         """
         # Call the mapping function and get the pixelmap.
-        mapCoordinates = MiniRacer().call(mapFunction, self.getPixelCount())
+        mapCoordinates = _newJsContext().call(mapFunction, self.getPixelCount())
         mapData = self.createMapData(mapCoordinates)
         self.putFile('/pixelmap.txt', mapFunction)
         self.putFile('/pixelmap.dat', mapData)
@@ -1758,8 +2024,13 @@ class Pixelblaze:
         if mapData is None: mapData = self.getMapData()
 
         # If no map has been defined, generate and return a 1D map with the pixels spaced at regular intervals.
+        def _synthetic_1d():
+            if pixelCount <= 1:
+                return [[0.0] * pixelCount]
+            return [list(pixel / (pixelCount - 1) for pixel in range(pixelCount))]
+
         if mapData is None:
-            return [list((pixel / (pixelCount - 1)) for pixel in range(pixelCount))]
+            return _synthetic_1d()
 
         # Parse the mapData to build the worldMap.
         headerSize = 3 * 4  # first 3 longwords are the header.
@@ -1767,6 +2038,9 @@ class Pixelblaze:
         fileVersion = offsets[0]
         numDimensions = offsets[1]
         dataSize = offsets[2]
+        # A cleared map has numDimensions=0/dataSize=0 — treat as no map.
+        if numDimensions == 0 or dataSize == 0:
+            return _synthetic_1d()
         wordSize = fileVersion * 1  # v1 uses uint8, v2 uses uint16
         numElements = dataSize // wordSize // numDimensions
         # If the number of elements in the worldMap doesn't match the pixelCount, it's stale and needs to be refreshed.
@@ -2282,7 +2556,8 @@ class Pixelblaze:
         """
         # The "cpuSpeed" setting doesn't exist on v2, so return the default.
         if configSettings is None: configSettings = self.getConfigSettings()
-        return self.cpuSpeeds(configSettings.get('cpuSpeed', 240))
+        # Firmware reports an int (240); the enum values are the strings the webUI sends ("240").
+        return self.cpuSpeeds(str(configSettings.get('cpuSpeed', 240)))
 
     def getNetworkPowerSave(self, configSettings: dict = None) -> bool:
         """Returns whether the "Network Power Saving" mode is enabled (and WiFi is disabled).
@@ -2386,6 +2661,66 @@ class Pixelblaze:
         response.raise_for_status()
         return response.json()
 
+    # --- SETTINGS menu: Sensor input sources
+
+    class sensorSources(IntEnum):
+        """Sensor-input source preference (per accelSrc/soundSrc/lightSrc/analogSrc).
+
+        Two values, matching the stock Settings-page dropdown. Each is a
+        *preference* — the firmware falls back to the other source if the
+        preferred one isn't reporting.
+        """
+        preferRemote = 0     # Prefer OTA/remote sensor data (e.g. audio capture tool)
+        preferLocal  = 1     # Prefer local (onboard / Sensor Expansion Board)
+
+    def getSensorSources(self, configSettings: dict = None) -> dict:
+        """Returns all sensor input source preferences.
+
+        Args:
+            configSettings (dict, optional): If provided, extracts values from the results of a previous call to `getConfigSettings`; otherwise, fetches the configSettings from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            dict: Dictionary with keys 'accel', 'light', 'sound', 'analog' mapped to source preference (0=preferRemote, 1=preferLocal).
+        """
+        if configSettings is None: configSettings = self.getConfigSettings()
+        return {
+            "accel": configSettings.get("accelSrc", 0),
+            "light": configSettings.get("lightSrc", 0),
+            "sound": configSettings.get("soundSrc", 0),
+            "analog": configSettings.get("analogSrc", 0),
+        }
+
+    def setSensorSources(self, accel: int = None, light: int = None, sound: int = None, analog: int = None, *, saveToFlash: bool = False):
+        """Sets multiple sensor input source preferences at once.
+
+        Useful for bulk configuration of all sensor inputs in a single command.
+
+        Args:
+            accel (int, optional): Accelerometer source preference (0=preferRemote, 1=preferLocal). Defaults to None (no change).
+            light (int, optional): Light sensor source preference. Defaults to None (no change).
+            sound (int, optional): Audio/sound sensor source preference. Defaults to None (no change).
+            analog (int, optional): Analog input source preference. Defaults to None (no change).
+            saveToFlash (bool): If True, saves the settings to persistent flash storage. Defaults to False.
+
+        Examples:
+            # Prefer remote (OTA) audio sensor data from a host bridge
+            pb.setSensorSources(sound=Pixelblaze.sensorSources.preferRemote, saveToFlash=True)
+
+            # Prefer local hardware for all sensors
+            pb.setSensorSources(accel=1, light=1, sound=1, analog=1)
+        """
+        payload = {}
+        if accel is not None: payload["accelSrc"] = int(accel)
+        if light is not None: payload["lightSrc"] = int(light)
+        if sound is not None: payload["soundSrc"] = int(sound)
+        if analog is not None: payload["analogSrc"] = int(analog)
+
+        if saveToFlash:
+            payload["save"] = True
+
+        if payload:  # Only send if there's something to set
+            self.wsSendJson(payload, expectedResponse=None)
+
     # --- SETTINGS menu: UPDATES settings
 
     class updateStates(IntEnum):
@@ -2396,6 +2731,7 @@ class Pixelblaze:
         upToDate = 4
         updateAvailable = 5
         updateComplete = 6
+        inProgressAlt = 7  # observed alongside inProgress during OTA writes; treat as in-progress
 
     def getUpdateState(self) -> updateStates:
         """Returns the updateState of the Pixelblaze.
@@ -2435,6 +2771,370 @@ class Pixelblaze:
             print(f"updateProgress: {self.updateStates(state).name}")
             time.sleep(0.5)
         return state
+
+    def quietForUpdate(self) -> dict:
+        """Ask the device to do as little as possible while it is being written.
+
+        The firmware's own `recovery.html` opens with
+        `{"sendUpdates":false,"getConfig":true,"getUpgradeState":true}` — it
+        silences the preview/status stream before it does anything else. We did
+        not, so every flash this client attempted ran with the board still
+        rendering and still pushing a frame after every render cycle, over the
+        same websocket it was being flashed through. On a 200-pixel board that
+        was measured at 19-86 fps *during* an OTA.
+
+        Order matters: the sequencer advancing a pattern **unpauses the
+        renderer**, so the sequencer has to stop first or the pause does not
+        hold for the length of an upload.
+
+        Nothing is written to flash (`saveToFlash=False` throughout), so a
+        successful update — which reboots — comes back with the settings it had.
+        `unquietAfterUpdate` puts them back when the update does *not* happen.
+
+        Returns:
+            dict: the prior state worth restoring, plus which steps took.
+        """
+        prior = {'brightness': None, 'sequencerWasRunning': None, 'steps': {}}
+        try:
+            settings = self.getConfigSettings() or {}
+            prior['brightness'] = settings.get('brightness')
+            prior['sequencerWasRunning'] = bool(settings.get('runSequencer'))
+        except Exception:
+            pass
+
+        # Quietest first, so a failure part-way still leaves it quieter.
+        for label, act in (
+            ('sendUpdates', lambda: self.setSendPreviewFrames(False)),
+            ('sequencer',   lambda: self.pauseSequencer()),
+            ('renderer',    lambda: self.pauseRenderer(True)),
+            ('brightness',  lambda: self.setBrightnessSlider(0)),
+        ):
+            try:
+                act()
+                prior['steps'][label] = True
+            except Exception:
+                prior['steps'][label] = False
+        return prior
+
+    def unquietAfterUpdate(self, prior: dict) -> None:
+        """Undo `quietForUpdate`. Only needed when the flash did not happen — a
+        device that actually updated has rebooted into its saved settings."""
+        try:
+            self.pauseRenderer(False)
+        except Exception:
+            pass
+        if prior.get('sequencerWasRunning'):
+            try:
+                self.playSequencer()
+            except Exception:
+                pass
+        if prior.get('brightness') is not None:
+            try:
+                self.setBrightnessSlider(float(prior['brightness']))
+            except Exception:
+                pass
+        try:
+            self.setSendPreviewFrames(True)
+        except Exception:
+            pass
+
+    def freshVersion(self):
+        """`getVersion()` caches in `self.latestVersion`, so after a flash it
+        happily reports the version the device used to run. This re-reads."""
+        self.latestVersion = None
+        return self.getVersion()
+
+    def installFirmwareFile(self, filePath: str, *, monitor: bool = True, callback=None,
+                            chunkSize: int = 8192, timeout: float = 300.0,
+                            postUploadPollSeconds: float = 5.0,
+                            minUploadSeconds: float = 20.0,
+                            quiet: bool = True) -> bool:
+        """Uploads a local firmware `.stfu` file directly to the device's /update endpoint.
+
+        Mirrors the built-in recovery.html flow (a multipart/form-data POST with field
+        name `update`). Useful for offline recovery when the device is reachable via
+        HTTP (its regular IP or SoftAP at 192.168.4.1) but the online updater can't
+        reach ElectroMage's servers, or when the WebSocket API is unresponsive.
+
+        When `monitor` is True (default), streams the upload in chunks and — in a
+        background thread — polls the same `{"getUpgradeState": true}` WebSocket
+        channel that recovery.html uses. The two signals combine to judge success:
+        the HTTP outcome, the byte count actually written, upload wall-clock time,
+        and any device-reported `updateStates` (inProgress/inProgressAlt/updateError/
+        updateComplete).
+
+        The primary success signal is an HTTP 200 with body "OK" (per ESPAsyncElegantOTA
+        convention). A `ChunkedEncodingError` or reboot-flavored `ConnectionError` is a
+        safety-net: on some builds or network paths the device restarts before the client
+        finishes reading the response body, and that disconnect is optimistically taken
+        as success unless the WS poller reports otherwise.
+
+        When `monitor` is False, uses a single non-streaming `requests.post(files=...)`
+        with no side channels — fastest possible path, no progress signalling, success
+        is judged solely from the HTTP response.
+
+        Args:
+            filePath (str): Path to the .stfu firmware file.
+            monitor (bool, optional): If True (default), stream chunks + poll device
+                state + apply stricter success heuristics. If False, single-shot POST
+                and trust the HTTP response only.
+            callback (callable, optional): When set, receives progress event dicts:
+                `{'type': 'start',  'total': int}`
+                `{'type': 'chunk',  'sent': int, 'total': int}`
+                `{'type': 'device', 'code': int, 'progress': str, 'raw': dict}`
+                `{'type': 'result', 'ok': bool, 'reason': str}`
+                Ignored when `monitor` is False (no events are emitted).
+            chunkSize (int, optional): Bytes per chunk (progress tick). Defaults to 8192.
+            timeout (float, optional): HTTP read timeout in seconds. Defaults to 300.
+            postUploadPollSeconds (float, optional): After upload returns, keep polling
+                for a final state=6/3 frame for this many seconds. Defaults to 5.
+            minUploadSeconds (float, optional): If the upload returns faster than this
+                and no device-side confirmation ever came in, treat as suspicious even
+                on 200/OK — real flashes take tens of seconds. Defaults to 20.
+
+        Returns:
+            bool: True if the device appears to have accepted the firmware, False
+            otherwise. Rationale is delivered via the final `'result'` callback event
+            when `callback` is set.
+
+        Raises:
+            FileNotFoundError: If `filePath` does not exist.
+            requests.exceptions.Timeout: If the device never responds within `timeout`.
+        """
+        path = pathlib.Path(filePath)
+
+        # Quiet the board before a byte goes out; see `quietForUpdate`.
+        prior = self.quietForUpdate() if quiet else None
+        ok = False
+        try:
+            ok = self._installFirmwareFile(
+                path, monitor=monitor, callback=callback, chunkSize=chunkSize,
+                timeout=timeout, postUploadPollSeconds=postUploadPollSeconds,
+                minUploadSeconds=minUploadSeconds)
+            return ok
+        finally:
+            # Only when the flash did not happen. A device that updated has
+            # rebooted into its saved settings, and nothing here was saved.
+            if prior is not None and not ok:
+                self.unquietAfterUpdate(prior)
+
+    def _installFirmwareFile(self, path, *, monitor, callback, chunkSize, timeout,
+                             postUploadPollSeconds, minUploadSeconds):
+        if not monitor:
+            startedAt = time.monotonic()
+            try:
+                with open(path, 'rb') as f:
+                    files = {'update': (path.name, f, 'application/octet-stream')}
+                    with requests.post(self.getUrl("update"), files=files,
+                                       proxies=self.proxyDict, timeout=timeout) as r:
+                        return self._interpretUpdateResponse(r)
+            except requests.exceptions.ChunkedEncodingError:
+                pass  # fall through to timing heuristic
+            except requests.exceptions.ConnectionError as e:
+                if not self._isRebootDrop(str(e)):
+                    raise
+            # Reboot-flavored disconnect: only trust it if the upload was underway long
+            # enough that a real flash could have happened (real flashes take tens of
+            # seconds). An immediate drop is a fault, not a successful reboot.
+            return (time.monotonic() - startedAt) >= minUploadSeconds
+
+        # --- monitor=True path: streaming upload + WS poller + heuristic success ---
+        fileSize = path.stat().st_size
+        boundary = f"----pixelblazeUpdate{time.time_ns():x}"
+        preamble = (
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="update"; filename="{path.name}"\r\n'
+            f"Content-Type: application/octet-stream\r\n\r\n"
+        ).encode()
+        epilogue = f"\r\n--{boundary}--\r\n".encode()
+
+        def emit(evt):
+            if callback:
+                try:
+                    callback(evt)
+                except Exception:
+                    pass  # never let a caller's bug abort a flash
+
+        emit({'type': 'start', 'total': fileSize})
+
+        # Shared state used by both the upload thread (main) and the poller thread.
+        state = {'lastCode': None, 'sawInProgress': False, 'sawComplete': False, 'sawError': False}
+        stopEvt = threading.Event()
+
+        def pollDeviceState():
+            try:
+                # Separate Pixelblaze/WS instance — the main thread's `self` isn't thread-safe.
+                with Pixelblaze(self.ipAddress, ignoreOpenFailure=True,
+                                proxyUrl=self.proxyUrl) as poll_pb:
+                    while not stopEvt.is_set():
+                        try:
+                            frame = poll_pb.wsSendJson({"getUpgradeState": True},
+                                                      expectedResponse="upgradeState")
+                            if frame:
+                                st = json.loads(frame).get("upgradeState", {}) or {}
+                                code = st.get("code", 0)
+                                progress = str(st.get("progress") or "").strip()
+                                if code in (self.updateStates.inProgress,
+                                            self.updateStates.inProgressAlt):
+                                    state['sawInProgress'] = True
+                                if code == self.updateStates.updateError:
+                                    state['sawError'] = True
+                                if code == self.updateStates.updateComplete:
+                                    state['sawComplete'] = True
+                                parsed = self._parseUpgradeProgress(progress)
+                                # Emit on any change to code OR progress string, so mid-file
+                                # ticks (e.g. bytesRemain shrinking) surface too.
+                                lastKey = (state['lastCode'], state.get('lastProgress'))
+                                if (code, progress) != lastKey:
+                                    state['lastCode'] = code
+                                    state['lastProgress'] = progress
+                                    emit({'type': 'device', 'code': code,
+                                          'progress': progress, 'parsed': parsed, 'raw': st})
+                                if code in (self.updateStates.updateError,
+                                            self.updateStates.updateComplete):
+                                    return
+                        except Exception:
+                            pass
+                        stopEvt.wait(0.5)
+            except Exception:
+                pass
+
+        poller = threading.Thread(target=pollDeviceState, daemon=True)
+        poller.start()
+
+        bytesSent = {'n': 0}
+
+        def bodyIter():
+            yield preamble
+            with open(path, 'rb') as f:
+                while True:
+                    chunk = f.read(chunkSize)
+                    if not chunk:
+                        break
+                    yield chunk
+                    bytesSent['n'] += len(chunk)
+                    emit({'type': 'chunk', 'sent': bytesSent['n'], 'total': fileSize})
+            yield epilogue
+
+        headers = {
+            'Content-Type': f'multipart/form-data; boundary={boundary}',
+            'Content-Length': str(len(preamble) + fileSize + len(epilogue)),
+        }
+
+        startedAt = time.monotonic()
+        httpAccepted = None
+        httpReason = ""
+        try:
+            with requests.post(self.getUrl("update"), data=bodyIter(), headers=headers,
+                               proxies=self.proxyDict, timeout=timeout) as r:
+                httpAccepted = self._interpretUpdateResponse(r)
+                httpReason = f"HTTP {r.status_code} body={(r.text or '')[:80]!r}"
+        except requests.exceptions.ChunkedEncodingError:
+            httpAccepted = True
+            httpReason = "connection closed by device mid-response (reboot?)"
+        except requests.exceptions.ConnectionError as e:
+            if self._isRebootDrop(str(e)):
+                httpAccepted = True
+                httpReason = "connection dropped by device (reboot?)"
+            else:
+                stopEvt.set()
+                poller.join(timeout=2.0)
+                raise
+        elapsed = time.monotonic() - startedAt
+
+        # Give the poller a moment to catch a final updateComplete/updateError frame.
+        deadline = time.monotonic() + postUploadPollSeconds
+        while time.monotonic() < deadline and not (state['sawComplete'] or state['sawError']):
+            time.sleep(0.1)
+        stopEvt.set()
+        poller.join(timeout=2.0)
+
+        ok, reason = self._judgeUpdateOutcome(
+            fileSize=fileSize, bytesSent=bytesSent['n'], elapsed=elapsed,
+            minUploadSeconds=minUploadSeconds, httpAccepted=httpAccepted, httpReason=httpReason,
+            sawInProgress=state['sawInProgress'], sawComplete=state['sawComplete'],
+            sawError=state['sawError'],
+        )
+        emit({'type': 'result', 'ok': ok, 'reason': reason})
+        return ok
+
+    @staticmethod
+    def _parseUpgradeProgress(progress: str):
+        """Best-effort parser for upgradeState.progress strings observed from the device.
+
+        Known formats:
+            "Starting"                     → {'phase': 'starting'}
+            "File 4/4 644041 bytes remain" → {'phase': 'file', 'fileIndex': 4,
+                                              'fileCount': 4, 'bytesRemain': 644041}
+
+        Returns None for empty, unknown, or malformed strings. Never raises.
+        """
+        if not progress:
+            return None
+        s = progress.strip()
+        if s == 'Starting':
+            return {'phase': 'starting'}
+        try:
+            parts = s.split()
+            if len(parts) >= 5 and parts[0] == 'File' and '/' in parts[1] and parts[3] == 'bytes':
+                idx_str, total_str = parts[1].split('/', 1)
+                return {
+                    'phase': 'file',
+                    'fileIndex': int(idx_str),
+                    'fileCount': int(total_str),
+                    'bytesRemain': int(parts[2]),
+                }
+        except (ValueError, IndexError):
+            pass
+        return None
+
+    @staticmethod
+    def _isRebootDrop(msg: str) -> bool:
+        return ('RemoteDisconnected' in msg
+                or 'Connection aborted' in msg
+                or 'Connection reset' in msg)
+
+    @staticmethod
+    def _judgeUpdateOutcome(*, fileSize, bytesSent, elapsed, minUploadSeconds,
+                            httpAccepted, httpReason, sawInProgress, sawComplete,
+                            sawError) -> tuple[bool, str]:
+        """Combine byte-transfer, timing, HTTP, and WS signals into one accept/reject
+        verdict with a human-readable reason string."""
+        # Device explicitly told us it failed: authoritative reject.
+        if sawError:
+            return (False, f"device reported upgradeState.updateError; {httpReason}")
+        # Device explicitly told us it finished: authoritative accept.
+        if sawComplete:
+            return (True, f"device reported upgradeState.updateComplete; {httpReason}")
+        # Not enough bytes made it out — POST returned before we streamed the file.
+        if bytesSent < fileSize:
+            return (False, f"only sent {bytesSent}/{fileSize} bytes before upload returned; {httpReason}")
+        # HTTP said reject and device didn't contradict.
+        if httpAccepted is False:
+            return (False, f"HTTP rejected the file; {httpReason}")
+        # HTTP said accept but device never even entered 'in progress' AND upload was
+        # suspiciously fast — real flashes take tens of seconds.
+        if httpAccepted and not sawInProgress and elapsed < minUploadSeconds:
+            return (False, f"upload finished in {elapsed:.2f}s (< {minUploadSeconds}s) "
+                           f"and device never confirmed progress; {httpReason}")
+        # HTTP said accept, bytes made it, no error reported — best-guess success even
+        # if the WS was silent (some builds don't stream progress reliably).
+        if httpAccepted:
+            confirm = "with device in-progress signal" if sawInProgress else "no device confirmation available"
+            return (True, f"HTTP accepted, all bytes sent in {elapsed:.1f}s; {confirm}")
+        return (False, f"indeterminate outcome; {httpReason}")
+
+    @staticmethod
+    def _interpretUpdateResponse(r) -> bool:
+        """Parses an /update HTTP response. Returns True on accept, False on rejection.
+
+        ESPAsyncWebServer OTA returns "OK" on success and "FAIL" (sometimes with
+        detail) on rejection. Some builds respond with an empty body on success.
+        """
+        if r.status_code != 200:
+            return False
+        body = (r.text or '').strip().upper()
+        return not ('FAIL' in body or 'ERROR' in body)
 
     # --- SETTINGS menu: UPDATES section: convenience functions
 
@@ -3493,6 +4193,10 @@ class PixelblazeEnumerator:
     SYNC_ID = 890
     BEACON_PACKET = 42
     TIMESYNC_PACKET = 43
+    # A sync-group follower does not send type 42. It sends this instead, in the
+    # same 12-byte shape (type, senderId=chipId, senderTimeMs). Observed on
+    # firmware 3.70; a follower is otherwise invisible to a passive listener.
+    FOLLOWER_BEACON_PACKET = 45
     DEVICE_TIMEOUT = 30000
     LIST_CHECK_INTERVAL = 5000
 
@@ -3575,22 +4279,17 @@ class PixelblazeEnumerator:
         Open socket for listening to Pixelblaze datagram traffic,
         set appropriate options and bind to specified interface and
         start listener thread.
+
+        Raises:
+            OSError: If UDP port 1889 cannot be bound (typically because another
+                listener already holds it). See `openBeaconSocket`.
         """
-        try:
-            self.listener = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self.listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self.listener.bind((hostIP, self.PORT))
-
-            self.threadObj = threading.Thread(target=self._listen)
-            self.isRunning = True
-            self.listTimeoutCheck = 0
-            self.threadObj.start()
-
-            return True
-        except socket.error as e:
-            print(e)
-            self.stop()
-            return False
+        self.listener = openBeaconSocket(hostIP)
+        self.threadObj = threading.Thread(target=self._listen)
+        self.isRunning = True
+        self.listTimeoutCheck = 0
+        self.threadObj.start()
+        return True
 
     def stop(self):
         """
@@ -3625,6 +4324,8 @@ class PixelblazeEnumerator:
         while self.isRunning:
             data, addr = self.listener.recvfrom(1024)
             now = self._time_in_millis()
+            if len(data) < 12:
+                continue  # not a Pixelblaze packet; a beacon is 12 bytes, a timeSync 20
 
             # check the list periodically,and remove devices we haven't seen in a while
             if (now - self.listTimeoutCheck) >= self.LIST_CHECK_INTERVAL:
@@ -3639,7 +4340,7 @@ class PixelblazeEnumerator:
 
             # when we receive a beacon packet from a Pixelblaze,
             # update device record and timestamp in our device list
-            pkt = self._unpack_beacon(data)
+            pkt = self._unpack_beacon(data[:12])
             if pkt[0] == self.BEACON_PACKET:
                 # add pixelblaze to list of devices
                 self.devices[pkt[1]] = {"address": addr,
@@ -3661,3 +4362,297 @@ class PixelblazeEnumerator:
             dev.append(record["address"][0])  # just the ip
         return dev
 
+
+#
+#   ███████╗██████╗ 
+#   ██╔════╝██╔══██╗
+#   ███████╗██████╔╝
+#   ╚════██║██╔═══╝ 
+#   ███████║██║     
+#   ╚══════╝╚═╝     
+#   ╔═╗┌─┐┌┐┌┌─┐┌─┐┬─┐  ╔═╗┌─┐┌─┐┬┌─┌─┐┌┬┐
+#   ╚═╗├┤ │││└─┐│ │├┬┘  ╠═╝├─┤│  ├┴┐├┤  │ 
+#   ╚═╝└─┘┘└┘└─┘└─┘┴└─  ╩  ┴ ┴└─┘┴ ┴└─┘ ┴ 
+#
+class SensorPacket:
+    """This class builds and parses the UDP datagrams that carry Sensor Expansion Board readings to Pixelblazes.
+
+    A Pixelblaze that leads a sync group broadcasts its Sensor Board readings to
+    the group as "expansion board" datagrams on port 1889, and any Pixelblaze
+    whose source preference for that reading is `sensorSources.preferRemote`
+    uses them in place of its own. Nothing in the packet is specific to real
+    hardware, so a host program can synthesize the readings and drive
+    sound-reactive patterns with no board attached anywhere on the network.
+
+    This is far cheaper for the Pixelblaze than pushing the same values with
+    [`setActiveVariables()`](#method-setactivevariables): one 104-byte datagram
+    replaces a websocket frame of JSON that the device has to parse on the
+    thread that renders patterns. Updates can run at the board's native ~40Hz
+    without costing framerate, and one broadcast reaches every Pixelblaze on the
+    network at once.
+
+    **WIRE FORMAT** (little-endian, 104 bytes)
+
+    | Offset | Type       | Field                                       |
+    | -----: | ---------- | ------------------------------------------- |
+    |      0 | uint32     | packet type (50, "expansion board")         |
+    |      4 | uint32     | sender id                                   |
+    |      8 | uint32     | sender time, in milliseconds                |
+    |     12 | uint8      | expansion type (1, an SB1.0 sensor board)   |
+    |     13 | uint8[3]   | padding                                     |
+    |     16 | uint16[32] | frequencyData                               |
+    |     80 | uint16     | energyAverage                               |
+    |     82 | uint16     | maxFrequencyMagnitude                       |
+    |     84 | uint16     | maxFrequency, in Hz                         |
+    |     86 | int16[3]   | accelerometer                               |
+    |     92 | uint16     | light                                       |
+    |     94 | uint16[5]  | analogInputs                                |
+
+    Everything from offset 16 on is the sensor board's own SB1.0 serial frame
+    with its "SB1.0" and "END" delimiters stripped.
+
+    **SCALING**
+
+    The wire carries integers; patterns see floats. Readings that a pattern
+    reads as 0.0-1.0 (`frequencyData`, `energyAverage`, `maxFrequencyMagnitude`,
+    `light`, `analogInputs`) are sent as `value * 65536`, clamped to a uint16;
+    `accelerometer` is bipolar and is sent as `value * 32768` as an int16.
+    `maxFrequency` is not scaled at all -- it is a frequency in Hz.
+
+    Measured on firmware 3.70 by sending known values and reading the pattern's
+    globals back with `getVars`: `light` 8192 -> 0.125, `frequencyData[8]` 8192
+    -> 0.125, `frequencyData[16]` 16384 -> 0.25, `energyAverage` 16384 -> 0.25,
+    `maxFrequency` 1170 -> 1170. So the same reading sent as a datagram or with
+    [`setActiveVariables()`](#method-setactivevariables) reaches the pattern as
+    the same number.
+
+    **CREATION**
+    - [`pack()`](#method-pack)
+
+    **PARSING**
+    - [`unpack()`](#method-unpack)
+    """
+
+    PORT = 1889
+    """The UDP port Pixelblazes listen on for discovery and expansion traffic."""
+
+    PACKET_TYPE = 50
+    """The Pixelblaze discovery packet type for expansion board data."""
+
+    EXPANSION_TYPE_SB10 = 1
+    """The expansion type identifying an SB1.0 sensor board frame."""
+
+    BIN_COUNT = 32
+    """The number of frequency bins in a sensor board frame."""
+
+    FRAME_SIZE = 104
+    """The total size, in bytes, of a sensor board datagram."""
+
+    UNIT_SCALE = 65536
+    """Multiplier converting a pattern's 0.0-1.0 reading to its uint16 on the wire."""
+
+    ACCEL_SCALE = 32768
+    """Multiplier converting a pattern's -1.0-1.0 accelerometer reading to its int16 on the wire."""
+
+    # <type, senderId, senderTime, expansionType, 3 padding bytes>
+    _header = struct.Struct("<IIIB3x")
+    # The SB1.0 frame: <frequencyData[32], energyAverage, maxFrequencyMagnitude,
+    #                   maxFrequency, accelerometer[3], light, analogInputs[5]>
+    _body = struct.Struct("<32HHHH3hH5H")
+
+    @staticmethod
+    def _packUnit(value: float) -> int:
+        """Internal method: converts a 0.0-1.0 reading to the uint16 sent on the wire."""
+        return min(65535, max(0, int(round(float(value) * SensorPacket.UNIT_SCALE))))
+
+    @staticmethod
+    def _packSigned(value: float) -> int:
+        """Internal method: converts a -1.0-1.0 reading to the int16 sent on the wire."""
+        return min(32767, max(-32768, int(round(float(value) * SensorPacket.ACCEL_SCALE))))
+
+    @staticmethod
+    def _packHertz(value: float) -> int:
+        """Internal method: converts a frequency in Hz to the uint16 sent on the wire."""
+        return min(65535, max(0, int(round(float(value)))))
+
+    @staticmethod
+    def _fixedList(values, length: int, name: str) -> list:
+        """Internal method: validates that an optional sequence is the right length."""
+        if values is None: return [0.0] * length
+        values = list(values)
+        if len(values) != length:
+            raise ValueError(f"{name} must have exactly {length} elements, got {len(values)}")
+        return values
+
+    @classmethod
+    def pack(cls, *, frequencyData=None, energyAverage: float = 0.0, maxFrequency: float = 0.0,
+             maxFrequencyMagnitude: float = 0.0, accelerometer=None, light: float = 0.0,
+             analogInputs=None, senderId: int = 0, senderTime: int = None) -> bytes:
+        """Builds a sensor board datagram from pattern-scale readings.
+
+        Every reading is optional; anything omitted is sent as zero, which is
+        what a real sensor board reports for a sensor that sees nothing.
+
+        Args:
+            frequencyData (optional): 32 frequency bin magnitudes, each 0.0-1.0. Defaults to all zeroes.
+            energyAverage (float, optional): Overall loudness, 0.0-1.0. Defaults to 0.
+            maxFrequency (float, optional): Frequency of the loudest bin, in Hz. Defaults to 0.
+            maxFrequencyMagnitude (float, optional): Magnitude of the loudest bin, 0.0-1.0. Defaults to 0.
+            accelerometer (optional): 3 axes, each -1.0-1.0. Defaults to all zeroes.
+            light (float, optional): Ambient light level, 0.0-1.0. Defaults to 0.
+            analogInputs (optional): 5 analog inputs, each 0.0-1.0. Defaults to all zeroes.
+            senderId (int, optional): Identifies this sender to the Pixelblaze. Defaults to 0.
+            senderTime (int, optional): Sender timestamp in milliseconds; the current time if omitted.
+
+        Returns:
+            bytes: A datagram of `FRAME_SIZE` bytes, ready to send to port `PORT`.
+        """
+        if senderTime is None: senderTime = int(round(time.time() * 1000)) & 0xFFFFFFFF
+
+        bins = cls._fixedList(frequencyData, cls.BIN_COUNT, "frequencyData")
+        accel = cls._fixedList(accelerometer, 3, "accelerometer")
+        analog = cls._fixedList(analogInputs, 5, "analogInputs")
+
+        return cls._header.pack(
+            cls.PACKET_TYPE, senderId & 0xFFFFFFFF, senderTime & 0xFFFFFFFF, cls.EXPANSION_TYPE_SB10
+        ) + cls._body.pack(
+            *[cls._packUnit(v) for v in bins],
+            cls._packUnit(energyAverage),
+            cls._packUnit(maxFrequencyMagnitude),
+            cls._packHertz(maxFrequency),
+            *[cls._packSigned(v) for v in accel],
+            cls._packUnit(light),
+            *[cls._packUnit(v) for v in analog],
+        )
+
+    @classmethod
+    def unpack(cls, data: bytes) -> dict:
+        """Parses a sensor board datagram back into pattern-scale readings.
+
+        Args:
+            data (bytes): A datagram received on port `PORT`.
+
+        Returns:
+            dict: The readings, keyed as they are named in patterns, plus `senderId` and `senderTime`.
+
+        Raises:
+            ValueError: If the datagram is not an SB1.0 expansion board packet of the expected size.
+        """
+        if len(data) != cls.FRAME_SIZE:
+            raise ValueError(f"Expected a {cls.FRAME_SIZE}-byte sensor packet, got {len(data)} bytes")
+
+        packetType, senderId, senderTime, expansionType = cls._header.unpack_from(data, 0)
+        if packetType != cls.PACKET_TYPE:
+            raise ValueError(f"Expected packet type {cls.PACKET_TYPE}, got {packetType}")
+        if expansionType != cls.EXPANSION_TYPE_SB10:
+            raise ValueError(f"Expected expansion type {cls.EXPANSION_TYPE_SB10}, got {expansionType}")
+
+        fields = cls._body.unpack_from(data, cls._header.size)
+        return {
+            "senderId": senderId,
+            "senderTime": senderTime,
+            "frequencyData": [v / cls.UNIT_SCALE for v in fields[0:32]],
+            "energyAverage": fields[32] / cls.UNIT_SCALE,
+            "maxFrequencyMagnitude": fields[33] / cls.UNIT_SCALE,
+            "maxFrequency": float(fields[34]),
+            "accelerometer": [v / cls.ACCEL_SCALE for v in fields[35:38]],
+            "light": fields[38] / cls.UNIT_SCALE,
+            "analogInputs": [v / cls.UNIT_SCALE for v in fields[39:44]],
+        }
+
+
+class SensorSender:
+    """This class streams synthesized Sensor Expansion Board readings to one or more Pixelblazes over UDP.
+
+    Example:
+        # Feed a spectrum to every Pixelblaze on the network at 40Hz.
+        with SensorSender(["255.255.255.255"]) as sender:
+            while capturing:
+                sender.send(frequencyData=bins, energyAverage=loudness,
+                            maxFrequency=peakHz, maxFrequencyMagnitude=peakMagnitude)
+
+    The receiving Pixelblaze only uses these readings if its source preference
+    for them is `Pixelblaze.sensorSources.preferRemote` -- see
+    [`setSensorSources()`](#method-setsensorsources). The preference is a
+    preference, though, not a switch: a Pixelblaze with no local sensor board
+    falls back to remote data regardless.
+
+    **The pattern has to be (re)loaded after the frames start arriving.** The
+    firmware binds a pattern's sensor globals to their source when the pattern
+    loads, so a pattern that was already running when streaming began keeps
+    using its own simulated values -- the frames arrive and are ignored, which
+    looks exactly like the packets being malformed. Send a few frames, then
+    call [`reloadActivePattern()`](#method-reloadactivepattern) once.
+
+    Nothing else is required: unicast and broadcast both work, `senderTime` can
+    be anything, the source port doesn't matter, and no sync-group or leader
+    relationship is needed. Once bound, a pattern keeps the last frame it was
+    sent -- on 3.70 it was still showing it 100 seconds after the stream
+    stopped, and reloading the pattern doesn't restore simulation -- so a
+    sender that is shutting down should send a frame of zeroes rather than just
+    stopping, or the pattern freezes on whatever was playing. Verified against
+    firmware 3.70.
+
+    See [`SensorPacket`](#class-sensorpacket) for the datagram itself.
+    """
+
+    def __init__(self, targets, *, senderId: int = None, port: int = None, sock=None):
+        """Opens a socket for sending sensor data to the given Pixelblazes.
+
+        Args:
+            targets: IP addresses (or hostnames) to send to. "255.255.255.255" reaches every Pixelblaze on the network.
+            senderId (int, optional): Identifies this sender to the Pixelblazes. A random id is generated if omitted.
+            port (int, optional): The destination port. Defaults to `SensorPacket.PORT` (1889).
+            sock (optional): An existing datagram socket to send from; one is created (and closed by `close()`) if omitted.
+
+        Raises:
+            ValueError: If no targets are given.
+        """
+        self.targets = [socket.gethostbyname(t) for t in targets]
+        if len(self.targets) == 0:
+            raise ValueError("SensorSender requires at least one target address")
+
+        self.port = SensorPacket.PORT if port is None else port
+        self.senderId = random.getrandbits(32) if senderId is None else senderId
+        self.frameCount = 0
+
+        self.ownsSocket = sock is None
+        self.socket = sock
+        if self.socket is None:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            # Needed for 255.255.255.255; harmless for unicast targets.
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+    def __enter__(self):
+        """Internal class method for resource management.
+
+        Returns:
+            SensorSender: This object.
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Internal class method for resource management."""
+        self.close()
+
+    def send(self, **readings) -> bytes:
+        """Builds a sensor board datagram and sends it to every target.
+
+        Args:
+            **readings: Any of the readings accepted by [`SensorPacket.pack()`](#method-pack).
+
+        Returns:
+            bytes: The datagram that was sent.
+        """
+        readings.setdefault("senderId", self.senderId)
+        packet = SensorPacket.pack(**readings)
+        for target in self.targets:
+            self.socket.sendto(packet, (target, self.port))
+        self.frameCount += 1
+        return packet
+
+    def close(self):
+        """Closes the socket, if this object opened it."""
+        if self.socket is not None and self.ownsSocket:
+            self.socket.close()
+        self.socket = None
