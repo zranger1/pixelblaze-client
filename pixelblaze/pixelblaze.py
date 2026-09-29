@@ -91,11 +91,43 @@ from urllib.parse import urlparse, urljoin
 #   Related third party imports.
 import websocket
 import requests
-from py_mini_racer import MiniRacer
 
 
 #   Local application/library specific imports.
 #   -None-
+
+# V8 sets itself up the first time a MiniRacer is constructed, and that one-time
+# setup is not thread-safe: two threads reaching it together trip
+# `Check failed: !IsConfigurablePoolInitialized()` and V8 aborts the whole
+# process with SIGTRAP. `pb <cmd> --ip all` fans out over a thread pool and each
+# worker compiles, so it lost that race about half the time — intermittently,
+# which is why it looked like a bad pattern rather than a bad race.
+#
+# Serializing only the first construction is enough; once V8 is up the rest are
+# free. The import is deferred with it because loading libmini_racer.so costs
+# ~80ms and only pattern compilation and pixelmap evaluation ever need it —
+# every other CLI command was paying for a JS engine it never used.
+_js_init_lock = threading.Lock()
+_js_initialized = False
+
+
+def _newJsContext():
+    """A MiniRacer interpreter, with V8's one-time global init serialized.
+
+    Import and initialization are both lazy: nothing here runs until something
+    actually needs to evaluate JavaScript.
+    """
+    global _js_initialized
+    from py_mini_racer import MiniRacer
+
+    if _js_initialized:
+        return MiniRacer()
+    with _js_init_lock:
+        # A second thread that queued on the lock finds V8 already up; building
+        # its context inside the lock is harmless and keeps this branch simple.
+        ctx = MiniRacer()
+        _js_initialized = True
+        return ctx
 
 # ----------------------------------------------------------------------------
 #
@@ -1759,7 +1791,7 @@ class Pixelblaze:
                 _cache_compiler(version, compiler)
 
         # Load the compiler into the interpreter.
-        ctx = MiniRacer()
+        ctx = _newJsContext()
         ctx.eval(compiler)
 
         # Use the interpreter to run the compiler to convert the sourcecode into the bytecode.
@@ -1916,7 +1948,7 @@ class Pixelblaze:
             bool: True if the function text was successfully saved; otherwise False.
         """
         # Call the mapping function and get the pixelmap.
-        mapCoordinates = MiniRacer().call(mapFunction, self.getPixelCount())
+        mapCoordinates = _newJsContext().call(mapFunction, self.getPixelCount())
         mapData = self.createMapData(mapCoordinates)
         self.putFile('/pixelmap.txt', mapFunction)
         self.putFile('/pixelmap.dat', mapData)
