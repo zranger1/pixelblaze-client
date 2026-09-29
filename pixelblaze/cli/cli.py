@@ -248,6 +248,66 @@ def off(pb: Pixelblaze, pause_sequencer, no_save):
 
 
 @cli(pixelblaze)
+@click.option(
+    '--no-resume',
+    is_flag=True,
+    help='Leave the sequencer paused afterwards instead of putting it back as it was'
+)
+def reload(pb: Pixelblaze, no_resume):
+    """
+    Restart the pattern already running, so it re-reads incoming sensor data.
+
+    The firmware decides where a pattern's sensor globals (`frequencyData`,
+    `energyAverage`, `light`, ...) come from when the pattern *loads*, not once
+    per frame. A pattern that was already running when remote sensor frames
+    began arriving keeps using the board's own simulated values instead — and
+    nothing about that looks wrong from either end. The board stays lit,
+    animating and answering; every frame you send is accepted; it is simply
+    deaf. Run this when a Pixelblaze stops honouring `pb sensor`, or any other
+    UDP sensor source.
+
+    Anything that loads a pattern behind your back puts a board back into that
+    state: a playlist advancing, a sync leader pushing a pattern, a power
+    cycle. So this is a lever you reach for again, not a one-time repair.
+
+    In playlist or shuffle mode the sequencer is paused first — which holds its
+    position — and resumed afterwards, so the board comes back on the same item
+    instead of jumping to the top of the playlist. Nothing is written to flash:
+    this changes what is running now, not what the board boots into.
+
+    \b
+    Examples:
+        pb reload                   # Reload whatever is running
+        pb --ip all reload          # ... on every Pixelblaze on the network
+        pb reload --no-resume       # Reload, and leave the sequencer paused
+    """
+    sequencer = pb.getConfigSequencer()
+    active = (sequencer.get('activeProgram') or {}).get('activeProgramId')
+    check(active, "No pattern is active, so there is nothing to reload.")
+    name = (sequencer.get('activeProgram') or {}).get('name') or active
+    running = bool(sequencer.get('runSequencer'))
+    mode = sequencer.get('sequencerMode')
+
+    # Reloading underneath a running sequencer races it: the advance that fires
+    # mid-reload is the one that undoes the reload. Pausing holds the position.
+    if running:
+        log("Pausing the sequencer (its position is kept)...")
+        pb.pauseSequencer()
+
+    log(f"Reloading '{name}'...")
+    pb.reloadActivePattern()
+
+    if running and not no_resume:
+        log("Resuming the sequencer...")
+        pb.playSequencer()
+
+    where = {Pixelblaze.sequencerModes.ShuffleAll.value: ' (shuffle)',
+             Pixelblaze.sequencerModes.Playlist.value: ' (playlist)'}.get(mode, '')
+    left = ' — sequencer left paused' if running and no_resume else ''
+    log(f"Reloaded '{name}'{where}{left}")
+
+
+@cli(pixelblaze)
 @input_arg
 @click.option('--csv', is_flag=True, help='Output as csv instead of Pixelblaze 3-arrays')
 @click.option('--clear', is_flag=True, help='Clear/remove the current pixel map from the device')
