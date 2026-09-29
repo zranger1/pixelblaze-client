@@ -25,6 +25,7 @@ import time
 import re
 import click
 import pathlib
+from tqdm import tqdm
 from pixelblaze.pixelblaze import Pixelblaze, PBB
 from pixelblaze.cli.cli_utils import cli, log, no_save_option, input_arg, read_input, parse_json, jsons, \
                                      get_cache_dir, check, parse_vars, get_pixelblaze, discover_pixelblaze, \
@@ -2029,6 +2030,153 @@ def reboot(ctx, wait):
             log("Warning: Timed out waiting for device to reconnect")
 
 
+@cli(pixelblaze, conn=False)
+@click.argument('file', type=click.Path(exists=True, dir_okay=False, resolve_path=True))
+@click.option('--timeout', type=float, default=300.0, show_default=True,
+              help='HTTP timeout in seconds (whole flash + response)')
+@click.option('--chunk', type=int, default=8192, show_default=True,
+              help='Progress-tick chunk size in bytes')
+@click.option('--no-ver', is_flag=True,
+              help="Skip querying the device's current firmware version before flashing")
+@click.option('--no-monitor', is_flag=True,
+              help='Fire the upload single-shot; no progress bar, no device polling, no heuristics')
+def update(ctx, file, timeout, chunk, no_ver, no_monitor):
+    """
+    Flash a Pixelblaze firmware `.stfu` file directly to the device.
+
+    Mirrors the built-in recovery.html /update flow — the fully-offline path.
+    Works when the device is reachable via HTTP (regular WiFi or SoftAP at
+    192.168.4.1) but the online updater can't reach ElectroMage's servers,
+    or when the WebSocket API is unresponsive.
+
+    Under monitored mode (default), streams the upload in chunks, polls the
+    device's `upgradeState` on the WebSocket in parallel, and combines the two
+    signals with sane heuristics to judge success. `--no-monitor` skips all of
+    that and just fires a single POST.
+
+    \b
+    Examples:
+        pb update ~/Downloads/v3.70.pb32.stfu
+        pb --ip 192.168.4.1 update firmware.stfu
+        pb update firmware.stfu --no-monitor    # fire and wait silently
+    """
+    device_ip = discover_pixelblaze(ctx)
+    path = pathlib.Path(file)
+    size = path.stat().st_size
+
+    log(f"Uploading {path.name} ({tqdm.format_sizeof(size, 'B', 1000)}) → http://{device_ip}/update")
+    log("Device stays silent until flash completes (~30-60s). Do not power-cycle.")
+
+    # ignoreOpenFailure=True: the device may not have a live WebSocket in recovery mode.
+    pb = Pixelblaze(device_ip, ignoreOpenFailure=True)
+
+    before = None
+    if not no_ver:
+        try:
+            before = pb.getVersion()
+            log(f"Current firmware: v{before}")
+        except Exception as e:
+            log(f"Could not read current firmware version ({type(e).__name__}); continuing anyway")
+
+    # `installFirmwareFile` works out *why* it succeeded or failed and hands it
+    # over in the result event. Keep it: without it a failure is a guess, and
+    # the guesses are not close together — "the device refused this image" and
+    # "the POST came back before we finished sending" want completely different
+    # next moves.
+    outcome = {'reason': None}
+
+    try:
+        if no_monitor:
+            ok = pb.installFirmwareFile(str(path), monitor=False,
+                                        chunkSize=chunk, timeout=timeout)
+        else:
+            bar_state = {'bar': None, 'last': 0}
+
+            def on_event(evt):
+                t = evt.get('type')
+                bar = bar_state.get('bar')
+                if t == 'start':
+                    bar_state['bar'] = tqdm(
+                        total=evt['total'], desc='Uploading',
+                        unit='B', unit_scale=True, unit_divisor=1000,
+                        bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} '
+                                   '[{elapsed}<{remaining}, {rate_fmt}]',
+                    )
+                elif t == 'chunk' and bar is not None:
+                    sent = evt['sent']
+                    bar.update(sent - bar_state['last'])
+                    bar_state['last'] = sent
+                elif t == 'device':
+                    parsed = evt.get('parsed') or {}
+                    if parsed.get('phase') == 'file':
+                        pretty = (f"file {parsed['fileIndex']}/{parsed['fileCount']}, "
+                                  f"{tqdm.format_sizeof(parsed['bytesRemain'], 'B', 1000)} remain")
+                    elif parsed.get('phase') == 'starting':
+                        pretty = 'starting'
+                    else:
+                        pretty = evt.get('progress') or ''
+                    # tqdm.write cooperates with the live bar; keep line above it.
+                    tqdm.write(f"[device] state={evt['code']} {pretty}".rstrip())
+                elif t == 'result':
+                    outcome['reason'] = evt.get('reason')
+                    if bar is not None:
+                        bar.close()
+                        bar_state['bar'] = None
+
+            ok = pb.installFirmwareFile(str(path), monitor=True, callback=on_event,
+                                        chunkSize=chunk, timeout=timeout)
+    except Exception as e:
+        raise click.ClickException(f"Firmware upload failed: {e}")
+
+    if not ok:
+        why = outcome['reason'] or (
+            "no reason available — --no-monitor judges on the HTTP response alone; "
+            "run without it to get the device's own upgradeState"
+        )
+        # Worth spelling out: the firmware answers the upload with HTTP 200 and
+        # the words "Update Success! Rebooting..." even when its own upgrade
+        # state machine goes to updateError. Anything trusting the HTTP response
+        # reports a flash that never happened.
+        hint = ""
+        if "updateError" in why and "HTTP 200" in why:
+            hint = ("\n  The device returned HTTP 200 and said 'Update Success' while its own "
+                    "upgradeState said updateError — the HTTP response is not trustworthy here. "
+                    "The image was fully transferred and refused, so it is the file the device "
+                    "objects to, not the transfer.")
+        raise click.ClickException(f"Firmware not installed: {why}{hint}")
+    log("Firmware accepted. Device is rebooting; it may take 30-60s to reappear on WiFi.")
+
+    # "Accepted" is the client's reading of a heuristic; the version is the fact.
+    # Worth the wait: a flash that reports success and leaves the old firmware in
+    # place is the single most confusing outcome there is, and it has happened.
+    deadline = time.time() + 90
+    after = None
+    last_error = None
+    while time.time() < deadline:
+        time.sleep(5)
+        try:
+            with Pixelblaze(device_ip) as check:
+                after = check.freshVersion()
+            if after:
+                break
+        except Exception as e:
+            # A reboot means connection failures are expected here, but do not
+            # swallow them silently — a bug in this loop would look exactly like
+            # a device that never came back.
+            last_error = f"{type(e).__name__}: {e}"
+            continue
+
+    if after is None:
+        log("Could not reach the device within 90s to confirm the version"
+            + (f" (last error: {last_error})" if last_error else "")
+            + ". Check with `pb --ip <device> cfg` once it is back.")
+    elif before is not None and str(after) == str(before):
+        raise click.ClickException(
+            f"Flash reported success but the device still runs v{after}. "
+            f"The upload was accepted and the firmware did not change — treat "
+            f"this as a failure, not a success.")
+    else:
+        log(f"Confirmed: now running v{after}" + (f" (was v{before})" if before else ""))
 @pixelblaze.group()
 def cache():
     """View and refresh the on-disk device cache (no network unless 'refresh')."""

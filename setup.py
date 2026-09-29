@@ -33,6 +33,7 @@ setuptools.setup(
       "click>=8.0",
       "json5",
       "lzstring",
+      "tqdm",
     ],
     packages=["pixelblaze"],
     python_requires='>=3.9',

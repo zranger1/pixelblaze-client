@@ -178,7 +178,7 @@ class Pixelblaze:
 
     ***UPDATES section***
 
-    - [`getUpdateState`](#method-getUpdateState)/[`installUpdate`](#method-installUpdate)
+    - [`getUpdateState`](#method-getUpdateState)/[`installUpdate`](#method-installUpdate)/[`installFirmwareFile`](#method-installFirmwareFile)
     - [`getVersion`](#method-getVersion)/[`getVersionMajor`](#method-getVersionMajor)/[`getVersionMinor`](#method-getVersionMinor)/
 
     ***BACKUPS section***
@@ -2396,6 +2396,7 @@ class Pixelblaze:
         upToDate = 4
         updateAvailable = 5
         updateComplete = 6
+        inProgressAlt = 7  # observed alongside inProgress during OTA writes; treat as in-progress
 
     def getUpdateState(self) -> updateStates:
         """Returns the updateState of the Pixelblaze.
@@ -2435,6 +2436,370 @@ class Pixelblaze:
             print(f"updateProgress: {self.updateStates(state).name}")
             time.sleep(0.5)
         return state
+
+    def quietForUpdate(self) -> dict:
+        """Ask the device to do as little as possible while it is being written.
+
+        The firmware's own `recovery.html` opens with
+        `{"sendUpdates":false,"getConfig":true,"getUpgradeState":true}` — it
+        silences the preview/status stream before it does anything else. We did
+        not, so every flash this client attempted ran with the board still
+        rendering and still pushing a frame after every render cycle, over the
+        same websocket it was being flashed through. On a 200-pixel board that
+        was measured at 19-86 fps *during* an OTA.
+
+        Order matters: the sequencer advancing a pattern **unpauses the
+        renderer**, so the sequencer has to stop first or the pause does not
+        hold for the length of an upload.
+
+        Nothing is written to flash (`saveToFlash=False` throughout), so a
+        successful update — which reboots — comes back with the settings it had.
+        `unquietAfterUpdate` puts them back when the update does *not* happen.
+
+        Returns:
+            dict: the prior state worth restoring, plus which steps took.
+        """
+        prior = {'brightness': None, 'sequencerWasRunning': None, 'steps': {}}
+        try:
+            settings = self.getConfigSettings() or {}
+            prior['brightness'] = settings.get('brightness')
+            prior['sequencerWasRunning'] = bool(settings.get('runSequencer'))
+        except Exception:
+            pass
+
+        # Quietest first, so a failure part-way still leaves it quieter.
+        for label, act in (
+            ('sendUpdates', lambda: self.setSendPreviewFrames(False)),
+            ('sequencer',   lambda: self.pauseSequencer()),
+            ('renderer',    lambda: self.pauseRenderer(True)),
+            ('brightness',  lambda: self.setBrightnessSlider(0)),
+        ):
+            try:
+                act()
+                prior['steps'][label] = True
+            except Exception:
+                prior['steps'][label] = False
+        return prior
+
+    def unquietAfterUpdate(self, prior: dict) -> None:
+        """Undo `quietForUpdate`. Only needed when the flash did not happen — a
+        device that actually updated has rebooted into its saved settings."""
+        try:
+            self.pauseRenderer(False)
+        except Exception:
+            pass
+        if prior.get('sequencerWasRunning'):
+            try:
+                self.playSequencer()
+            except Exception:
+                pass
+        if prior.get('brightness') is not None:
+            try:
+                self.setBrightnessSlider(float(prior['brightness']))
+            except Exception:
+                pass
+        try:
+            self.setSendPreviewFrames(True)
+        except Exception:
+            pass
+
+    def freshVersion(self):
+        """`getVersion()` caches in `self.latestVersion`, so after a flash it
+        happily reports the version the device used to run. This re-reads."""
+        self.latestVersion = None
+        return self.getVersion()
+
+    def installFirmwareFile(self, filePath: str, *, monitor: bool = True, callback=None,
+                            chunkSize: int = 8192, timeout: float = 300.0,
+                            postUploadPollSeconds: float = 5.0,
+                            minUploadSeconds: float = 20.0,
+                            quiet: bool = True) -> bool:
+        """Uploads a local firmware `.stfu` file directly to the device's /update endpoint.
+
+        Mirrors the built-in recovery.html flow (a multipart/form-data POST with field
+        name `update`). Useful for offline recovery when the device is reachable via
+        HTTP (its regular IP or SoftAP at 192.168.4.1) but the online updater can't
+        reach ElectroMage's servers, or when the WebSocket API is unresponsive.
+
+        When `monitor` is True (default), streams the upload in chunks and — in a
+        background thread — polls the same `{"getUpgradeState": true}` WebSocket
+        channel that recovery.html uses. The two signals combine to judge success:
+        the HTTP outcome, the byte count actually written, upload wall-clock time,
+        and any device-reported `updateStates` (inProgress/inProgressAlt/updateError/
+        updateComplete).
+
+        The primary success signal is an HTTP 200 with body "OK" (per ESPAsyncElegantOTA
+        convention). A `ChunkedEncodingError` or reboot-flavored `ConnectionError` is a
+        safety-net: on some builds or network paths the device restarts before the client
+        finishes reading the response body, and that disconnect is optimistically taken
+        as success unless the WS poller reports otherwise.
+
+        When `monitor` is False, uses a single non-streaming `requests.post(files=...)`
+        with no side channels — fastest possible path, no progress signalling, success
+        is judged solely from the HTTP response.
+
+        Args:
+            filePath (str): Path to the .stfu firmware file.
+            monitor (bool, optional): If True (default), stream chunks + poll device
+                state + apply stricter success heuristics. If False, single-shot POST
+                and trust the HTTP response only.
+            callback (callable, optional): When set, receives progress event dicts:
+                `{'type': 'start',  'total': int}`
+                `{'type': 'chunk',  'sent': int, 'total': int}`
+                `{'type': 'device', 'code': int, 'progress': str, 'raw': dict}`
+                `{'type': 'result', 'ok': bool, 'reason': str}`
+                Ignored when `monitor` is False (no events are emitted).
+            chunkSize (int, optional): Bytes per chunk (progress tick). Defaults to 8192.
+            timeout (float, optional): HTTP read timeout in seconds. Defaults to 300.
+            postUploadPollSeconds (float, optional): After upload returns, keep polling
+                for a final state=6/3 frame for this many seconds. Defaults to 5.
+            minUploadSeconds (float, optional): If the upload returns faster than this
+                and no device-side confirmation ever came in, treat as suspicious even
+                on 200/OK — real flashes take tens of seconds. Defaults to 20.
+
+        Returns:
+            bool: True if the device appears to have accepted the firmware, False
+            otherwise. Rationale is delivered via the final `'result'` callback event
+            when `callback` is set.
+
+        Raises:
+            FileNotFoundError: If `filePath` does not exist.
+            requests.exceptions.Timeout: If the device never responds within `timeout`.
+        """
+        path = pathlib.Path(filePath)
+
+        # Quiet the board before a byte goes out; see `quietForUpdate`.
+        prior = self.quietForUpdate() if quiet else None
+        ok = False
+        try:
+            ok = self._installFirmwareFile(
+                path, monitor=monitor, callback=callback, chunkSize=chunkSize,
+                timeout=timeout, postUploadPollSeconds=postUploadPollSeconds,
+                minUploadSeconds=minUploadSeconds)
+            return ok
+        finally:
+            # Only when the flash did not happen. A device that updated has
+            # rebooted into its saved settings, and nothing here was saved.
+            if prior is not None and not ok:
+                self.unquietAfterUpdate(prior)
+
+    def _installFirmwareFile(self, path, *, monitor, callback, chunkSize, timeout,
+                             postUploadPollSeconds, minUploadSeconds):
+        if not monitor:
+            startedAt = time.monotonic()
+            try:
+                with open(path, 'rb') as f:
+                    files = {'update': (path.name, f, 'application/octet-stream')}
+                    with requests.post(self.getUrl("update"), files=files,
+                                       proxies=self.proxyDict, timeout=timeout) as r:
+                        return self._interpretUpdateResponse(r)
+            except requests.exceptions.ChunkedEncodingError:
+                pass  # fall through to timing heuristic
+            except requests.exceptions.ConnectionError as e:
+                if not self._isRebootDrop(str(e)):
+                    raise
+            # Reboot-flavored disconnect: only trust it if the upload was underway long
+            # enough that a real flash could have happened (real flashes take tens of
+            # seconds). An immediate drop is a fault, not a successful reboot.
+            return (time.monotonic() - startedAt) >= minUploadSeconds
+
+        # --- monitor=True path: streaming upload + WS poller + heuristic success ---
+        fileSize = path.stat().st_size
+        boundary = f"----pixelblazeUpdate{time.time_ns():x}"
+        preamble = (
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="update"; filename="{path.name}"\r\n'
+            f"Content-Type: application/octet-stream\r\n\r\n"
+        ).encode()
+        epilogue = f"\r\n--{boundary}--\r\n".encode()
+
+        def emit(evt):
+            if callback:
+                try:
+                    callback(evt)
+                except Exception:
+                    pass  # never let a caller's bug abort a flash
+
+        emit({'type': 'start', 'total': fileSize})
+
+        # Shared state used by both the upload thread (main) and the poller thread.
+        state = {'lastCode': None, 'sawInProgress': False, 'sawComplete': False, 'sawError': False}
+        stopEvt = threading.Event()
+
+        def pollDeviceState():
+            try:
+                # Separate Pixelblaze/WS instance — the main thread's `self` isn't thread-safe.
+                with Pixelblaze(self.ipAddress, ignoreOpenFailure=True,
+                                proxyUrl=self.proxyUrl) as poll_pb:
+                    while not stopEvt.is_set():
+                        try:
+                            frame = poll_pb.wsSendJson({"getUpgradeState": True},
+                                                      expectedResponse="upgradeState")
+                            if frame:
+                                st = json.loads(frame).get("upgradeState", {}) or {}
+                                code = st.get("code", 0)
+                                progress = str(st.get("progress") or "").strip()
+                                if code in (self.updateStates.inProgress,
+                                            self.updateStates.inProgressAlt):
+                                    state['sawInProgress'] = True
+                                if code == self.updateStates.updateError:
+                                    state['sawError'] = True
+                                if code == self.updateStates.updateComplete:
+                                    state['sawComplete'] = True
+                                parsed = self._parseUpgradeProgress(progress)
+                                # Emit on any change to code OR progress string, so mid-file
+                                # ticks (e.g. bytesRemain shrinking) surface too.
+                                lastKey = (state['lastCode'], state.get('lastProgress'))
+                                if (code, progress) != lastKey:
+                                    state['lastCode'] = code
+                                    state['lastProgress'] = progress
+                                    emit({'type': 'device', 'code': code,
+                                          'progress': progress, 'parsed': parsed, 'raw': st})
+                                if code in (self.updateStates.updateError,
+                                            self.updateStates.updateComplete):
+                                    return
+                        except Exception:
+                            pass
+                        stopEvt.wait(0.5)
+            except Exception:
+                pass
+
+        poller = threading.Thread(target=pollDeviceState, daemon=True)
+        poller.start()
+
+        bytesSent = {'n': 0}
+
+        def bodyIter():
+            yield preamble
+            with open(path, 'rb') as f:
+                while True:
+                    chunk = f.read(chunkSize)
+                    if not chunk:
+                        break
+                    yield chunk
+                    bytesSent['n'] += len(chunk)
+                    emit({'type': 'chunk', 'sent': bytesSent['n'], 'total': fileSize})
+            yield epilogue
+
+        headers = {
+            'Content-Type': f'multipart/form-data; boundary={boundary}',
+            'Content-Length': str(len(preamble) + fileSize + len(epilogue)),
+        }
+
+        startedAt = time.monotonic()
+        httpAccepted = None
+        httpReason = ""
+        try:
+            with requests.post(self.getUrl("update"), data=bodyIter(), headers=headers,
+                               proxies=self.proxyDict, timeout=timeout) as r:
+                httpAccepted = self._interpretUpdateResponse(r)
+                httpReason = f"HTTP {r.status_code} body={(r.text or '')[:80]!r}"
+        except requests.exceptions.ChunkedEncodingError:
+            httpAccepted = True
+            httpReason = "connection closed by device mid-response (reboot?)"
+        except requests.exceptions.ConnectionError as e:
+            if self._isRebootDrop(str(e)):
+                httpAccepted = True
+                httpReason = "connection dropped by device (reboot?)"
+            else:
+                stopEvt.set()
+                poller.join(timeout=2.0)
+                raise
+        elapsed = time.monotonic() - startedAt
+
+        # Give the poller a moment to catch a final updateComplete/updateError frame.
+        deadline = time.monotonic() + postUploadPollSeconds
+        while time.monotonic() < deadline and not (state['sawComplete'] or state['sawError']):
+            time.sleep(0.1)
+        stopEvt.set()
+        poller.join(timeout=2.0)
+
+        ok, reason = self._judgeUpdateOutcome(
+            fileSize=fileSize, bytesSent=bytesSent['n'], elapsed=elapsed,
+            minUploadSeconds=minUploadSeconds, httpAccepted=httpAccepted, httpReason=httpReason,
+            sawInProgress=state['sawInProgress'], sawComplete=state['sawComplete'],
+            sawError=state['sawError'],
+        )
+        emit({'type': 'result', 'ok': ok, 'reason': reason})
+        return ok
+
+    @staticmethod
+    def _parseUpgradeProgress(progress: str):
+        """Best-effort parser for upgradeState.progress strings observed from the device.
+
+        Known formats:
+            "Starting"                     → {'phase': 'starting'}
+            "File 4/4 644041 bytes remain" → {'phase': 'file', 'fileIndex': 4,
+                                              'fileCount': 4, 'bytesRemain': 644041}
+
+        Returns None for empty, unknown, or malformed strings. Never raises.
+        """
+        if not progress:
+            return None
+        s = progress.strip()
+        if s == 'Starting':
+            return {'phase': 'starting'}
+        try:
+            parts = s.split()
+            if len(parts) >= 5 and parts[0] == 'File' and '/' in parts[1] and parts[3] == 'bytes':
+                idx_str, total_str = parts[1].split('/', 1)
+                return {
+                    'phase': 'file',
+                    'fileIndex': int(idx_str),
+                    'fileCount': int(total_str),
+                    'bytesRemain': int(parts[2]),
+                }
+        except (ValueError, IndexError):
+            pass
+        return None
+
+    @staticmethod
+    def _isRebootDrop(msg: str) -> bool:
+        return ('RemoteDisconnected' in msg
+                or 'Connection aborted' in msg
+                or 'Connection reset' in msg)
+
+    @staticmethod
+    def _judgeUpdateOutcome(*, fileSize, bytesSent, elapsed, minUploadSeconds,
+                            httpAccepted, httpReason, sawInProgress, sawComplete,
+                            sawError) -> tuple[bool, str]:
+        """Combine byte-transfer, timing, HTTP, and WS signals into one accept/reject
+        verdict with a human-readable reason string."""
+        # Device explicitly told us it failed: authoritative reject.
+        if sawError:
+            return (False, f"device reported upgradeState.updateError; {httpReason}")
+        # Device explicitly told us it finished: authoritative accept.
+        if sawComplete:
+            return (True, f"device reported upgradeState.updateComplete; {httpReason}")
+        # Not enough bytes made it out — POST returned before we streamed the file.
+        if bytesSent < fileSize:
+            return (False, f"only sent {bytesSent}/{fileSize} bytes before upload returned; {httpReason}")
+        # HTTP said reject and device didn't contradict.
+        if httpAccepted is False:
+            return (False, f"HTTP rejected the file; {httpReason}")
+        # HTTP said accept but device never even entered 'in progress' AND upload was
+        # suspiciously fast — real flashes take tens of seconds.
+        if httpAccepted and not sawInProgress and elapsed < minUploadSeconds:
+            return (False, f"upload finished in {elapsed:.2f}s (< {minUploadSeconds}s) "
+                           f"and device never confirmed progress; {httpReason}")
+        # HTTP said accept, bytes made it, no error reported — best-guess success even
+        # if the WS was silent (some builds don't stream progress reliably).
+        if httpAccepted:
+            confirm = "with device in-progress signal" if sawInProgress else "no device confirmation available"
+            return (True, f"HTTP accepted, all bytes sent in {elapsed:.1f}s; {confirm}")
+        return (False, f"indeterminate outcome; {httpReason}")
+
+    @staticmethod
+    def _interpretUpdateResponse(r) -> bool:
+        """Parses an /update HTTP response. Returns True on accept, False on rejection.
+
+        ESPAsyncWebServer OTA returns "OK" on success and "FAIL" (sometimes with
+        detail) on rejection. Some builds respond with an empty body on success.
+        """
+        if r.status_code != 200:
+            return False
+        body = (r.text or '').strip().upper()
+        return not ('FAIL' in body or 'ERROR' in body)
 
     # --- SETTINGS menu: UPDATES section: convenience functions
 
