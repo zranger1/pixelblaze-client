@@ -16,12 +16,27 @@ from pixelblaze.cli import cli as cli_mod
 from pixelblaze.cli.cli import pixelblaze
 
 
+class _FakeClock:
+    """Advances only when slept on, so a wall-clock deadline resolves instantly."""
+
+    def __init__(self):
+        self.now = 1000.0
+
+    def time(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.now += seconds
+
+
 class FakePB:
     """Stands in for a device: emits the events installFirmwareFile would."""
 
     ok = False
     reason = None
     version = "3.51"
+    after_version = None          # what freshVersion() reports post-flash
+    quieted = None                # records that the quiet step ran
 
     def __init__(self, *a, **kw):
         pass
@@ -35,6 +50,16 @@ class FakePB:
     def getVersion(self):
         return self.version
 
+    def freshVersion(self):
+        return type(self).after_version or type(self).version
+
+    def quietForUpdate(self):
+        type(self).quieted = True
+        return {'brightness': 0.5, 'sequencerWasRunning': True, 'steps': {}}
+
+    def unquietAfterUpdate(self, prior):
+        type(self).quieted = 'restored'
+
     def installFirmwareFile(self, path, *, monitor=True, callback=None, **kw):
         if monitor and callback:
             callback({'type': 'start', 'total': 1024})
@@ -43,9 +68,13 @@ class FakePB:
         return type(self).ok
 
 
-def _run(tmp, monkeypatch, *, ok, reason, extra=()):
+def _run(tmp, monkeypatch, *, ok, reason, extra=(), after=None):
     monkeypatch.setattr(cli_mod, 'Pixelblaze', FakePB)
+    # A fake clock, not a no-op sleep: the verification loop is bounded by
+    # wall-clock, so stubbing only sleep() turns it into a 90-second busy-wait.
+    monkeypatch.setattr(cli_mod, 'time', _FakeClock())
     FakePB.ok, FakePB.reason = ok, reason
+    FakePB.after_version = after
     fw = Path(tmp) / "v3.70.pb32.stfu"
     fw.write_bytes(b"STFU" + b"\0" * 64)
     runner = CliRunner()
@@ -99,7 +128,28 @@ def test_no_monitor_says_why_it_has_no_reason(tmp_path, monkeypatch):
 
 
 def test_success_still_says_so(tmp_path, monkeypatch):
-    result = _run(tmp_path, monkeypatch, ok=True, reason="device reported updateComplete")
+    """Needs a changed version now: "accepted" alone is no longer success."""
+    result = _run(tmp_path, monkeypatch, ok=True,
+                  reason="device reported updateComplete", after="3.70")
     assert result.exit_code == 0, result.output
     assert "Firmware accepted" in result.output, result.output
     print("✓ a good flash still reports success")
+
+
+def test_a_success_that_did_not_change_the_version_is_a_failure(tmp_path, monkeypatch):
+    """The most confusing outcome there is, and it happened for real: the upload
+    is accepted, the device reboots, and it still runs the old firmware."""
+    result = _run(tmp_path, monkeypatch, ok=True, reason="ok", after="3.51")
+    assert result.exit_code != 0, result.output
+    assert "still runs v3.51" in result.output, result.output
+    assert "treat" in result.output and "failure" in result.output, result.output
+
+
+def test_a_real_upgrade_is_confirmed_by_reading_the_version_back(tmp_path, monkeypatch):
+    out = _run(tmp_path, monkeypatch, ok=True, reason="ok", after="3.70").output
+    assert "Confirmed: now running v3.70" in out, out
+    assert "was v3.51" in out, out
+
+# Quieting is tested in test_quiet_for_update.py: it happens inside
+# installFirmwareFile, which this file's fake replaces wholesale, so a CLI-level
+# assertion here would only be testing the fake.

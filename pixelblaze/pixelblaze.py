@@ -2740,10 +2740,83 @@ class Pixelblaze:
             time.sleep(0.5)
         return state
 
+    def quietForUpdate(self) -> dict:
+        """Ask the device to do as little as possible while it is being written.
+
+        The firmware's own `recovery.html` opens with
+        `{"sendUpdates":false,"getConfig":true,"getUpgradeState":true}` — it
+        silences the preview/status stream before it does anything else. We did
+        not, so every flash this client attempted ran with the board still
+        rendering and still pushing a frame after every render cycle, over the
+        same websocket it was being flashed through. On a 200-pixel board that
+        was measured at 19-86 fps *during* an OTA.
+
+        Order matters: the sequencer advancing a pattern **unpauses the
+        renderer**, so the sequencer has to stop first or the pause does not
+        hold for the length of an upload.
+
+        Nothing is written to flash (`saveToFlash=False` throughout), so a
+        successful update — which reboots — comes back with the settings it had.
+        `unquietAfterUpdate` puts them back when the update does *not* happen.
+
+        Returns:
+            dict: the prior state worth restoring, plus which steps took.
+        """
+        prior = {'brightness': None, 'sequencerWasRunning': None, 'steps': {}}
+        try:
+            settings = self.getConfigSettings() or {}
+            prior['brightness'] = settings.get('brightness')
+            prior['sequencerWasRunning'] = bool(settings.get('runSequencer'))
+        except Exception:
+            pass
+
+        # Quietest first, so a failure part-way still leaves it quieter.
+        for label, act in (
+            ('sendUpdates', lambda: self.setSendPreviewFrames(False)),
+            ('sequencer',   lambda: self.pauseSequencer()),
+            ('renderer',    lambda: self.pauseRenderer(True)),
+            ('brightness',  lambda: self.setBrightnessSlider(0)),
+        ):
+            try:
+                act()
+                prior['steps'][label] = True
+            except Exception:
+                prior['steps'][label] = False
+        return prior
+
+    def unquietAfterUpdate(self, prior: dict) -> None:
+        """Undo `quietForUpdate`. Only needed when the flash did not happen — a
+        device that actually updated has rebooted into its saved settings."""
+        try:
+            self.pauseRenderer(False)
+        except Exception:
+            pass
+        if prior.get('sequencerWasRunning'):
+            try:
+                self.playSequencer()
+            except Exception:
+                pass
+        if prior.get('brightness') is not None:
+            try:
+                self.setBrightnessSlider(float(prior['brightness']))
+            except Exception:
+                pass
+        try:
+            self.setSendPreviewFrames(True)
+        except Exception:
+            pass
+
+    def freshVersion(self):
+        """`getVersion()` caches in `self.latestVersion`, so after a flash it
+        happily reports the version the device used to run. This re-reads."""
+        self.latestVersion = None
+        return self.getVersion()
+
     def installFirmwareFile(self, filePath: str, *, monitor: bool = True, callback=None,
                             chunkSize: int = 8192, timeout: float = 300.0,
                             postUploadPollSeconds: float = 5.0,
-                            minUploadSeconds: float = 20.0) -> bool:
+                            minUploadSeconds: float = 20.0,
+                            quiet: bool = True) -> bool:
         """Uploads a local firmware `.stfu` file directly to the device's /update endpoint.
 
         Mirrors the built-in recovery.html flow (a multipart/form-data POST with field
@@ -2798,6 +2871,23 @@ class Pixelblaze:
         """
         path = pathlib.Path(filePath)
 
+        # Quiet the board before a byte goes out; see `quietForUpdate`.
+        prior = self.quietForUpdate() if quiet else None
+        ok = False
+        try:
+            ok = self._installFirmwareFile(
+                path, monitor=monitor, callback=callback, chunkSize=chunkSize,
+                timeout=timeout, postUploadPollSeconds=postUploadPollSeconds,
+                minUploadSeconds=minUploadSeconds)
+            return ok
+        finally:
+            # Only when the flash did not happen. A device that updated has
+            # rebooted into its saved settings, and nothing here was saved.
+            if prior is not None and not ok:
+                self.unquietAfterUpdate(prior)
+
+    def _installFirmwareFile(self, path, *, monitor, callback, chunkSize, timeout,
+                             postUploadPollSeconds, minUploadSeconds):
         if not monitor:
             startedAt = time.monotonic()
             try:
