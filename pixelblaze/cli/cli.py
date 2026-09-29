@@ -2070,9 +2070,11 @@ def update(ctx, file, timeout, chunk, no_ver, no_monitor):
     # ignoreOpenFailure=True: the device may not have a live WebSocket in recovery mode.
     pb = Pixelblaze(device_ip, ignoreOpenFailure=True)
 
+    before = None
     if not no_ver:
         try:
-            log(f"Current firmware: v{pb.getVersion()}")
+            before = pb.getVersion()
+            log(f"Current firmware: v{before}")
         except Exception as e:
             log(f"Could not read current firmware version ({type(e).__name__}); continuing anyway")
 
@@ -2143,6 +2145,38 @@ def update(ctx, file, timeout, chunk, no_ver, no_monitor):
                     "objects to, not the transfer.")
         raise click.ClickException(f"Firmware not installed: {why}{hint}")
     log("Firmware accepted. Device is rebooting; it may take 30-60s to reappear on WiFi.")
+
+    # "Accepted" is the client's reading of a heuristic; the version is the fact.
+    # Worth the wait: a flash that reports success and leaves the old firmware in
+    # place is the single most confusing outcome there is, and it has happened.
+    deadline = time.time() + 90
+    after = None
+    last_error = None
+    while time.time() < deadline:
+        time.sleep(5)
+        try:
+            with Pixelblaze(device_ip) as check:
+                after = check.freshVersion()
+            if after:
+                break
+        except Exception as e:
+            # A reboot means connection failures are expected here, but do not
+            # swallow them silently — a bug in this loop would look exactly like
+            # a device that never came back.
+            last_error = f"{type(e).__name__}: {e}"
+            continue
+
+    if after is None:
+        log("Could not reach the device within 90s to confirm the version"
+            + (f" (last error: {last_error})" if last_error else "")
+            + ". Check with `pb --ip <device> cfg` once it is back.")
+    elif before is not None and str(after) == str(before):
+        raise click.ClickException(
+            f"Flash reported success but the device still runs v{after}. "
+            f"The upload was accepted and the firmware did not change — treat "
+            f"this as a failure, not a success.")
+    else:
+        log(f"Confirmed: now running v{after}" + (f" (was v{before})" if before else ""))
 @pixelblaze.group()
 def cache():
     """View and refresh the on-disk device cache (no network unless 'refresh')."""
