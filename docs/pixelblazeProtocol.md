@@ -376,3 +376,37 @@ The `timeSync` packet contains five longwords in little-endian format, represent
 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 |
 |--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|
 | [&nbsp;43 | 0 | 0 | 0] | [\xFF | \xFF | 0 | 0] | [0 | 0 | 0 | 0] | [192. | 168. | 4. | 1] | [\x98 | \x8F |\xD2 | \x21] |
+
+## Sensor board packet
+
+A Pixelblaze leading a sync group shares its Sensor Expansion Board with the group by broadcasting an `expansionBoard` packet over UDP on port 1889, at the board's own rate of about 40 times a second. A Pixelblaze receiving one uses the readings for any sensor whose source preference (`accelSrc`/`lightSrc`/`soundSrc`/`analogSrc` in the `Settings` tab) is _"Prefer Remote"_, and for any sensor it has no local source for.
+
+Nothing in the packet is specific to real hardware, so a program on the network can synthesize the readings -- see the `SensorPacket` and `SensorSender` classes in this library -- and drive sound-reactive patterns with no board attached to anything. Because the Pixelblaze parses no JSON to receive it, this costs it none of the pattern framerate that the equivalent `setVars` traffic does, and one broadcast feeds every Pixelblaze at once.
+
+The packet is 104 bytes: a 16-byte header, followed by the sensor board's own SB1.0 serial frame (documented in the [sensor board source code](https://github.com/simap/pixelblaze_sensor_board)) with its `"SB1.0"` and `"END"` delimiters removed. Every field is little-endian.
+
+The header contains three longwords -- a 32-bit _packetType_ of 50 (_expansionBoard_), a 32-bit _senderId_ and the _currentTime_ according to the sender (the lowest 32 bits of the Unix `timestamp` format, with millisecond resolution) -- followed by an _expansionType_ byte of 01 (an SB1.0 sensor board) and three bytes of padding:
+
+| 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 |
+|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|--|
+| [&nbsp;50 | 0 | 0 | 0&nbsp;] | [&nbsp;senderId&nbsp;] | [&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | currentTime | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;] | [&nbsp;1&nbsp;] | [&nbsp;0 | 0 | 0&nbsp;] |
+
+The remaining 88 bytes are the sensor readings, in the order and at the offsets below. They reach patterns under these same names, as the reserved global variables described in the [sensor board documentation](https://www.bhencke.com/pixelblaze-sensor-expansion-board):
+
+| Offset | Type | Field | Pattern value |
+|--|--|--|--|
+| 16 | uint16[32] | `frequencyData` | magnitude of each of 32 frequency bins (12.5Hz-10kHz), _value_ / 65536 |
+| 80 | uint16 | `energyAverage` | overall loudness, _value_ / 65536 |
+| 82 | uint16 | `maxFrequencyMagnitude` | magnitude of the loudest bin, _value_ / 65536 |
+| 84 | uint16 | `maxFrequency` | frequency of the loudest bin, in Hz (not scaled; ~39Hz resolution) |
+| 86 | int16[3] | `accelerometer` | X/Y/Z at 16G full scale, _value_ / 32768 |
+| 92 | uint16 | `light` | ambient light level, _value_ / 65536 |
+| 94 | uint16[5] | `analogInputs` | five inputs of 12-bit resolution shifted up to 16 bits, _value_ / 65536 |
+
+*Note: a receiving Pixelblaze binds a pattern's sensor globals to their source when the **pattern loads**. A pattern that was already running when the packets started arriving keeps using its own simulated values and ignores them — which looks exactly like the packets being malformed. Send a few frames, then re-select the pattern (`{"activeProgramId": "<the id already running>"}`). Nothing else is required: unicast and broadcast both work, `senderTime` can be any value, the source port is irrelevant, and no sync group or leader relationship is needed.*
+
+*Note: once bound, a pattern keeps the last frame it was sent. On firmware 3.70 it was still displaying it 100 seconds after the stream stopped, and reloading the pattern does not restore simulation — so a sender that is shutting down should send a frame of zeroes rather than simply stopping.*
+
+*Note: the scaling above follows from the sensor board firmware, where the light and analog readings are 12-bit ADC values shifted up to 16 bits and the frequency magnitudes are multiplied by 16 and saturated at 16 bits; a full-scale reading is therefore 65535, not 32768. Confirmed on firmware 3.70 by sending known values and reading the pattern's globals back with `getVars`: `light` 8192 → 0.125, `frequencyData[16]` 16384 → 0.25, `energyAverage` 16384 → 0.25, `maxFrequency` 1170 → 1170.*
+
+*Note: the sensor board itself sends this frame over serial at 115200 baud, wrapped in its `"SB1.0"` header and `"END"` footer; the UDP form drops both and prefixes the discovery header instead. A Pixelblaze whose sensor sources all prefer local, and which has a board attached, ignores these packets entirely.*

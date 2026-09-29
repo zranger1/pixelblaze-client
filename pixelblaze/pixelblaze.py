@@ -1237,6 +1237,21 @@ class Pixelblaze:
                                                                 "setActivePattern(id)/setActivePatternByName(name")
         self.wsSendJson({"activeProgramId": patternId, "save": saveToFlash}, expectedResponse="activeProgram")
 
+    def reloadActivePattern(self):
+        """Restarts the pattern that is already running.
+
+        The firmware decides where a pattern's sensor globals (`frequencyData`,
+        `energyAverage`, `light`, ...) come from when the pattern loads. A
+        pattern that started before remote sensor data began arriving keeps
+        using its own simulated values until it is reloaded, so a host
+        streaming sensor data with [`SensorSender`](#class-sensorsender) should
+        call this once the frames are flowing. Verified on firmware 3.70.
+
+        Does nothing if no pattern is active.
+        """
+        patternId = self.getActivePattern()
+        if patternId: self.setActivePattern(patternId)
+
     def getPatternAsEpe(self, patternId: str) -> str:
         """Convert a stored pattern into an exportable, portable JSON format (which then needs to be saved by the caller).
 
@@ -2296,6 +2311,66 @@ class Pixelblaze:
         # The "networkPowerSave" setting doesn't exist on v2, so return the default.
         if configSettings is None: configSettings = self.getConfigSettings()
         return configSettings.get('networkPowerSave', False)
+
+    # --- SETTINGS menu: Sensor input sources
+
+    class sensorSources(IntEnum):
+        """Sensor-input source preference (per accelSrc/soundSrc/lightSrc/analogSrc).
+
+        Two values, matching the stock Settings-page dropdown. Each is a
+        *preference* — the firmware falls back to the other source if the
+        preferred one isn't reporting.
+        """
+        preferRemote = 0     # Prefer OTA/remote sensor data (e.g. audio capture tool)
+        preferLocal  = 1     # Prefer local (onboard / Sensor Expansion Board)
+
+    def getSensorSources(self, configSettings: dict = None) -> dict:
+        """Returns all sensor input source preferences.
+
+        Args:
+            configSettings (dict, optional): If provided, extracts values from the results of a previous call to `getConfigSettings`; otherwise, fetches the configSettings from the Pixelblaze anew. Defaults to None.
+
+        Returns:
+            dict: Dictionary with keys 'accel', 'light', 'sound', 'analog' mapped to source preference (0=preferRemote, 1=preferLocal).
+        """
+        if configSettings is None: configSettings = self.getConfigSettings()
+        return {
+            "accel": configSettings.get("accelSrc", 0),
+            "light": configSettings.get("lightSrc", 0),
+            "sound": configSettings.get("soundSrc", 0),
+            "analog": configSettings.get("analogSrc", 0),
+        }
+
+    def setSensorSources(self, accel: int = None, light: int = None, sound: int = None, analog: int = None, *, saveToFlash: bool = False):
+        """Sets multiple sensor input source preferences at once.
+
+        Useful for bulk configuration of all sensor inputs in a single command.
+
+        Args:
+            accel (int, optional): Accelerometer source preference (0=preferRemote, 1=preferLocal). Defaults to None (no change).
+            light (int, optional): Light sensor source preference. Defaults to None (no change).
+            sound (int, optional): Audio/sound sensor source preference. Defaults to None (no change).
+            analog (int, optional): Analog input source preference. Defaults to None (no change).
+            saveToFlash (bool): If True, saves the settings to persistent flash storage. Defaults to False.
+
+        Examples:
+            # Prefer remote (OTA) audio sensor data from a host bridge
+            pb.setSensorSources(sound=Pixelblaze.sensorSources.preferRemote, saveToFlash=True)
+
+            # Prefer local hardware for all sensors
+            pb.setSensorSources(accel=1, light=1, sound=1, analog=1)
+        """
+        payload = {}
+        if accel is not None: payload["accelSrc"] = int(accel)
+        if light is not None: payload["lightSrc"] = int(light)
+        if sound is not None: payload["soundSrc"] = int(sound)
+        if analog is not None: payload["analogSrc"] = int(analog)
+
+        if saveToFlash:
+            payload["save"] = True
+
+        if payload:  # Only send if there's something to set
+            self.wsSendJson(payload, expectedResponse=None)
 
     # --- SETTINGS menu: WIFI settings (HTTP-only, no WebSocket required)
 
@@ -3661,3 +3736,298 @@ class PixelblazeEnumerator:
             dev.append(record["address"][0])  # just the ip
         return dev
 
+
+
+#
+#   ███████╗██████╗ 
+#   ██╔════╝██╔══██╗
+#   ███████╗██████╔╝
+#   ╚════██║██╔═══╝ 
+#   ███████║██║     
+#   ╚══════╝╚═╝     
+#   ╔═╗┌─┐┌┐┌┌─┐┌─┐┬─┐  ╔═╗┌─┐┌─┐┬┌─┌─┐┌┬┐
+#   ╚═╗├┤ │││└─┐│ │├┬┘  ╠═╝├─┤│  ├┴┐├┤  │ 
+#   ╚═╝└─┘┘└┘└─┘└─┘┴└─  ╩  ┴ ┴└─┘┴ ┴└─┘ ┴ 
+#
+class SensorPacket:
+    """This class builds and parses the UDP datagrams that carry Sensor Expansion Board readings to Pixelblazes.
+
+    A Pixelblaze that leads a sync group broadcasts its Sensor Board readings to
+    the group as "expansion board" datagrams on port 1889, and any Pixelblaze
+    whose source preference for that reading is `sensorSources.preferRemote`
+    uses them in place of its own. Nothing in the packet is specific to real
+    hardware, so a host program can synthesize the readings and drive
+    sound-reactive patterns with no board attached anywhere on the network.
+
+    This is far cheaper for the Pixelblaze than pushing the same values with
+    [`setActiveVariables()`](#method-setactivevariables): one 104-byte datagram
+    replaces a websocket frame of JSON that the device has to parse on the
+    thread that renders patterns. Updates can run at the board's native ~40Hz
+    without costing framerate, and one broadcast reaches every Pixelblaze on the
+    network at once.
+
+    **WIRE FORMAT** (little-endian, 104 bytes)
+
+    | Offset | Type       | Field                                       |
+    | -----: | ---------- | ------------------------------------------- |
+    |      0 | uint32     | packet type (50, "expansion board")         |
+    |      4 | uint32     | sender id                                   |
+    |      8 | uint32     | sender time, in milliseconds                |
+    |     12 | uint8      | expansion type (1, an SB1.0 sensor board)   |
+    |     13 | uint8[3]   | padding                                     |
+    |     16 | uint16[32] | frequencyData                               |
+    |     80 | uint16     | energyAverage                               |
+    |     82 | uint16     | maxFrequencyMagnitude                       |
+    |     84 | uint16     | maxFrequency, in Hz                         |
+    |     86 | int16[3]   | accelerometer                               |
+    |     92 | uint16     | light                                       |
+    |     94 | uint16[5]  | analogInputs                                |
+
+    Everything from offset 16 on is the sensor board's own SB1.0 serial frame
+    with its "SB1.0" and "END" delimiters stripped.
+
+    **SCALING**
+
+    The wire carries integers; patterns see floats. Readings that a pattern
+    reads as 0.0-1.0 (`frequencyData`, `energyAverage`, `maxFrequencyMagnitude`,
+    `light`, `analogInputs`) are sent as `value * 65536`, clamped to a uint16;
+    `accelerometer` is bipolar and is sent as `value * 32768` as an int16.
+    `maxFrequency` is not scaled at all -- it is a frequency in Hz.
+
+    Measured on firmware 3.70 by sending known values and reading the pattern's
+    globals back with `getVars`: `light` 8192 -> 0.125, `frequencyData[8]` 8192
+    -> 0.125, `frequencyData[16]` 16384 -> 0.25, `energyAverage` 16384 -> 0.25,
+    `maxFrequency` 1170 -> 1170. So the same reading sent as a datagram or with
+    [`setActiveVariables()`](#method-setactivevariables) reaches the pattern as
+    the same number.
+
+    **CREATION**
+    - [`pack()`](#method-pack)
+
+    **PARSING**
+    - [`unpack()`](#method-unpack)
+    """
+
+    PORT = 1889
+    """The UDP port Pixelblazes listen on for discovery and expansion traffic."""
+
+    PACKET_TYPE = 50
+    """The Pixelblaze discovery packet type for expansion board data."""
+
+    EXPANSION_TYPE_SB10 = 1
+    """The expansion type identifying an SB1.0 sensor board frame."""
+
+    BIN_COUNT = 32
+    """The number of frequency bins in a sensor board frame."""
+
+    FRAME_SIZE = 104
+    """The total size, in bytes, of a sensor board datagram."""
+
+    UNIT_SCALE = 65536
+    """Multiplier converting a pattern's 0.0-1.0 reading to its uint16 on the wire."""
+
+    ACCEL_SCALE = 32768
+    """Multiplier converting a pattern's -1.0-1.0 accelerometer reading to its int16 on the wire."""
+
+    # <type, senderId, senderTime, expansionType, 3 padding bytes>
+    _header = struct.Struct("<IIIB3x")
+    # The SB1.0 frame: <frequencyData[32], energyAverage, maxFrequencyMagnitude,
+    #                   maxFrequency, accelerometer[3], light, analogInputs[5]>
+    _body = struct.Struct("<32HHHH3hH5H")
+
+    @staticmethod
+    def _packUnit(value: float) -> int:
+        """Internal method: converts a 0.0-1.0 reading to the uint16 sent on the wire."""
+        return min(65535, max(0, int(round(float(value) * SensorPacket.UNIT_SCALE))))
+
+    @staticmethod
+    def _packSigned(value: float) -> int:
+        """Internal method: converts a -1.0-1.0 reading to the int16 sent on the wire."""
+        return min(32767, max(-32768, int(round(float(value) * SensorPacket.ACCEL_SCALE))))
+
+    @staticmethod
+    def _packHertz(value: float) -> int:
+        """Internal method: converts a frequency in Hz to the uint16 sent on the wire."""
+        return min(65535, max(0, int(round(float(value)))))
+
+    @staticmethod
+    def _fixedList(values, length: int, name: str) -> list:
+        """Internal method: validates that an optional sequence is the right length."""
+        if values is None: return [0.0] * length
+        values = list(values)
+        if len(values) != length:
+            raise ValueError(f"{name} must have exactly {length} elements, got {len(values)}")
+        return values
+
+    @classmethod
+    def pack(cls, *, frequencyData=None, energyAverage: float = 0.0, maxFrequency: float = 0.0,
+             maxFrequencyMagnitude: float = 0.0, accelerometer=None, light: float = 0.0,
+             analogInputs=None, senderId: int = 0, senderTime: int = None) -> bytes:
+        """Builds a sensor board datagram from pattern-scale readings.
+
+        Every reading is optional; anything omitted is sent as zero, which is
+        what a real sensor board reports for a sensor that sees nothing.
+
+        Args:
+            frequencyData (optional): 32 frequency bin magnitudes, each 0.0-1.0. Defaults to all zeroes.
+            energyAverage (float, optional): Overall loudness, 0.0-1.0. Defaults to 0.
+            maxFrequency (float, optional): Frequency of the loudest bin, in Hz. Defaults to 0.
+            maxFrequencyMagnitude (float, optional): Magnitude of the loudest bin, 0.0-1.0. Defaults to 0.
+            accelerometer (optional): 3 axes, each -1.0-1.0. Defaults to all zeroes.
+            light (float, optional): Ambient light level, 0.0-1.0. Defaults to 0.
+            analogInputs (optional): 5 analog inputs, each 0.0-1.0. Defaults to all zeroes.
+            senderId (int, optional): Identifies this sender to the Pixelblaze. Defaults to 0.
+            senderTime (int, optional): Sender timestamp in milliseconds; the current time if omitted.
+
+        Returns:
+            bytes: A datagram of `FRAME_SIZE` bytes, ready to send to port `PORT`.
+        """
+        if senderTime is None: senderTime = int(round(time.time() * 1000)) & 0xFFFFFFFF
+
+        bins = cls._fixedList(frequencyData, cls.BIN_COUNT, "frequencyData")
+        accel = cls._fixedList(accelerometer, 3, "accelerometer")
+        analog = cls._fixedList(analogInputs, 5, "analogInputs")
+
+        return cls._header.pack(
+            cls.PACKET_TYPE, senderId & 0xFFFFFFFF, senderTime & 0xFFFFFFFF, cls.EXPANSION_TYPE_SB10
+        ) + cls._body.pack(
+            *[cls._packUnit(v) for v in bins],
+            cls._packUnit(energyAverage),
+            cls._packUnit(maxFrequencyMagnitude),
+            cls._packHertz(maxFrequency),
+            *[cls._packSigned(v) for v in accel],
+            cls._packUnit(light),
+            *[cls._packUnit(v) for v in analog],
+        )
+
+    @classmethod
+    def unpack(cls, data: bytes) -> dict:
+        """Parses a sensor board datagram back into pattern-scale readings.
+
+        Args:
+            data (bytes): A datagram received on port `PORT`.
+
+        Returns:
+            dict: The readings, keyed as they are named in patterns, plus `senderId` and `senderTime`.
+
+        Raises:
+            ValueError: If the datagram is not an SB1.0 expansion board packet of the expected size.
+        """
+        if len(data) != cls.FRAME_SIZE:
+            raise ValueError(f"Expected a {cls.FRAME_SIZE}-byte sensor packet, got {len(data)} bytes")
+
+        packetType, senderId, senderTime, expansionType = cls._header.unpack_from(data, 0)
+        if packetType != cls.PACKET_TYPE:
+            raise ValueError(f"Expected packet type {cls.PACKET_TYPE}, got {packetType}")
+        if expansionType != cls.EXPANSION_TYPE_SB10:
+            raise ValueError(f"Expected expansion type {cls.EXPANSION_TYPE_SB10}, got {expansionType}")
+
+        fields = cls._body.unpack_from(data, cls._header.size)
+        return {
+            "senderId": senderId,
+            "senderTime": senderTime,
+            "frequencyData": [v / cls.UNIT_SCALE for v in fields[0:32]],
+            "energyAverage": fields[32] / cls.UNIT_SCALE,
+            "maxFrequencyMagnitude": fields[33] / cls.UNIT_SCALE,
+            "maxFrequency": float(fields[34]),
+            "accelerometer": [v / cls.ACCEL_SCALE for v in fields[35:38]],
+            "light": fields[38] / cls.UNIT_SCALE,
+            "analogInputs": [v / cls.UNIT_SCALE for v in fields[39:44]],
+        }
+
+
+class SensorSender:
+    """This class streams synthesized Sensor Expansion Board readings to one or more Pixelblazes over UDP.
+
+    Example:
+        # Feed a spectrum to every Pixelblaze on the network at 40Hz.
+        with SensorSender(["255.255.255.255"]) as sender:
+            while capturing:
+                sender.send(frequencyData=bins, energyAverage=loudness,
+                            maxFrequency=peakHz, maxFrequencyMagnitude=peakMagnitude)
+
+    The receiving Pixelblaze only uses these readings if its source preference
+    for them is `Pixelblaze.sensorSources.preferRemote` -- see
+    [`setSensorSources()`](#method-setsensorsources). The preference is a
+    preference, though, not a switch: a Pixelblaze with no local sensor board
+    falls back to remote data regardless.
+
+    **The pattern has to be (re)loaded after the frames start arriving.** The
+    firmware binds a pattern's sensor globals to their source when the pattern
+    loads, so a pattern that was already running when streaming began keeps
+    using its own simulated values -- the frames arrive and are ignored, which
+    looks exactly like the packets being malformed. Send a few frames, then
+    call [`reloadActivePattern()`](#method-reloadactivepattern) once.
+
+    Nothing else is required: unicast and broadcast both work, `senderTime` can
+    be anything, the source port doesn't matter, and no sync-group or leader
+    relationship is needed. Once bound, a pattern keeps the last frame it was
+    sent -- on 3.70 it was still showing it 100 seconds after the stream
+    stopped, and reloading the pattern doesn't restore simulation -- so a
+    sender that is shutting down should send a frame of zeroes rather than just
+    stopping, or the pattern freezes on whatever was playing. Verified against
+    firmware 3.70.
+
+    See [`SensorPacket`](#class-sensorpacket) for the datagram itself.
+    """
+
+    def __init__(self, targets, *, senderId: int = None, port: int = None, sock=None):
+        """Opens a socket for sending sensor data to the given Pixelblazes.
+
+        Args:
+            targets: IP addresses (or hostnames) to send to. "255.255.255.255" reaches every Pixelblaze on the network.
+            senderId (int, optional): Identifies this sender to the Pixelblazes. A random id is generated if omitted.
+            port (int, optional): The destination port. Defaults to `SensorPacket.PORT` (1889).
+            sock (optional): An existing datagram socket to send from; one is created (and closed by `close()`) if omitted.
+
+        Raises:
+            ValueError: If no targets are given.
+        """
+        self.targets = [socket.gethostbyname(t) for t in targets]
+        if len(self.targets) == 0:
+            raise ValueError("SensorSender requires at least one target address")
+
+        self.port = SensorPacket.PORT if port is None else port
+        self.senderId = random.getrandbits(32) if senderId is None else senderId
+        self.frameCount = 0
+
+        self.ownsSocket = sock is None
+        self.socket = sock
+        if self.socket is None:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            # Needed for 255.255.255.255; harmless for unicast targets.
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+    def __enter__(self):
+        """Internal class method for resource management.
+
+        Returns:
+            SensorSender: This object.
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Internal class method for resource management."""
+        self.close()
+
+    def send(self, **readings) -> bytes:
+        """Builds a sensor board datagram and sends it to every target.
+
+        Args:
+            **readings: Any of the readings accepted by [`SensorPacket.pack()`](#method-pack).
+
+        Returns:
+            bytes: The datagram that was sent.
+        """
+        readings.setdefault("senderId", self.senderId)
+        packet = SensorPacket.pack(**readings)
+        for target in self.targets:
+            self.socket.sendto(packet, (target, self.port))
+        self.frameCount += 1
+        return packet
+
+    def close(self):
+        """Closes the socket, if this object opened it."""
+        if self.socket is not None and self.ownsSocket:
+            self.socket.close()
+        self.socket = None
