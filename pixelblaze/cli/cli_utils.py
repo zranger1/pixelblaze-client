@@ -712,7 +712,7 @@ def _discover_devices(
     on_ip: Optional[Callable[[str], None]] = None,
     probe: bool = True,
     sweep: bool = True,
-    peers: bool = True,
+    peers: bool = False,
 ) -> list[dict]:
     """
     Find every Pixelblaze on the network, using every source at once.
@@ -747,9 +747,11 @@ def _discover_devices(
             wall-clock because it runs inside the beacon listen.
         peers: Ask each device found for its sync-group peer list. This is
             the only part of discovery that opens a **websocket**, and the
-            firmware has few connection slots, so an unattended caller that
-            sweeps on a timer should pass False: the subnet sweep already
-            finds everything a peer list would, without connecting.
+            firmware has few connection slots and leaks them when a session
+            ends badly — so it defaults to **False**. The subnet sweep finds
+            everything a peer list would for anything on a local subnet,
+            over a connect that sends no bytes. Pass True only to reach a
+            peer on a subnet this machine is not on.
 
     Returns:
         list[dict]: One per device, in the order they answered:
@@ -957,7 +959,7 @@ def enumerate_pixelblazes(
     on_ip: Optional[Callable[[str], None]] = None,
     probe: bool = True,
     sweep: bool = True,
-    peers: bool = True,
+    peers: bool = False,
 ) -> list[dict]:
     """
     Discover all Pixelblazes on the network.
