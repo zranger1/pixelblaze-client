@@ -3086,9 +3086,11 @@ def update(ctx, file, timeout, chunk, no_ver, no_monitor):
     # ignoreOpenFailure=True: the device may not have a live WebSocket in recovery mode.
     pb = Pixelblaze(device_ip, ignoreOpenFailure=True)
 
+    before = None
     if not no_ver:
         try:
-            log(f"Current firmware: v{pb.getVersion()}")
+            before = pb.getVersion()
+            log(f"Current firmware: v{before}")
         except Exception as e:
             log(f"Could not read current firmware version ({type(e).__name__}); continuing anyway")
 
@@ -3159,6 +3161,154 @@ def update(ctx, file, timeout, chunk, no_ver, no_monitor):
                     "objects to, not the transfer.")
         raise click.ClickException(f"Firmware not installed: {why}{hint}")
     log("Firmware accepted. Device is rebooting; it may take 30-60s to reappear on WiFi.")
+
+    # "Accepted" is the client's reading of a heuristic; the version is the fact.
+    # Worth the wait: a flash that reports success and leaves the old firmware in
+    # place is the single most confusing outcome there is, and it has happened.
+    deadline = time.time() + 90
+    after = None
+    last_error = None
+    while time.time() < deadline:
+        time.sleep(5)
+        try:
+            with Pixelblaze(device_ip) as check:
+                after = check.freshVersion()
+            if after:
+                break
+        except Exception as e:
+            # A reboot means connection failures are expected here, but do not
+            # swallow them silently — a bug in this loop would look exactly like
+            # a device that never came back.
+            last_error = f"{type(e).__name__}: {e}"
+            continue
+
+    if after is None:
+        log("Could not reach the device within 90s to confirm the version"
+            + (f" (last error: {last_error})" if last_error else "")
+            + ". Check with `pb --ip <device> cfg` once it is back.")
+    elif before is not None and str(after) == str(before):
+        raise click.ClickException(
+            f"Flash reported success but the device still runs v{after}. "
+            f"The upload was accepted and the firmware did not change — treat "
+            f"this as a failure, not a success.")
+    else:
+        log(f"Confirmed: now running v{after}" + (f" (was v{before})" if before else ""))
+@pixelblaze.group()
+def cache():
+    """View and refresh the on-disk device cache (no network unless 'refresh')."""
+    pass
+
+
+@cache.command(name='ls')
+@click.option('--json', 'as_json', is_flag=True, help='Output one JSON object per device.')
+def cache_ls(as_json):
+    """List all cached Pixelblazes with summary info. No network calls.
+
+    \b
+    Examples:
+        pb cache ls            # human-readable summary, * marks lastIp
+        pb cache ls --json     # JSONL output for piping into jq
+    """
+    cache_data = _read_cache()
+    devices = cache_data.get('devices', {})
+    last_ip = cache_data.get('lastIp')
+    if not devices:
+        log("No cached devices. Run `pb find` to discover.")
+        return
+    for ip, entry in devices.items():
+        if as_json:
+            click.echo(jsonlib.dumps(entry, separators=(',', ':')))
+            continue
+        marker = '*' if ip == last_ip else ' '
+        name = entry.get('name', '?') or '?'
+        pixels = entry.get('pixelCount', '?')
+        ver = entry.get('ver', '?')
+        active = entry.get('activePatternName') or entry.get('activePatternId') or '-'
+        last_seen = entry.get('lastSeenAt', 'never')
+        click.echo(f"{marker} {ip:15}  {name:20}  {pixels}px  v{ver}  → {active}  @ {last_seen}")
+
+
+@cache.command(name='show')
+@click.argument('query', required=False)
+def cache_show(query):
+    """Show full cached config for a device (no network call).
+
+    QUERY is an IP, a device name, or a name substring. With no QUERY, shows lastIp.
+
+    \b
+    Examples:
+        pb cache show                  # full dump of lastIp's config
+        pb cache show jforb            # lookup by name substring
+        pb cache show 192.168.1.86     # lookup by exact IP
+    """
+    if not query:
+        last_ip = _read_cache().get('lastIp')
+        if not last_ip:
+            raise click.ClickException("No lastIp cached. Specify <ip-or-name> or run `pb find`.")
+        query = last_ip
+    ip, entry = lookup_cached_device(query)
+    click.echo(jsonlib.dumps(entry, indent=2))
+
+
+@cache.command(name='refresh')
+@click.argument('query', required=False)
+@click.option('--all', 'all_devices', is_flag=True, help='Refresh every cached device in parallel.')
+@click.option('--timeout', 'conn_timeout', type=float, default=5.0,
+              help='Per-device connection timeout in seconds.', show_default=True)
+def cache_refresh(query, all_devices, conn_timeout):
+    """Force-refresh cached config from device(s), bypassing TTL. Always fetches patterns.
+
+    \b
+    Examples:
+        pb cache refresh              # refresh lastIp
+        pb cache refresh jforb        # refresh by name substring
+        pb cache refresh --all        # refresh every cached device (parallel)
+    """
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    cache_data = _read_cache()
+    devices_cached = cache_data.get('devices', {})
+    if not devices_cached:
+        raise click.ClickException("No cached devices. Run `pb find` first.")
+
+    if all_devices:
+        targets = list(devices_cached.keys())
+    elif query:
+        ip, _ = lookup_cached_device(query)
+        targets = [ip]
+    else:
+        last_ip = cache_data.get('lastIp')
+        if not last_ip:
+            raise click.ClickException("Specify QUERY or --all, or set lastIp via `pb find`.")
+        targets = [last_ip]
+
+    log(f"Refreshing {len(targets)} device(s)...")
+    Pixelblaze.default_recv_timeout = conn_timeout
+
+    def _refresh_one(ip):
+        try:
+            with Pixelblaze(ip) as pb:
+                return _fetch_device_config(pb, ip=ip, include_patterns=True)
+        except Exception as e:
+            log(f"  {ip}: failed ({type(e).__name__}: {e})")
+            return None
+
+    refreshed = []
+    with ThreadPoolExecutor(max_workers=min(len(targets), 8)) as pool:
+        futures = {pool.submit(_refresh_one, ip): ip for ip in targets}
+        for fut in as_completed(futures):
+            r = fut.result()
+            if r:
+                refreshed.append(r)
+                log(f"  {r['ip']}: {r.get('name', '?')} "
+                    f"(v{r.get('ver', '?')}, {r.get('pixelCount', '?')}px, "
+                    f"{len(r.get('patterns', {}))} patterns)")
+
+    if refreshed:
+        update_device_cache(refreshed)
+        log(f"Refreshed {len(refreshed)}/{len(targets)} device(s).")
+    else:
+        raise click.ClickException("Could not refresh any devices.")
 
 
 def main():
