@@ -135,18 +135,39 @@ def pixelblaze(ctx, ip, prefix, timeout, retries):
               help='Do not TCP-sweep the local /24. The sweep is the only source '
                    'that can find a device which never beaconed and was never '
                    'cached; it runs inside the beacon listen, so it costs no time.')
+@click.option('--peers', is_flag=True,
+              help='Also ask each device found for its sync-group peer list. This is '
+                   'the only part of discovery that opens a WEBSOCKET, and the '
+                   'firmware has few connection slots — so it is off by default. '
+                   'Turn it on to reach a peer on a subnet this machine is not on; '
+                   'anything on a local subnet the sweep already finds.')
 @click.pass_context
-def find(ctx, name_filter, ip_filter, scan_timeout, slow, no_cache, passive, no_sweep):
+def find(ctx, name_filter, ip_filter, scan_timeout, slow, no_cache, passive, no_sweep,
+         peers):
     """
     Discover and enumerate all Pixelblazes on the network.
 
     Every source is tried at once, so a sweep takes as long as the beacon
-    listen and no longer: UDP beacons; one probe beacon of our own, which
-    every Pixelblaze answers (including sync-group followers, which never
-    beacon themselves); a connect on ports 80/81 to the ad-hoc address and
-    every cached address; and each found device's sync-group peer list.
-    Nothing is sent over TCP by the probes, so they are safe against a
-    device in any state.
+    listen and no longer.
+
+    \b
+    What the default costs a device — deliberately almost nothing:
+        · UDP beacons: passive listening, nothing sent to anyone.
+        · One probe beacon per interface: a single UDP datagram, which every
+          Pixelblaze answers, including sync-group followers, which never
+          beacon themselves.
+        · A TCP connect on ports 80/81 to the ad-hoc address, every cached
+          address, and every host on each local /24. A bare connect closed
+          the instant it opens; not one byte is ever sent, which is why it is
+          safe against a device in any state.
+
+    \b
+    No websocket is opened unless you ask for one:
+        · --peers  asks each device found for its sync-group peer list.
+        · --full   connects to each device for names, version and config.
+    The firmware has a handful of websocket slots and leaks them when a
+    session ends badly, so a wedged board is exactly when you least want
+    either. Both are off by default for that reason.
 
     By default runs fast: returns each IP with how it was found (`via`)
     and, when probed, whether ports 80 (`http`) and 81 (`ws`) answered.
@@ -169,6 +190,7 @@ def find(ctx, name_filter, ip_filter, scan_timeout, slow, no_cache, passive, no_
         pb find --timeout 5000           # Scan longer for slow networks
         pb find --passive                # Listen only: no probe, no sweep
       pb find --no-sweep               # Skip the local /24 sweep
+      pb find --peers                  # ...and ask for peer lists (opens a websocket)
         pb find --no-cache               # Don't update cached IP
         pb find 2>/dev/null              # Quiet mode (stdout JSONL only)
     """
@@ -177,7 +199,7 @@ def find(ctx, name_filter, ip_filter, scan_timeout, slow, no_cache, passive, no_
         slow = True
 
     devices = enumerate_pixelblazes(timeout=scan_timeout, slow=slow, probe=not passive,
-                                    sweep=not (passive or no_sweep))
+                                    sweep=not (passive or no_sweep), peers=peers)
 
     if not devices:
         raise click.ClickException(

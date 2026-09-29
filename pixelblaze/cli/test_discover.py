@@ -281,7 +281,7 @@ class FakePixelblaze:
 
 
 def _run_discovery(cache, ports, script, probe=True, self_ip='192.168.1.67', peers=None,
-                   raise_on_start=None, subnets=None, ask_peers=True):
+                   raise_on_start=None, subnets=None, ask_peers=False):
     # sweep off unless a test asks for it: a real one would connect to every
     # host on whatever LAN the suite happens to be running on.
     FakeEnumerator.script = script
@@ -329,7 +329,7 @@ def test_discovery_merges_every_source():
     ]}
     script = [(0.05, '192.168.1.230', 42), (0.05, '10.1.1.86', 43)]
 
-    found, seen, log = _run_discovery(cache, ports, script, peers=peers)
+    found, seen, log = _run_discovery(cache, ports, script, peers=peers, ask_peers=True)
     by_ip = {d['ip']: d for d in found}
 
     assert set(by_ip) == {'10.1.1.86', '10.1.1.24', '192.168.4.1',
@@ -604,7 +604,7 @@ def test_sweep_refuses_anything_wider_than_a_24():
 
 
 def test_peers_false_opens_no_websocket():
-    """The one socket discovery opens, and why an unattended sweeper must not.
+    """The one socket discovery opens — and why it is now off by default.
 
     The firmware has a handful of websocket slots, and `wsSendJson` reopens and
     retries on a closed connection — so against a device whose server is
@@ -616,7 +616,8 @@ def test_peers_false_opens_no_websocket():
 
     # With peers on, the peer is followed and FakePixelblaze is opened.
     found, _, _ = _run_discovery(cache={'devices': {}}, ports={**ports, '10.1.1.99': {80: True, 81: True}},
-                                 script=[(0.05, '10.1.1.86', 42)], peers=peers)
+                                 script=[(0.05, '10.1.1.86', 42)], peers=peers,
+                                 ask_peers=True)
     assert '10.1.1.99' in {d['ip'] for d in found}
     assert FakePixelblaze.opened, "expected a websocket when peers=True"
 
@@ -627,3 +628,31 @@ def test_peers_false_opens_no_websocket():
     assert {d['ip'] for d in found} == {'10.1.1.86'}, found
     assert FakePixelblaze.opened == [], FakePixelblaze.opened
     print("✓ peers=False finds the device and opens no websocket")
+
+
+def test_find_defaults_to_no_websocket_and_still_finds_everything(tmp_path):
+    """The default has to stay light *and* still find boards, or it is useless.
+
+    Beacons, one probe datagram and bare TCP connects are all it costs. The
+    peer query — the only websocket — is opt-in, and the subnet sweep already
+    covers anything on a local subnet that a peer list would have named.
+    """
+    from click.testing import CliRunner
+    from pixelblaze.cli.cli import pixelblaze
+
+    # A device that never beacons and was never cached: only the sweep can see
+    # it, which is exactly the case peers used to be needed for.
+    ports = {'10.17.76.143': {80: True, 81: True}}
+    subnets = [('10.17.76.0/24', ['10.17.76.1', '10.17.76.143'])]
+    FakePixelblaze.opened = []
+
+    found, _, log = _run_discovery(cache={'devices': {}}, ports=ports, script=[],
+                                   self_ip='10.17.76.1', subnets=subnets)
+    assert [d['ip'] for d in found] == ['10.17.76.143'], found
+    assert FakePixelblaze.opened == [], FakePixelblaze.opened
+
+    # and the flag is wired: --peers is what turns the websocket back on
+    help_text = CliRunner().invoke(pixelblaze, ['find', '--help']).output
+    assert '--peers' in help_text
+    assert 'off by default' in help_text
+    print("✓ default find opens no websocket and still finds a board")
