@@ -75,9 +75,30 @@ If you need or want to use a proxy server (for debugging it can be very useful t
     pb = Pixelblaze("192.168.4.1", proxyUrl="http://192.168.8.8:8888")
 ```
 
-The great [tshark](https://tshark.dev/) (comes with [Wireshark](https://www.wireshark.org/), both available with brew install)
-can be used to see Pixelblaze requests and responses as seen in this example Terminal command
-(with [jq](https://jqlang.org/) highlighting) here (`en0` is often your computer's WiFi interface):
+This library also ships a command that watches the wire for you.  `pb snoop`
+decodes the websocket conversation with a Pixelblaze, every request and
+response in both directions, one JSON object per line; `pb snoop --udp`
+decodes the UDP:1889 discovery beacons instead (and `--sensor` narrows that to
+the sensor board frames that ride the same port):
+
+```sh
+pb snoop                  # websocket traffic to and from the resolved device
+pb snoop --udp            # discovery beacons on UDP:1889
+pb snoop --dry-run        # print the pipeline it would run, and exit
+```
+
+Under the hood it is the same two tools you would reach for by hand:
+[tshark](https://tshark.dev/) (comes with [Wireshark](https://www.wireshark.org/),
+both available with brew install) captures and dissects, and
+[jq](https://jqlang.org/) filters and renders, so the output composes with the
+rest of your shell.  Nothing is decoded in Python; `pb snoop`'s job is to build
+a correct pipeline and then get out of the way.  See
+[Snooping the wire](snooping.md) for installation, capture permissions, what a
+switched network does and does not let you observe, and the full option list.
+
+To drive the two directly, `--dry-run` prints the exact pipeline for whatever
+you asked for.  The short hand-rolled version, for a single device, looks like
+this (`en0` is often your computer's WiFi interface):
 
 ```sh
 sudo tshark -i en0 -ql -d tcp.port==81,http \
@@ -85,6 +106,13 @@ sudo tshark -i en0 -ql -d tcp.port==81,http \
     -Y "(ip.dst == 192.168.4.1 or ip.src == 192.168.4.1) and websocket" \
     | jq --unbuffered -c .
 ```
+
+Two things to know about that command: it decodes only if the websocket
+handshake happens *after* tshark starts, since that is what primes the
+dissector (`pb snoop --midstream` is the way to attach to a connection that is
+already open); and when one TCP packet carries several websocket frames,
+`-T fields` joins them with a comma into something that is no longer valid
+JSON and jq will stop on it.  `pb snoop` uses `-T ek` for that reason.
 
 ### Advanced topic: lifecycle management
 

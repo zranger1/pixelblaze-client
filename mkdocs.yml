@@ -33,5 +33,6 @@ nav:
   - How-To: how-to-guides.md
   - API: pixelblaze.md
   #- API: mkapi/api/pixelblaze/pixelblaze
+  - Snooping the wire: snooping.md
   - The Pixelblaze Protocol: pixelblazeProtocol.md
   - Tutorials: tutorials.md
