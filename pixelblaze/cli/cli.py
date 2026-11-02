@@ -572,7 +572,15 @@ def playlist_set(pb: Pixelblaze, terms, duration, shuffle, no_save):
     is_flag=True,
     help='Print the source code of an existing pattern'
 )
-def pattern(pb: Pixelblaze, input, name, write, rm, img, var_args, no_save, exact, lookup, cat):
+@click.option(
+    '--no-forwarders',
+    is_flag=True,
+    help="Upload the source exactly as written. By default a pattern missing "
+         "some of render/render2D/render3D gets forwarding exports for the ones "
+         "it lacks, because the device picks a render function by the pixel map "
+         "it holds and silently draws black when the pattern has no match"
+)
+def pattern(pb: Pixelblaze, input, name, write, rm, img, var_args, no_save, exact, lookup, cat, no_forwarders):
     """
     Unified pattern command: switch to, render, or save patterns.
 
@@ -672,7 +680,8 @@ def pattern(pb: Pixelblaze, input, name, write, rm, img, var_args, no_save, exac
         # Map the new 'name' arg to the internal 'write_target' logic
         # If name is None, pass '' so logic knows to use filename stem
         target = name if name else ''
-        _handle_write_mode(pb, input, target, img, variables, no_save, input_from_stdin)
+        _handle_write_mode(pb, input, target, img, variables, no_save, input_from_stdin,
+                           no_forwarders=no_forwarders)
 
     else:
         # ===== RENDER/SWITCH MODE =====
@@ -682,7 +691,9 @@ def pattern(pb: Pixelblaze, input, name, write, rm, img, var_args, no_save, exac
         if name:
              log(f"Warning: Name argument '{name}' ignored because --write was not specified.")
 
-        _handle_render_or_switch_mode(pb, input, variables, no_save, exact, lookup, from_stdin=input_from_stdin)
+        _handle_render_or_switch_mode(pb, input, variables, no_save, exact, lookup,
+                                      from_stdin=input_from_stdin,
+                                      no_forwarders=no_forwarders)
 
 
 def _looks_like_code(s: str) -> bool:
@@ -763,6 +774,69 @@ def _find_patterns(pb: Pixelblaze, search: str, exact: bool = False):
     return results
 
 
+# Pixelblaze picks ONE render function per frame, and the pixel map decides
+# which: measured on a v3.51 device with a 3D map installed, it calls render3D,
+# else render(index) — never render2D. With a 2D map: render2D, else render.
+# With NO map: render only. So a pattern exporting only render2D draws *nothing*
+# on a 3D-mapped device, and a render3D-only pattern draws nothing on an
+# unmapped one — silently, with every pixel black and no error anywhere.
+#
+# That bites a third of the public corpus (169 of 506 patterns are render2D
+# with no render3D and no render), and it is not a device fault: the docs say
+# render2D/render3D require a map "of the same dimensionality".
+#
+# Since we compile the source here anyway, append forwarding exports for the
+# render functions the pattern lacks, so it degrades the way the docs describe
+# instead of going dark. Unused exports cost nothing on the device, so this
+# needs no knowledge of the target's map — which is the point: the same upload
+# works on a 1D strip, a 2D grid and a 3D fixture.
+_RENDER_FN_RE = re.compile(r'^\s*export\s+function\s+(render3D|render2D|render)\s*\(', re.M)
+
+FORWARDER_BANNER = '// pb: forwarders so this renders whatever map the device has'
+
+
+def _add_render_forwarders(code):
+    """Append forwarding exports for whichever render functions `code` omits.
+
+    Returns (code, added) — `added` names the forwarders appended, for logging.
+    A pattern exporting none of the three is left completely alone, as is one
+    that already exports all three.
+    """
+    have = set(_RENDER_FN_RE.findall(code))
+    if not have or len(have) == 3:
+        return code, []
+
+    r1, r2, r3 = 'render' in have, 'render2D' in have, 'render3D' in have
+    lines, added = [], []
+    if not r3 and r2:
+        lines.append('export function render3D(index, x, y, z) { render2D(index, x, y) }')
+        added.append('render3D')
+    if not r2 and r3:
+        lines.append('export function render2D(index, x, y) { render3D(index, x, y, 0) }')
+        added.append('render2D')
+    if not r1 and r2:
+        lines.append('export function render(index) { render2D(index, index / pixelCount, 0) }')
+        added.append('render')
+    elif not r1 and r3:
+        lines.append('export function render(index) { render3D(index, index / pixelCount, 0, 0) }')
+        added.append('render')
+
+    if not lines:
+        return code, []
+    return code.rstrip('\n') + '\n\n' + FORWARDER_BANNER + '\n' + '\n'.join(lines) + '\n', added
+
+
+def _apply_forwarders(code, no_forwarders, what):
+    """Shared wrapper: apply forwarders unless opted out, and say what it did."""
+    if no_forwarders:
+        return code
+    code, added = _add_render_forwarders(code)
+    if added:
+        log(f"Adding {', '.join(added)} forwarder(s) so {what} renders on any pixel map "
+            f"(--no-forwarders to skip)")
+    return code
+
+
 def _handle_cat_mode(pb: Pixelblaze, input, exact):
     """Handle --cat mode: print pattern source code."""
     pattern_id, pattern_name = _find_pattern(pb, input, exact)
@@ -794,7 +868,7 @@ def _handle_remove_mode(pb: Pixelblaze, input, exact):
     log(f"Pattern '{pattern_name}' deleted successfully!")
 
 
-def _handle_write_mode(pb: Pixelblaze, input, write_target, img, variables, no_save, from_stdin=False):
+def _handle_write_mode(pb: Pixelblaze, input, write_target, img, variables, no_save, from_stdin=False, no_forwarders=False):
     """Handle --write mode: save pattern to Pixelblaze."""
     # If input came from stdin, it's already the code content; otherwise check if it's a file
     is_file = not from_stdin and pathlib.Path(input).is_file()
@@ -815,6 +889,7 @@ def _handle_write_mode(pb: Pixelblaze, input, write_target, img, variables, no_s
 
     if "export" not in code:
         code = 'export function render(index) { ' + code + ' ; }'
+    code = _apply_forwarders(code, no_forwarders, f"'{pattern_name}'")
 
     img = img or pathlib.Path(__file__).parent / '../../site/images/preview_placeholder.jpg'
     log(f"Loading preview image from {img}...")
@@ -837,12 +912,12 @@ def _handle_write_mode(pb: Pixelblaze, input, write_target, img, variables, no_s
     jsons({'id': pattern_id})
 
 
-def _handle_render_or_switch_mode(pb: Pixelblaze, input, variables, no_save, exact, lookup=False, from_stdin=False):
+def _handle_render_or_switch_mode(pb: Pixelblaze, input, variables, no_save, exact, lookup=False, from_stdin=False, no_forwarders=False):
     """Handle render or switch mode based on input type."""
     # Only check if it's a file if it didn't come from stdin
     if not from_stdin and pathlib.Path(input).is_file():
         code, _ = read_input(input, "code")
-        _render_pattern(pb, code, variables)
+        _render_pattern(pb, code, variables, no_forwarders)
         return
 
     # Determine if input looks like code or a pattern lookup
@@ -850,7 +925,7 @@ def _handle_render_or_switch_mode(pb: Pixelblaze, input, variables, no_save, exa
 
     # If input looks like code and --lookup is not set, treat as inline code
     if input_looks_like_code and not lookup:
-        _render_pattern(pb, input, variables)
+        _render_pattern(pb, input, variables, no_forwarders)
         return
 
     # Try to find as existing pattern (by ID or name)
@@ -868,13 +943,14 @@ def _handle_render_or_switch_mode(pb: Pixelblaze, input, variables, no_save, exa
         # Not found as pattern, treat as inline code (unless --lookup was specified)
         if lookup:
             check(False, f"Pattern '{input}' not found on Pixelblaze (use without --lookup to treat as code)")
-        _render_pattern(pb, input, variables)
+        _render_pattern(pb, input, variables, no_forwarders)
 
 
-def _render_pattern(pb: Pixelblaze, code, variables):
+def _render_pattern(pb: Pixelblaze, code, variables, no_forwarders=False):
     """Compile and render a pattern to the Pixelblaze."""
     if "export" not in code:
         code = 'export function render(index) { ' + code + ' ; }'
+    code = _apply_forwarders(code, no_forwarders, "this pattern")
 
     log("Compiling pattern...")
     bytecode = pb.compilePattern(code, allow_cache=True)
