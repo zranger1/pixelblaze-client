@@ -297,6 +297,15 @@ def record_sighting(inventory: dict, chip: str, name: str, ip: str, when: str = 
     address", and a device coming back is not a new answer. A device that
     moves, or is renamed, gets a new row — the old one stays, which is the
     history.
+
+    `lastSeenAt` on the row DOES move, every single time the address answers.
+    That is what tells a board's live address apart from one it left behind:
+    without it every address of a board looks equally current forever, and
+    resolving a name falls through to sorting the raw address text, which
+    picked a dead `192.168.1.12` over the `192.168.1.9` answering right now.
+    Writing it on every sighting is the point — "corrected any time we see an
+    IP and a config" — so this returns True for a timestamp move too, and the
+    inventory is written.
     """
     if not chip:
         return False
@@ -304,10 +313,14 @@ def record_sighting(inventory: dict, chip: str, name: str, ip: str, when: str = 
     if name and entry.get('name') != name:
         entry['name'] = name            # the current name; the history keeps the rest
     seen = entry.setdefault('seen', [])
+    stamp = when or _now()
     for row in seen:
         if row.get('ip') == ip and row.get('name', '') == (name or ''):
-            return False
-    seen.append({'name': name or '', 'ip': ip, 'firstSeenAt': when or _now()})
+            if str(row.get('lastSeenAt') or '') >= stamp:
+                return False            # nothing newer to say
+            row['lastSeenAt'] = stamp
+            return True
+    seen.append({'name': name or '', 'ip': ip, 'firstSeenAt': stamp, 'lastSeenAt': stamp})
     seen.sort(key=lambda r: (r.get('firstSeenAt') or '', r.get('ip') or ''))
     return True
 
@@ -398,10 +411,7 @@ def cached_by_ip() -> dict:
     claimed: dict = {}
     for entry in cached_devices():
         for ip in entry.get('ips', []):
-            when = ''
-            for row in entry.get('seen', []):
-                if row.get('ip') == ip:
-                    when = max(when, row.get('firstSeenAt') or '')
+            when = addr_last_seen(entry, ip)
             if ip not in out or when > claimed.get(ip, ''):
                 out[ip] = entry
                 claimed[ip] = when
@@ -639,6 +649,13 @@ def maybe_refresh_cache(pb: Pixelblaze, ip: str, force: bool = False) -> bool:
         return False
 
 
+def _ip_sort_key(ip: str):
+    """Sort addresses numerically, so .9 precedes .12 as a human expects."""
+    if is_ipv4(ip):
+        return (0,) + tuple(int(o) for o in ip.split('.'))
+    return (1, ip)
+
+
 def _subnet(ip: str) -> str:
     """The /24 an address is on, or '' if it isn't an address."""
     return ip.rsplit('.', 1)[0] if is_ipv4(ip) else ''
@@ -647,6 +664,27 @@ def _subnet(ip: str) -> str:
 def _last_seen(entry: dict) -> str:
     """`lastSeenAt` as a sortable string. Missing sorts oldest."""
     return str(entry.get('lastSeenAt') or '')
+
+
+def addr_last_seen(entry: dict, ip: str) -> str:
+    """When this BOARD was last reachable AT THIS ADDRESS, sortable. '' if never.
+
+    The board-level `lastSeenAt` is the same value for every address a board
+    has ever had, so it cannot separate the address it answers at today from
+    one it left behind in another building. That distinction lives in the
+    `seen` rows, which carry an immutable `firstSeenAt` and a `lastSeenAt`
+    that `record_sighting` moves every time the address answers.
+
+    Rows written before `lastSeenAt` existed only have `firstSeenAt`, which is
+    still per-address and still ranks a newer address above an older one, so
+    an old cache gets the right answer without needing to be rebuilt.
+    """
+    best = ''
+    for row in entry.get('seen', []) or []:
+        if row.get('ip') != ip:
+            continue
+        best = max(best, str(row.get('lastSeenAt') or row.get('firstSeenAt') or ''))
+    return best
 
 
 def rank_matches(matches: list) -> list:
@@ -673,9 +711,13 @@ def rank_matches(matches: list) -> list:
 
     def reason(ip, entry):
         if here and _subnet(ip) == here:
-            return f"on this machine's subnet {here}.x"
+            seen_here = addr_last_seen(entry, ip)
+            return (f"on this machine's subnet {here}.x"
+                    + (f", answered {seen_here[:19]}" if seen_here else ""))
         if host_ip and entry.get('hostIp') == host_ip:
             return "last seen from this machine"
+        if addr_last_seen(entry, ip):
+            return f"most recently seen at this address ({addr_last_seen(entry, ip)[:19]})"
         if _last_seen(entry):
             return f"most recently seen ({_last_seen(entry)[:19]})"
         return "first by address"
@@ -684,10 +726,15 @@ def rank_matches(matches: list) -> list:
         ip, entry = pair
         return (0 if here and _subnet(ip) == here else 1,
                 0 if host_ip and entry.get('hostIp') == host_ip else 1,
-                # Newest first: strings sort ascending, so invert by negating
-                # the comparison with a reversed sort on this field alone.
+                # PER-ADDRESS recency, not the board's. The board-level
+                # lastSeenAt is identical for every address it has ever had,
+                # so it ties, and the tie used to fall through to the raw
+                # address string -- where '192.168.1.12' sorts BEFORE
+                # '192.168.1.9' because '1' < '9'. That is how a dead
+                # September address kept beating the one answering today.
+                _invert(addr_last_seen(entry, ip)),
                 _invert(_last_seen(entry)),
-                ip)
+                _ip_sort_key(ip))
 
     ranked = sorted(matches, key=key)
     return [(ip, entry, reason(ip, entry)) for ip, entry in ranked]
