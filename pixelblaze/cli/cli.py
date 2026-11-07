@@ -23,12 +23,14 @@ flexible discovery, pattern rendering, and configuration management.
 import json as jsonlib
 import time
 import re
+import threading
 import click
 import pathlib
+import socket
 from pixelblaze.pixelblaze import Pixelblaze, PBB
 from pixelblaze.cli.cli_utils import cli, log, no_save_option, input_arg, read_input, parse_json, jsons, \
                                      get_cache_dir, check, parse_vars, get_pixelblaze, discover_pixelblaze, \
-                                     enumerate_pixelblazes, cache_ip, _read_cache, _write_cache, \
+                                     enumerate_pixelblazes, cache_ip, _read_cache, _write_cache, get_host_ip, \
                                      _fetch_device_config, update_device_cache, lookup_cached_device
 
 @click.group()
@@ -243,6 +245,66 @@ def off(pb: Pixelblaze, pause_sequencer, no_save):
 
     action = "turned off" if no_save else "saved and turned off"
     log(f"Pixelblaze {action}")
+
+
+@cli(pixelblaze)
+@click.option(
+    '--no-resume',
+    is_flag=True,
+    help='Leave the sequencer paused afterwards instead of putting it back as it was'
+)
+def reload(pb: Pixelblaze, no_resume):
+    """
+    Restart the pattern already running, so it re-reads incoming sensor data.
+
+    The firmware decides where a pattern's sensor globals (`frequencyData`,
+    `energyAverage`, `light`, ...) come from when the pattern *loads*, not once
+    per frame. A pattern that was already running when remote sensor frames
+    began arriving keeps using the board's own simulated values instead — and
+    nothing about that looks wrong from either end. The board stays lit,
+    animating and answering; every frame you send is accepted; it is simply
+    deaf. Run this when a Pixelblaze stops honouring `pb sensor`, or any other
+    UDP sensor source.
+
+    Anything that loads a pattern behind your back puts a board back into that
+    state: a playlist advancing, a sync leader pushing a pattern, a power
+    cycle. So this is a lever you reach for again, not a one-time repair.
+
+    In playlist or shuffle mode the sequencer is paused first — which holds its
+    position — and resumed afterwards, so the board comes back on the same item
+    instead of jumping to the top of the playlist. Nothing is written to flash:
+    this changes what is running now, not what the board boots into.
+
+    \b
+    Examples:
+        pb reload                   # Reload whatever is running
+        pb --ip all reload          # ... on every Pixelblaze on the network
+        pb reload --no-resume       # Reload, and leave the sequencer paused
+    """
+    sequencer = pb.getConfigSequencer()
+    active = (sequencer.get('activeProgram') or {}).get('activeProgramId')
+    check(active, "No pattern is active, so there is nothing to reload.")
+    name = (sequencer.get('activeProgram') or {}).get('name') or active
+    running = bool(sequencer.get('runSequencer'))
+    mode = sequencer.get('sequencerMode')
+
+    # Reloading underneath a running sequencer races it: the advance that fires
+    # mid-reload is the one that undoes the reload. Pausing holds the position.
+    if running:
+        log("Pausing the sequencer (its position is kept)...")
+        pb.pauseSequencer()
+
+    log(f"Reloading '{name}'...")
+    pb.reloadActivePattern()
+
+    if running and not no_resume:
+        log("Resuming the sequencer...")
+        pb.playSequencer()
+
+    where = {Pixelblaze.sequencerModes.ShuffleAll.value: ' (shuffle)',
+             Pixelblaze.sequencerModes.Playlist.value: ' (playlist)'}.get(mode, '')
+    left = ' — sequencer left paused' if running and no_resume else ''
+    log(f"Reloaded '{name}'{where}{left}")
 
 
 @cli(pixelblaze)
@@ -1237,6 +1299,28 @@ def setup(ctx):
     log("WiFi reset to setup mode — look for a 'Pixelblaze_*' network")
 
 
+def _sync_group_members(pb: Pixelblaze) -> list:
+    """Every member of this device's sync group, the connected device first.
+
+    `getPeers` reports only the *other* members, so the device's own row is
+    synthesized from its config. One definition, two users: `pb wifi peers`
+    prints it, and `pb sensor sound --peers` streams sensor frames to it.
+    """
+    peers = pb.getPeers()
+    settings = pb.getConfigSettings()
+    self_entry = {
+        'id': settings.get('chipId', 0),
+        'address': pb.ipAddress,
+        'name': settings.get('name', '?'),
+        'ver': settings.get('ver', '?'),
+        'isFollowing': 1 if settings.get('leaderId', 0) else 0,
+        'nodeId': settings.get('nodeId', 0),
+        'followerCount': sum(1 for peer in peers if peer.get('isFollowing')),
+        'self': True,
+    }
+    return [self_entry] + peers
+
+
 @cli(wifi)
 def peers(pb: Pixelblaze):
     """
@@ -1252,22 +1336,7 @@ def peers(pb: Pixelblaze):
         pb wifi peers
         pb wifi peers --ip 192.168.1.230
     """
-    peers = pb.getPeers()
-
-    # getPeers returns only *other* members, not self — synthesize a self row
-    # from the device's own config so users see the whole group.
-    cfg = pb.getConfigSettings()
-    self_entry = {
-        'id': cfg.get('chipId', 0),
-        'address': pb.ipAddress,
-        'name': cfg.get('name', '?'),
-        'ver': cfg.get('ver', '?'),
-        'isFollowing': 1 if cfg.get('leaderId', 0) else 0,
-        'nodeId': cfg.get('nodeId', 0),
-        'followerCount': sum(1 for p in peers if p.get('isFollowing')),
-        'self': True,
-    }
-    all_members = [self_entry] + peers
+    all_members = _sync_group_members(pb)
     jsons(all_members)
 
     log(f"\n    {'NAME':<20} {'ADDRESS':<15} {'CHIPID':>10} {'NODE':>5} {'ROLE':<10} {'VER':<6} {'FOLLOWERS':>9}")
@@ -2027,6 +2096,644 @@ def reboot(ctx, wait):
 
         if not reconnected:
             log("Warning: Timed out waiting for device to reconnect")
+
+
+## ─── Sensor (virtual sensor board sources) ────────────────────────────────────
+
+def _host_sender_id() -> int:
+    """This host's IPv4 as the 32-bit sender id the discovery protocol carries.
+
+    A Pixelblaze puts its own chipId in this field. A host has no chipId, so
+    use the address: stable across runs — a random id per invocation makes
+    `pb snoop --sensor` output impossible to follow — and meaningful in a
+    capture. Falls back to 0 if the host address can't be determined.
+    """
+    try:
+        return int.from_bytes(socket.inet_aton(get_host_ip()), 'little')
+    except Exception:
+        return 0
+
+
+def _parse_sender_id(value: str) -> int:
+    """Accept a decimal or 0x-prefixed sender id and range-check it."""
+    try:
+        parsed = int(value, 0)
+    except ValueError:
+        raise click.ClickException(
+            f"--sender-id must be a number (decimal or 0x hex), got '{value}'")
+    check(0 <= parsed <= 0xFFFFFFFF, f"--sender-id must fit in 32 bits, got {parsed}")
+    return parsed
+
+
+def _describe_sync_group(targets: list, roles: dict) -> list:
+    """Render the `--peers` target list, so it is obvious who is about to be fed."""
+    lines = [f"  Sync group ({len(targets)} device(s)):"]
+    for address in targets:
+        info = roles.get(address, {})
+        node = f", node {info['nodeId']}" if info.get('nodeId') else ""
+        lines.append(f"    {address:<15} {info.get('name', '?'):<20} "
+                     f"{info.get('role', 'unknown')}{node}")
+    # A leader with a real sensor board is broadcasting its own frames at 40Hz;
+    # ours and its interleave, and whichever lands last is what patterns see.
+    if len(targets) > 1 and any(i.get('role') == 'leader/solo' for i in roles.values()):
+        lines.append("    Note: a leader with its own sensor board is broadcasting too — "
+                     "whichever frame arrives last wins.")
+    return lines
+
+
+def _peer_targets(timeout_ms: int = 3000) -> tuple:
+    """Every Pixelblaze we can identify, with sync-group roles where known.
+
+    Deliberately owns no discovery of its own. `enumerate_pixelblazes` already
+    checks the ad-hoc address, listens for beacons, and asks each device it
+    finds for its sync-group peer list — which is the only way a *follower*
+    turns up, since followers never beacon.
+
+    Roles come from `_sync_group_members`, the same helper `pb wifi peers`
+    prints: the peer list is a group-wide view, so the first device that
+    answers describes the whole group.
+
+    Returns:
+        (addresses, roles) — roles maps address -> {name, role, nodeId}.
+    """
+    addresses = [d['ip'] for d in enumerate_pixelblazes(timeout=timeout_ms)]
+
+    roles = {}
+    for address in addresses:
+        try:
+            with Pixelblaze(address) as pb:
+                for member in _sync_group_members(pb):
+                    if member.get('address'):
+                        roles[member['address']] = {
+                            'name': member.get('name', '?'),
+                            'role': 'follower' if member.get('isFollowing') else 'leader/solo',
+                            'nodeId': member.get('nodeId', 0),
+                        }
+            break
+        except Exception:
+            continue   # a wedged device shouldn't cost us the group view
+
+    # A peer list can name a device the sweep never reached directly.
+    for address in roles:
+        if address not in addresses:
+            addresses.append(address)
+
+    return addresses, roles
+
+
+def _make_controls(bridge, display, use_keys: bool, on_rebind=None):
+    """The keyboard, or None when this run has no terminal to read -- a pipe, a
+    service, a cron job, or `--no-keys`."""
+    if not use_keys:
+        return None
+    from pixelblaze.cli.controls import Controls
+    from pixelblaze.cli.keys import KeyReader
+
+    reader = KeyReader()
+    if not reader.available:
+        return None
+
+    def rebind():
+        # On its own thread: reloading a pattern opens a websocket to every
+        # target, and the run loop that called this has frames to push.
+        threading.Thread(target=on_rebind, name='pb-rebind', daemon=True).start()
+
+    return Controls(bridge, display=display, reader=reader,
+                    on_rebind=rebind if on_rebind is not None else None)
+
+
+@pixelblaze.group()
+def sensor():
+    """
+    Push sensor data into pattern globals from host-side sources.
+
+    Feeds the same readings a physical Pixelblaze Sensor Expansion Board
+    would emit (frequencyData, energyAverage, maxFrequency, ...), so
+    sound-reactive patterns work with no SB attached — by default over the
+    board's own UDP protocol, which costs the device no pattern framerate and
+    can feed every Pixelblaze on the network at once.
+    """
+    pass
+
+
+_SENSOR_PREF_MAP = {'remote': 0, 'local': 1}
+_SENSOR_PREF_NAMES = {0: 'Prefer Remote', 1: 'Prefer Local'}
+
+@cli(sensor, name='sources')
+@click.option('--prefer', 'preference',
+              type=click.Choice(['remote', 'local'], case_sensitive=False),
+              help='Set source preference (remote = OTA/bridge, local = onboard/SB)')
+@click.option('--type', 'sensor_type', multiple=True,
+              type=click.Choice(['accel', 'light', 'sound', 'analog'], case_sensitive=False),
+              help='Sensor type(s) to set (default: all four). Can be repeated.')
+@no_save_option
+def sensor_sources(pb: Pixelblaze, preference, sensor_type, no_save):
+    """
+    View or set sensor input source preferences (accelSrc/lightSrc/soundSrc/analogSrc).
+
+    Two values: 0 = "Prefer Remote" (OTA/bridge data), 1 = "Prefer Local"
+    (onboard mic or Sensor Expansion Board). The firmware falls back to the
+    other source if the preferred one isn't reporting.
+
+    \b
+    Examples:
+        pb sensor sources                                # Show all preferences
+        pb sensor sources --prefer remote                # Set ALL to prefer remote
+        pb sensor sources --prefer local --type sound    # Only audio → local
+        pb sensor sources --prefer remote --type accel --type light
+    """
+    if preference is None:
+        s = pb.getSensorSources()
+        log("Sensor source preferences:")
+        for k, label in [('accel', 'Accelerometer'), ('light', 'Light        '),
+                         ('sound', 'Audio/Sound  '), ('analog', 'Analog       ')]:
+            log(f"  {label}: {_SENSOR_PREF_NAMES.get(s[k], '?')} ({s[k]})")
+        return
+
+    value = _SENSOR_PREF_MAP[preference.lower()]
+    types = [t.lower() for t in sensor_type] if sensor_type else ['accel', 'light', 'sound', 'analog']
+    pb.setSensorSources(**{t: value for t in types}, saveToFlash=not no_save)
+
+    action = "saved" if not no_save else "set (temporary)"
+    log(f"✓ {', '.join(types)} → prefer {preference} ({action})")
+
+
+@cli(sensor, conn=False)
+@click.option('--transport', type=click.Choice(['udp', 'vars'], case_sensitive=False),
+              default='udp',
+              help='How to deliver the data: udp = sensor-board datagrams (default), '
+                   'vars = setVars over the websocket')
+@click.option('--target', '-t', 'targets', multiple=True,
+              help='UDP destination IP (repeatable). Giving any turns discovery off, '
+                   'so these are the only devices fed unless --all is also given.')
+@click.option('--broadcast', is_flag=True,
+              help='One UDP broadcast datagram instead of discovering: reaches every '
+                   'Pixelblaze on the network, but cannot rebind any of them')
+@click.option('--all', '--peers', 'use_all', is_flag=True,
+              help='Stream to every Pixelblaze found the way `pb find` finds them: the '
+                   "ad-hoc address, beacons, and each device's sync-group peer list — "
+                   'which is the only way a follower turns up, since followers never '
+                   'beacon. This is the DEFAULT when no --target and no --ip is given; '
+                   'pass it alongside --target to add discovery back on top. Unicast, '
+                   'so --rebind reloads the pattern on every one of them, which '
+                   '--broadcast cannot do.')
+@click.option('--rescan', type=float, default=0.0, metavar='SECONDS',
+              help='Keep discovering while streaming: every SECONDS, look again and '
+                   'start feeding (and rebinding) anything new that has appeared. '
+                   'Off by default — it broadcasts a probe beacon each time.')
+@click.option('--sender-id', 'sender_id', default=None, metavar='ID',
+              help='Sender id to put in the packet header (decimal, or 0x hex). A real '
+                   'sensor board leader sends its chipId; the default here is this '
+                   "host's IPv4 as a 32-bit int, so a capture identifies who sent a "
+                   'frame. Firmware 3.70 does not check this field — see the full help.')
+@click.option('--rebind/--no-rebind', default=True,
+              help='UDP: reload each target\'s active pattern once frames are flowing, '
+                   'so the firmware binds them to the stream (default: on)')
+@click.option('--device', '-d', default='blackhole',
+              help='Audio input device name substring (default: blackhole)')
+@click.option('--tone', type=float, default=None, metavar='HZ',
+              help='Send a generated sine instead of capturing: no input device, no '
+                   'permission prompt, no PortAudio. A known-good signal for asking '
+                   'whether the *device* is listening.')
+@click.option('--file', '-F', 'audio_file', default=None, metavar='PATHS',
+              help='Beam audio files instead of capturing, in real time, on a loop. '
+                   'Anything ffmpeg reads. Several, comma-separated, make a playlist '
+                   '(↑/↓ to move through it while it runs); a directory means the '
+                   'audio files in it.')
+@click.option('--from', 'from_time', default=None, metavar='TIME',
+              help='With --file: start here (seconds, or m:ss / h:mm:ss). Applies '
+                   'to every track when --file names more than one.')
+@click.option('--to', 'to_time', default=None, metavar='TIME',
+              help='With --file: stop here — --from/--to loop just that section')
+@click.option('--loop/--no-loop', 'loop', default=True,
+              help='With --file: loop (default), or play through once and stop')
+@click.option('--keys/--no-keys', 'use_keys', default=True,
+              help='Take single keypresses while it runs — pause, seek, change '
+                   'tracks, turn the gain and AGC up and down (default: on, when '
+                   'there is a terminal to read). `--list-keys` prints the lot.')
+@click.option('--list-keys', 'list_keys', is_flag=True,
+              help='Print the keys that work while it runs, and exit')
+@click.option('--mix', 'mix', is_flag=False, flag_value='', default=None, metavar='DEVICE',
+              help='Also play the audio out of an output device, so you can hear what '
+                   'is being sent. Bare --mix means the OS default output; give a name '
+                   'fragment or index for a specific one. The default with no flag is '
+                   'a guess — see the full help — and --no-mix turns it off.')
+@click.option('--no-mix', is_flag=True, help='Never play the audio out of anything')
+@click.option('--seconds', type=float, default=None, metavar='S',
+              help='Stop after S seconds (default: until Ctrl-C)')
+@click.option('--fps', type=int, default=30,
+              help='How often to push data to PB (default: 30; a real sensor board runs at 40)')
+@click.option('--sample-rate', '-r', type=int, default=None,
+              help='Sample rate in Hz (default: device native)')
+@click.option('--block-size', '-b', type=int, default=1024,
+              help='FFT block size in samples (default: 1024)')
+@click.option('--gain', '-g', type=float, default=1.0,
+              help='Linear gain multiplier for spectrum (default: 1.0)')
+@click.option('--noise-gate', type=float, default=0.0,
+              help='Zero out spectrum values below this threshold (default: 0, off)')
+@click.option('--log', 'log_scale', is_flag=True,
+              help='Apply log scaling to compress dynamic range')
+@click.option('--agc', is_flag=True,
+              help='Auto-gain control: adapts gain so peaks stay consistent')
+@click.option('--plain', is_flag=True,
+              help='A status line a second instead of the live spectrum')
+@click.option('--quiet', '-q', is_flag=True, help='Neither')
+@click.option('--list-devices', '-l', is_flag=True,
+              help='List available audio input devices and exit')
+def sound(ctx, transport, targets, broadcast, use_all, rescan, sender_id, rebind,
+          device, tone, audio_file, from_time, to_time, loop, use_keys, list_keys,
+          mix, no_mix, seconds, fps, sample_rate, block_size, gain, noise_gate,
+          log_scale, agc, plain, quiet, list_devices):
+    """
+    Stream audio FFT to Pixelblazes as sensor-board data.
+
+    Captures audio from a system device (mic, loopback, etc.), computes
+    32 frequency bins matching the PB Sensor Board format, and streams
+    frequencyData, energyAverage, maxFrequency and maxFrequencyMagnitude
+    to the device.
+
+    \b
+    What it sends:
+        Nothing named — the default input device (--device to pick another,
+        -l to list them). --file PATHS beams audio files in real time
+        instead, on a loop, with --from/--to to loop just a section of
+        each. Several files, comma-separated, are a playlist, and so is a
+        directory. --tone HZ generates a sine, which needs no audio stack
+        at all.
+
+    \b
+    Steering it while it runs (--list-keys, or ? while it runs):
+        space       pause / resume — the lights go quiet with it, because
+                    pausing sends silence rather than stopping, and a
+                    pattern holds the last frame it was sent forever
+        ← →         seek ∓5s · shift ∓30s · alt/ctrl ∓1s
+        ↑ ↓         previous / next track
+        - +         gain down / up          a    AGC on / off
+        [ ]         AGC target down / up    l    log scaling on / off
+        n N         noise gate down / up    0    gain back to --gain
+        m           mute what you hear      r    reload the patterns
+        ? q         these keys · stop
+    \b
+        The knobs are the ones you cannot pick in advance: the right gain
+        depends on the room, the source and the pattern, and the way to
+        find it is to watch the lights and turn it until they look right.
+        Transport applies to --file; everything else applies to whatever
+        is playing. --no-keys turns this off, and so does having no
+        terminal to read (a pipe, a service, a cron job).
+
+    \b
+    Whether you hear it (--mix / --no-mix):
+        --mix DEVICE plays it out of that output; bare --mix uses the OS
+        default; --no-mix never does. With neither, it guesses:
+          --file   → the default output. You asked to play a track.
+          --tone   → nothing. A test signal is not something to blast.
+          capture  → the default output, UNLESS the input looks like a
+                     loopback that output already carries. The usual Mac
+                     rig is an aggregate/multi-output device feeding both
+                     BlackHole and the speakers, with this capturing
+                     BlackHole: the sound is already reaching the speakers
+                     and playing it again would double it. That is read
+                     from the system where it can be (macOS aggregate
+                     devices) and guessed from the device names otherwise
+                     ("BlackHole" + "BH Speakers"). Whatever it decides is
+                     printed with its reason — --mix/--no-mix settles it.
+
+    \b
+    Where it sends, by default:
+        With no --target, no --broadcast and no --ip, it finds every
+        Pixelblaze on the network and unicasts to all of them — one host
+        feeding a whole installation is the normal case, not a special one.
+        Name devices (--target, --ip) and it feeds only those. --rescan
+        keeps looking while it streams.
+
+    \b
+    Transports:
+        --transport udp     (default) the same UDP datagrams a sync group
+                            leader uses to share its sensor board. The device
+                            does no JSON parsing, so this costs it no pattern
+                            framerate, and one --broadcast feeds every
+                            Pixelblaze on the network at once.
+        --transport vars    setVars over the websocket. Reaches a device
+                            pinned to local sensor sources, and works with any
+                            pattern exporting the variables by name, but the
+                            device parses JSON on its render thread every
+                            frame — expect lost framerate on complex patterns.
+
+    Over UDP a Pixelblaze uses these readings when its sound source preference
+    is "prefer remote" (`pb sensor sources --prefer remote --type sound`), or
+    when it has no local sensor board to prefer.
+
+    The firmware binds a pattern's sensor globals when the pattern loads, so a
+    pattern that was already running keeps simulating and ignores the stream.
+    This reloads the active pattern on each target once frames are flowing;
+    `--no-rebind` leaves it alone, and with `--broadcast` you re-select the
+    pattern yourself. Unicast can rebind; a broadcast cannot.
+
+    \b
+    What it shows while it runs:
+        On a terminal it draws the 32 bins live, exactly as the device
+        receives them, with loudness in LUFS (NO_COLOR=1 for monochrome).
+        Piped, it prints a status line a second; --plain forces that and
+        --quiet neither.
+
+    \b
+        `energy` is energyAverage, what a pattern reads: the mean of the 32
+        bins. It tracks "busier", not "louder". LUFS (ITU-R BS.1770 /
+        EBU R128) is loudness as heard — M = last 400 ms, S = last 3 s,
+        I = gated since start — and is measured on the input, so --gain
+        scales what is sent, not the sound.
+
+    \b
+        If the input delivers no audio at all for 3 s this stops with exit 1.
+        A running capture that sends nothing looks exactly like a quiet room
+        from the device's side, and exactly like success from here.
+
+    \b
+    About the sender id (it is not a leader gate):
+        This protocol exists so a sync group's *leader* can share its sensor
+        board with its followers, and the header carries the sender's id — a
+        real leader puts its chipId there. But a receiving Pixelblaze does
+        NOT check it against its own leaderId: measured on firmware 3.70,
+        frames are accepted from any sender, unicast or broadcast, with no
+        sync group, no leader and no FOLLOW subscription; setting a device's
+        leaderId to ours changed nothing. So --sender-id is for identifying
+        yourself in a capture, not for getting frames accepted. To actually
+        put devices into a sync group, use `pb cfg --leader-id / --node-id`.
+
+    Requires `numpy` on the host, and `sounddevice` to capture (`--tone` needs
+    neither a device nor PortAudio). On macOS you'll typically also want
+    BlackHole (https://existential.audio/blackhole/) to loopback system audio
+    into an input device.
+
+    \b
+    Scaling options:
+        --gain 10           Boost quiet sources (mic, quiet music)
+        --gain 0.1          Tame hot sources (direct line-in)
+        --log               Compress dynamic range (loud/quiet more even)
+        --agc               Auto-adjusts gain to keep peaks consistent
+        --noise-gate 0.001  Kill low-level noise floor
+
+    \b
+    Examples:
+        pb sensor sound                          # every Pixelblaze found
+        pb sensor sound --rescan 30              # ...and any that turn up later
+        pb --ip kitchen sensor sound             # just that one
+        pb sensor sound -t 192.168.1.24 -t 192.168.1.25
+        pb sensor sound --broadcast              # one datagram to the whole LAN
+        pb sensor sound --tone 440 --seconds 10  # no mic needed; is it listening?
+        pb sensor sound --file set.m4a           # beam a track, on a loop
+        pb sensor sound -F set.m4a --from 1:12 --to 1:40   # loop that drop
+        pb sensor sound -F a.mp3,b.mp3,c.mp3     # a playlist; ↑↓ moves through it
+        pb sensor sound -F ~/Music/set           # every track in a folder
+        pb sensor sound --list-keys              # what the keyboard does
+        pb sensor sound --no-mix                 # don't play it out of anything
+        pb sensor sound --mix "MacBook Pro Speakers"
+        pb sensor sound --sender-id 0xD0CAFE     # label the frames in a capture
+        pb sensor sound --transport vars         # old setVars path
+        pb sensor sound -d "MacBook"             # Stream from built-in mic
+        pb sensor sound --agc                    # Auto-gain (adapts to volume)
+        pb sensor sound -g 20 --log              # Boost + compress for mic
+        pb sensor sound --fps 40                 # Match the real sensor board
+        pb sensor sound -l                       # List input devices
+    """
+    from pixelblaze.cli.sensor_bridge import (Monitor, Playlist, SoundBridge, UdpSink,
+                                              VarsSink, choose_monitor, decode_audio,
+                                              expand_tracks, find_device, parse_time)
+    from pixelblaze.cli.spectrum import make_display
+
+    if list_keys:
+        from pixelblaze.cli.controls import FILE, keymap
+        log("Keys that work while `pb sensor sound` is running:\n")
+        for binding in keymap():
+            if not binding.label:
+                continue
+            scope = "--file" if binding.scope == FILE else ""
+            log(f"  {' / '.join(binding.keys):<22} {scope:<7} {binding.label}")
+        log("\n  --file keys need a file to steer; the rest apply to a capture too.")
+        return
+
+    if list_devices:
+        import sounddevice as sd
+        for i, dev in enumerate(sd.query_devices()):
+            if dev['max_input_channels'] > 0:
+                marker = " ←" if device.lower() in dev['name'].lower() else ""
+                log(f"  [{i}] {dev['name']} "
+                    f"(ch={dev['max_input_channels']}, "
+                    f"rate={int(dev['default_samplerate'])}){marker}")
+        return
+
+    transport = transport.lower()
+    sender_id = _parse_sender_id(sender_id) if sender_id is not None else _host_sender_id()
+
+    # An --ip the user actually typed means "this device" — so it is one of the
+    # ways of naming targets, and it turns the find-everything default off.
+    named_ip = str(ctx.obj.get('ip') or '').strip().lower() not in ('', 'auto')
+    targets = list(targets) + (['255.255.255.255'] if broadcast else [])
+    discover = transport == 'udp' and (use_all or not (targets or named_ip))
+
+    check(transport == 'udp' or not (targets or use_all or broadcast),
+          "--target, --broadcast and --all/--peers only apply to --transport udp")
+    check(rescan >= 0, "--rescan takes seconds, not a negative number")
+    if rescan and not discover:
+        log("Note: --rescan only adds devices that discovery finds, and this run "
+            "was given its targets explicitly — nothing will be added.")
+
+    check(sum(1 for x in (tone, audio_file) if x) <= 1,
+          "give one of --tone or --file, not both")
+    check(not ((from_time or to_time) and not audio_file),
+          "--from and --to say where in --file to play; there is no --file here")
+    check(not (mix and no_mix), "give one of --mix or --no-mix, not both")
+
+    # Channels as the source delivers them, capped at a pair: BS.1770 sums
+    # channel POWER, and a mono mixdown first reads up to 3 dB low on a wide mix
+    # and cancels out-of-phase content outright. The FFT mixes to mono itself.
+    samples, playlist = None, None
+    if audio_file:
+        try:
+            start, end = parse_time(from_time), parse_time(to_time)
+        except ValueError as e:
+            raise click.ClickException(str(e))
+        try:
+            tracks = expand_tracks(audio_file)
+            # The first track is decoded here rather than by the playlist, so a
+            # file that cannot be read fails the command now, loudly, instead of
+            # being skipped past once the run is under way.
+            samples, sr = decode_audio(tracks[0], start=start, end=end,
+                                       sample_rate=sample_rate, channels=2)
+        except RuntimeError as e:
+            raise click.ClickException(str(e))
+        channels = samples.shape[1]
+        dev_idx = None
+
+        # Every later track is decoded at the first one's rate: the meter, the
+        # FFT and the output stream are all built around one sample rate, and a
+        # playlist that changed it halfway would have to rebuild all three.
+        playlist = Playlist(
+            tracks,
+            decode=lambda track: decode_audio(track, start=start, end=end,
+                                              sample_rate=sr, channels=2)[0])
+        playlist.seed(0, samples)
+
+        section = f" {from_time or '0'}–{to_time}" if (from_time or to_time) else ""
+        first = f"{pathlib.Path(tracks[0]).name}{section}"
+        dev_info = {'name': (f"{first} ({len(samples) / sr:.1f}s"
+                             + (f", +{len(tracks) - 1} more" if len(tracks) > 1 else "")
+                             + f", {'looping' if loop else 'once'})")}
+    elif tone:
+        dev_idx, dev_info = None, {'name': f"generated {tone:g} Hz tone"}
+        sr, channels = sample_rate or 48000, 2
+    else:
+        log(f"Looking for audio device matching '{device}'...")
+        dev_idx, dev_info = find_device(device)
+        sr = sample_rate or int(dev_info['default_samplerate'])
+        channels = max(1, min(2, int(dev_info.get('max_input_channels') or 1)))
+
+    # Hearing it is a separate question from sending it — see the full help.
+    monitor = None
+    try:
+        mix_device, why_mix = choose_monitor(mix, no_mix, dev_info['name'],
+                                             is_capture=not (tone or audio_file),
+                                             is_tone=bool(tone))
+    except (RuntimeError, ImportError, OSError) as e:
+        check(mix is None, f"--mix: {e}")
+        mix_device, why_mix = None, f"no monitor: {e}"
+    if mix_device is not None:
+        monitor = Monitor(mix_device, sr, min(2, channels))
+
+    roles = {}
+    if discover:
+        found, roles = _peer_targets()
+        check(found, "Found no Pixelblazes to stream to: nothing beaconed, nothing "
+                     "answered the probe, and no known address answered. Name one with "
+                     "--target or --ip, or use --broadcast.")
+        targets += [address for address in found if address not in targets]
+
+    display = make_display(quiet=quiet, plain=plain, gain=gain)
+    say = display.log
+
+    if playlist is not None:
+        # One unreadable track out of forty is not a reason to lose the set —
+        # but it is said out loud, every time, rather than skipped quietly.
+        playlist.on_error = lambda track, e: say(f"  ✗ {pathlib.Path(track).name}: {e}"
+                                                 f" — skipping")
+
+    scaling = []
+    if gain != 1.0: scaling.append(f"gain={gain}x")
+    if noise_gate > 0: scaling.append(f"gate={noise_gate}")
+    if log_scale: scaling.append("log")
+    if agc: scaling.append("agc")
+
+    def stream(sink, on_flowing=None, on_running=None, on_rebind=None):
+        log(f"Source: {dev_info['name']}")
+        log(f"  Sample rate: {sr} Hz, Block: {block_size}, Channels: {channels}, FPS: {fps}")
+        log(f"  Sending: {sink.describe()}")
+        log(f"  {'Playing out of' if monitor else 'Not playing out of anything'}: {why_mix}")
+        if scaling:
+            log(f"  Scaling: {', '.join(scaling)}")
+        bridge = SoundBridge(sink, dev_idx, sr, block_size, fps, gain=gain,
+                             noise_gate=noise_gate, log_scale=log_scale, agc=agc,
+                             on_flowing=on_flowing, display=display, seconds=seconds,
+                             channels=channels, tone=tone, samples=samples, loop=loop,
+                             monitor=monitor, playlist=playlist)
+        bridge.controls = _make_controls(bridge, display, use_keys, on_rebind)
+        if bridge.controls is not None:
+            log(f"  {bridge.controls.hint()}")
+        log("  Press Ctrl+C to stop\n")
+        stop_extras = on_running(bridge) if on_running else None
+        try:
+            bridge.run()
+        finally:
+            display.finish()
+            if stop_extras:
+                stop_extras()
+        # Loud failure: a capture that is open and delivering nothing sends no
+        # frames, and from the device's side that is indistinguishable from a
+        # quiet room. Exit 1 rather than sit there looking busy.
+        if bridge.stalled_for is not None:
+            raise click.ClickException(
+                f"no audio has arrived from {dev_info['name']} for "
+                f"{bridge.stalled_for:.0f} s. The input is open but delivering nothing: "
+                f"an aggregate device with a member missing, an interface unplugged, or "
+                f"an input another app holds exclusively. `pb sensor sound -l` lists "
+                f"what is there.")
+        return bridge
+
+    if transport == 'vars':
+        # The websocket has to stay open for the whole run.
+        with get_pixelblaze(ctx) as pb:
+            bridge = stream(VarsSink(pb))
+        log(f"\nStopped after {bridge.frames_sent} frames. Sensor sentinels reset.")
+        return
+
+    if not targets:
+        # Not discovering and nothing named: whichever Pixelblaze this CLI would
+        # talk to anyway. Resolved without connecting — UDP needs no websocket,
+        # and an idle open session is one the firmware can hang onto.
+        targets = [discover_pixelblaze(ctx)]
+
+    try:
+        sink = UdpSink(targets, senderId=sender_id)
+    except OSError as e:
+        raise click.ClickException(f"Can't send to {', '.join(targets)}: {e}")
+
+    if roles:
+        for line in _describe_sync_group(targets, roles):
+            log(line)
+
+    def bind(addresses):
+        """Reload each device's pattern so the firmware binds it to the stream,
+        and say so if the device is set to ignore us anyway."""
+        # A broadcast address has no websocket to open.
+        for address in [a for a in addresses if not a.endswith('.255')]:
+            try:
+                with Pixelblaze(address) as pb:
+                    pb.reloadActivePattern()
+                    prefers_local = (pb.getSensorSources()['sound']
+                                     == Pixelblaze.sensorSources.preferLocal)
+                say(f"  ↻ {address}: reloaded the active pattern so it reads the stream")
+                if prefers_local:
+                    say(f"  ! {address} prefers its LOCAL sound source — with a sensor "
+                        f"board attached it ignores these frames "
+                        f"(`pb sensor sources --prefer remote --type sound`)")
+            except Exception as e:
+                say(f"  ✗ could not reload the pattern on {address}: {e}")
+        if any(a.endswith('.255') for a in addresses):
+            say("  · broadcasting: re-select the pattern on each Pixelblaze so it "
+                "reads the stream")
+
+    def start_rescan(bridge):
+        """Keep discovering while streaming. Returns a stopper, or None."""
+        if not (rescan and discover):
+            return None
+        stop = threading.Event()
+
+        def loop():
+            while not stop.wait(rescan):
+                try:
+                    found, _ = _peer_targets(timeout_ms=1500)
+                except Exception as e:
+                    say(f"  ✗ rescan failed: {e}")
+                    continue
+                added = [a for a in found if sink.add_target(a)]
+                for address in added:
+                    say(f"  + {address} — found by rescan, now streaming to it")
+                if added and rebind:
+                    bind(added)
+
+        thread = threading.Thread(target=loop, name='pb-sensor-rescan', daemon=True)
+        thread.start()
+
+        def stopper():
+            stop.set()
+            thread.join(timeout=2.0)
+        return stopper
+
+    # `r` rebinds on demand even when --no-rebind turned the automatic one off:
+    # a pattern that is not reacting is exactly when you reach for it.
+    bridge = stream(sink, on_flowing=(lambda: bind(sink.targets)) if rebind else None,
+                    on_running=start_rescan, on_rebind=lambda: bind(sink.targets))
+    log(f"\nStopped after {bridge.frames_sent} frames. Sent a frame of silence to each "
+        f"target; patterns hold the last frame otherwise.")
 
 
 @pixelblaze.group()
